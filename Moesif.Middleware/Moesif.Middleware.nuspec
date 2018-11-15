@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Moesif.Middleware</id>
+    <version>0.1.0</version>
+    <title>MoesifMiddleware</title>
+    <authors>Moesif</authors>
+	<owners>Moesif</owners>
+	<licenseUrl>https://github.com/moesif/moesif-csharp/blob/master/LICENSE</licenseUrl>
+	<projectUrl>https://www.moesif.com</projectUrl>
+    <iconUrl>https://cdn.moesif.com/images/icon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Moesif Middleware Library</description>
+    <summary />
+    <releaseNotes />
+    <copyright>Copyright 2018</copyright>
+    <language>en-US</language>
+	<tags>moesif restful api log error debug logging</tags>
+	<dependencies>
+    <dependency id="Microsoft.AspNetCore.Http" version="2.1.1" />
+    <dependency id="Microsoft.AspNetCore.Http.Extensions" version="2.1.1" />
+    <dependency id="Moesif.Api" version="1.1.1" />
+	</dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\netstandard2.0\Moesif.Middleware.dll" target="lib\Moesif.Middleware.dll" />
+    <file src="..\README.md" target="readme.txt" />
+    <file src="..\LICENSE" target="LICENSE" />
+  </files>
+</package>
