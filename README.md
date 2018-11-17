@@ -118,7 +118,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 ## Example
 
 An example Moesif integration based on quick start tutorial:
-[Moesif CSharp Example](https://github.com/Moesif/moesif-dotnet-example)
+[Moesif .NET Example](https://github.com/Moesif/moesif-dotnet-example)
 
 ## Other integrations
 
