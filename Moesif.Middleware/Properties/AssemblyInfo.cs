@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Moesif.Middleware")]
-[assembly: AssemblyDescription("Moesif Middleware Lib")]
+[assembly: AssemblyDescription("Moesif Middleware for .NET")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Moesif, Inc")]
 [assembly: AssemblyProduct("Moesif.Middleware")]

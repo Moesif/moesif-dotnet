@@ -1,8 +1,6 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoesifMiddlewareExample", "..\moesif-csharp-example\MoesifMiddlewareExample\MoesifMiddlewareExample.csproj", "{0200FA63-5808-4D0F-87ED-735C4E682E2F}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Moesif.Middleware", "Moesif.Middleware\Moesif.Middleware.csproj", "{1090B4F7-8793-4129-8C6F-3601950BD01D}"
 EndProject
 Global
@@ -11,10 +9,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0200FA63-5808-4D0F-87ED-735C4E682E2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0200FA63-5808-4D0F-87ED-735C4E682E2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0200FA63-5808-4D0F-87ED-735C4E682E2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0200FA63-5808-4D0F-87ED-735C4E682E2F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1090B4F7-8793-4129-8C6F-3601950BD01D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1090B4F7-8793-4129-8C6F-3601950BD01D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1090B4F7-8793-4129-8C6F-3601950BD01D}.Release|Any CPU.ActiveCfg = Release|Any CPU

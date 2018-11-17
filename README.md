@@ -2,7 +2,7 @@
 
 Middleware to capture _incoming_ API calls and send to the Moesif API Analytics platform.
 
-[Source Code on GitHub](https://github.com/Moesif/moesif-csharp)
+[Source Code on GitHub](https://github.com/Moesif/moesif-dotnet)
 
 [Nuget Package](https://www.nuget.org/packages/Moesif.Middleware/)
 
@@ -118,7 +118,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 ## Example
 
 An example Moesif integration based on quick start tutorial:
-[Moesif CSharp Example](https://github.com/Moesif/moesif-csharp-example)
+[Moesif CSharp Example](https://github.com/Moesif/moesif-dotnet-example)
 
 ## Other integrations
 
