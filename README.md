@@ -1,4 +1,4 @@
-﻿# Moesif Middleware for C#
+﻿# Moesif Middleware for .NET
 
 Middleware to capture _incoming_ API calls and send to the Moesif API Analytics platform.
 
