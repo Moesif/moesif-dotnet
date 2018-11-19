@@ -344,10 +344,28 @@ namespace Moesif.Middleware
                 {
                     var client = new MoesifApiClient(applicationId);
 
-                    await client.Api.CreateEventAsync(eventModel);
-                    if (debug)
-                    {
-                        Console.WriteLine("Event sent successfully to Moesif");
+                    double samplingPercentage = 100;
+                    var samplingPercentage_out = new object();
+                    var getSamplingPercentage = moesifOptions.TryGetValue("SamplingPercentage", out samplingPercentage_out);
+
+                    if (getApplicationId) {
+                        samplingPercentage = Convert.ToDouble(samplingPercentage_out.ToString());   
+                    }
+
+                    Random random = new Random();
+                    double randomPercentage = random.NextDouble() * 100;
+
+                    if (samplingPercentage >= randomPercentage) {
+                        await client.Api.CreateEventAsync(eventModel);
+                        if (debug)
+                        {
+                            Console.WriteLine("Event sent successfully to Moesif");
+                        }    
+                    }
+                    else {
+                        if (debug) {
+                            Console.WriteLine("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
+                        }
                     }
                 }
                 catch (APIException inst)
