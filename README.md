@@ -1,10 +1,13 @@
-﻿# Moesif Middleware for .NET
+# Moesif Middleware for DotNet
 
-Middleware to capture _incoming_ API calls and send to the Moesif API Analytics platform.
+[![Built For][ico-built-for]][link-built-for]
+[![Latest Version][ico-version]][link-package]
+[![Software License][ico-license]][link-license]
+[![Source Code][ico-source]][link-source]
+
+Middleware to capture _incoming_ API calls from .NET apps and send to the Moesif API Analytics platform.
 
 [Source Code on GitHub](https://github.com/Moesif/moesif-dotnet)
-
-[Nuget Package](https://www.nuget.org/packages/Moesif.Middleware/)
 
 ## How to install
 
@@ -123,3 +126,15 @@ An example Moesif integration based on quick start tutorial:
 ## Other integrations
 
 To view more more documentation on integration options, please visit __[the Integration Options Documentation](https://www.moesif.com/docs/getting-started/integration-options/).__
+
+[ico-built-for]: https://img.shields.io/badge/built%20for-dotnet-blue.svg
+[ico-version]: https://img.shields.io/nuget/v/Moesif.Middleware.svg
+[ico-downloads]: https://img.shields.io/nuget/dt/Moesif.Middleware.svg
+[ico-license]: https://img.shields.io/badge/License-Apache%202.0-green.svg
+[ico-source]: https://img.shields.io/github/last-commit/moesif/moesifdjango.svg?style=social
+
+[link-built-for]: https://www.microsoft.com/net
+[link-package]: https://www.nuget.org/packages/Moesif.Middleware
+[link-downloads]: https://www.nuget.org/packages/Moesif.Middleware
+[link-license]: https://raw.githubusercontent.com/Moesif/moesif-dotnet/master/LICENSE
+[link-source]: https://github.com/Moesif/moesif-dotnet
