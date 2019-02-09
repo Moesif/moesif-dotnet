@@ -1,22 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+<?xml version="1.0"?>
+<package >
   <metadata>
     <id>Moesif.Middleware</id>
     <version>0.1.1</version>
     <title>MoesifMiddleware</title>
     <authors>Moesif</authors>
-	<owners>Moesif</owners>
-	<licenseUrl>https://github.com/moesif/moesif-dotnet/blob/master/LICENSE</licenseUrl>
-	<projectUrl>https://www.moesif.com</projectUrl>
+	  <owners>Moesif</owners>
+    <license type="expression">Apache-2.0</license>
+	  <projectUrl>https://www.moesif.com</projectUrl>
     <iconUrl>https://cdn.moesif.com/images/icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Moesif Middleware Library</description>
+    <description>.NET Middleware to log API Calls to Moesif API Analytics</description>
     <summary />
     <releaseNotes />
-    <copyright>Copyright 2018</copyright>
+    <copyright>Copyright 2019</copyright>
     <language>en-US</language>
-	<tags>moesif restful api log error debug logging</tags>
+    <tags>moesif restful rest graphql web3 api analytics log logging error debug</tags>
 	<dependencies>
     <dependency id="Microsoft.AspNetCore.Http" version="2.1.1" />
     <dependency id="Microsoft.AspNetCore.Http.Extensions" version="2.1.1" />
