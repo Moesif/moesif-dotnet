@@ -12,6 +12,7 @@ using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using Moesif.Api.Http.Client;
 using Microsoft.AspNetCore.Http.Extensions;
+using System.Threading;
 
 namespace Moesif.Middleware
 {
@@ -26,6 +27,14 @@ namespace Moesif.Middleware
         public Dictionary<string, object> metadata;
 
         public Dictionary<string, object> moesifOptions;
+
+        public MoesifApiClient client;
+
+        // Initialize config dictionary
+        public Dictionary<string, object> confDict = new Dictionary<string, object>();
+
+        // Initialize cached_config_etag
+        public string cachedConfigETag = null;
 
         public bool debug;
 
@@ -45,11 +54,48 @@ namespace Moesif.Middleware
             return localDebug;
         }
 
+        // Get application configuration
+        public async Task<Dictionary<string, object>> GetConfig(MoesifApiClient client, Dictionary<string, object> appConfigDict, string cachedETag)
+        {
+            // Remove cached ETag if exist
+            if (!(string.IsNullOrEmpty(cachedETag)) && confDict.ContainsKey(cachedETag)) {
+                confDict.Remove(cachedETag);
+            }
+
+            // Call the api to get the application config
+            var appConfig = await client.Api.GetAppConfigAsync();
+
+            // Set default config
+            if (string.IsNullOrEmpty(appConfig.Body))
+            {
+                appConfigDict["ETag"] = null;
+                appConfigDict["sample_rate"] = 100;
+                appConfigDict["last_updated_time"] = DateTime.UtcNow;
+            }
+            // Set application config
+            else {
+                var rspBody = ApiHelper.JsonDeserialize<Dictionary<string, object>>(appConfig.Body);
+                appConfigDict["ETag"] = appConfig.Headers["X-Moesif-Config-ETag"];
+                appConfigDict["sample_rate"] = rspBody["sample_rate"];
+                appConfigDict["last_updated_time"] = DateTime.UtcNow;    
+            }
+
+            // Return config dictionary
+            return appConfigDict;
+        }
+
         public MoesifMiddleware(RequestDelegate next, Dictionary<string, object> _middleware)
         {
             moesifOptions = _middleware;
+            // Initialize client
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
             debug = Debug();
             _next = next;
+            // Create a new thread to get the application config
+            new Thread(async () =>
+            {
+                confDict = await GetConfig(client, confDict, cachedConfigETag);
+            }).Start();
         }
 
         public async Task Invoke(Microsoft.AspNetCore.Http.HttpContext httpContext)
@@ -342,21 +388,20 @@ namespace Moesif.Middleware
                 // Send Events
                 try
                 {
-                    var client = new MoesifApiClient(applicationId);
-
-                    double samplingPercentage = 100;
-                    var samplingPercentage_out = new object();
-                    var getSamplingPercentage = moesifOptions.TryGetValue("SamplingPercentage", out samplingPercentage_out);
-
-                    if (getApplicationId) {
-                        samplingPercentage = Convert.ToDouble(samplingPercentage_out.ToString());   
-                    }
+                    double samplingPercentage = Convert.ToDouble(confDict["sample_rate"]);
 
                     Random random = new Random();
                     double randomPercentage = random.NextDouble() * 100;
-
                     if (samplingPercentage >= randomPercentage) {
-                        await client.Api.CreateEventAsync(eventModel);
+                        var createEventResponse = await client.Api.CreateEventAsync(eventModel);
+                        var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
+                        cachedConfigETag = confDict["ETag"].ToString();
+
+                        if (!(string.IsNullOrEmpty(eventResponseConfigETag)) && 
+                            cachedConfigETag != eventResponseConfigETag &&
+                            DateTime.UtcNow > ((DateTime)confDict["last_updated_time"]).AddMinutes(5)) {
+                            confDict = await GetConfig(client, confDict, eventResponseConfigETag);
+                        }
                         if (debug)
                         {
                             Console.WriteLine("Event sent successfully to Moesif");
