@@ -38,6 +38,8 @@ namespace Moesif.Middleware
 
         public bool debug;
 
+        public string transactionId;
+
         public bool Debug()
         {
             bool localDebug;
@@ -91,6 +93,8 @@ namespace Moesif.Middleware
             client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
             debug = Debug();
             _next = next;
+            // Initialize Transaction Id
+            transactionId = null;
             // Create a new thread to get the application config
             new Thread(async () =>
             {
@@ -103,6 +107,12 @@ namespace Moesif.Middleware
             var request = await FormatRequest(httpContext.Request);
 
             var originalBodyStream = httpContext.Response.Body;
+
+            // Add Transaction Id to the Response Header
+            if (!string.IsNullOrEmpty(transactionId))
+            {
+                httpContext.Response.Headers.Add("X-Moesif-Transaction-Id", transactionId);
+            }
 
             using (var responseBody = new MemoryStream())
             {
@@ -243,6 +253,39 @@ namespace Moesif.Middleware
                 }
             }
 
+            // Add Transaction Id to the Request Header
+            var transation_id_out = new Object();
+            var captureTransactionId = moesifOptions.TryGetValue("DisableTransactionId", out transation_id_out);
+
+            bool GetCaptureTransactionId = false;
+            if (captureTransactionId)
+            {
+                GetCaptureTransactionId = (bool)(transation_id_out);
+            }
+
+            if (!GetCaptureTransactionId) {
+                if (reqHeaders.ContainsKey("X-Moesif-Transaction-Id"))
+                {
+                    string reqTransId = reqHeaders["X-Moesif-Transaction-Id"];
+                    if (!string.IsNullOrEmpty(reqTransId))
+                    {
+                        transactionId = reqTransId; 
+                        if (string.IsNullOrEmpty(transactionId)) {
+                            transactionId = Guid.NewGuid().ToString();
+                        }
+                    }
+                    else {
+                        transactionId = Guid.NewGuid().ToString();
+                    }
+                }
+                else
+                {
+                    transactionId = Guid.NewGuid().ToString();
+                }
+                // Add Transaction Id to the Request Header
+                reqHeaders["X-Moesif-Transaction-Id"] = transactionId;    
+            }
+
             var reqBody = new object();
             reqBody = null;
             try
@@ -310,6 +353,12 @@ namespace Moesif.Middleware
                     Console.WriteLine("error encountered while copying response header");
                     Console.WriteLine(inst);
                 }
+            }
+
+            // Add Transaction Id to Response Header
+            if (!string.IsNullOrEmpty(transactionId))
+            {
+                rspHeaders["X-Moesif-Transaction-Id"] = transactionId;
             }
 
             var rspBody = new object();
