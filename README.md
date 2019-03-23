@@ -14,7 +14,7 @@ Middleware to capture _incoming_ API calls from .NET apps and send to the Moesif
 Install the Nuget Package:
 
 ```bash
-    Install-Package Moesif.Middleware
+Install-Package Moesif.Middleware
 ```
 
 ## How to use
@@ -117,6 +117,80 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 };
 
 ```
+## Update User
+
+### UpdateUser method
+A method is attached to the moesif middleware object to update the users profile or metadata.
+The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+
+```csharp
+Dictionary<string, object> metadata = new Dictionary<string, object>
+{
+    {"email", "johndoe@acmeinc.com"},
+    {"string_field", "value_1"},
+    {"number_field", 0},
+    {"object_field", new Dictionary<string, string> {
+        {"field_a", "value_a"},
+        {"field_b", "value_b"}
+        }
+    }
+};
+
+Dictionary<string, object> user = new Dictionary<string, object>
+{
+    {"user_id", "csharpapiuser"},
+    {"metadata", metadata},
+};
+
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+moesifMiddleware.UpdateUser(user);
+```
+
+### UpdateUsersBatch method
+A method is attached to the moesif middleware object to update the users profile or metadata in batch.
+The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+
+```csharp
+List<Dictionary<string, object>> usersBatch = new List<Dictionary<string, object>>();
+Dictionary<string, object> metadata = new Dictionary<string, object>
+{
+    {"email", "johndoe@acmeinc.com"},
+    {"string_field", "value_1"},
+    {"number_field", 0},
+    {"object_field", new Dictionary<string, string> {
+        {"field_a", "value_a"},
+        {"field_b", "value_b"}
+        }
+    }
+};
+
+Dictionary<string, object> userA = new Dictionary<string, object>
+{
+    {"user_id", "csharpapiuser"},
+    {"metadata", metadata},
+};
+
+Dictionary<string, object> userB = new Dictionary<string, object>
+{
+    {"user_id", "csharpapiuser1"},
+    {"modified_time", DateTime.UtcNow},
+    {"metadata", metadata},
+};
+
+usersBatch.Add(userA);
+usersBatch.Add(userB);
+
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+moesifMiddleware.UpdateUsersBatch(usersBatch);
+```
+
+## How to test
+
+1. Manually clone the git repo
+2. From terminal/cmd navigate to the root directory of the middleware.
+3. Invoke 'Install-Package Moesif.Middleware'
+4. Add your own application id to 'Moesif.Middleware.Test/MoesifMiddlewareTest.cs'. You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _Installation_
+5. The tests are contained in the Moesif.Middleware.Test project. In order to invoke these test cases, you will need NUnit 3.0 Test Adapter Extension for Visual Studio. Once the SDK is complied, the test cases should appear in the Test Explorer window. Here, you can click Run All to execute these test cases.
 
 ## Example
 
