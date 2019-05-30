@@ -90,122 +90,47 @@ namespace Moesif.Middleware
         public MoesifMiddleware(RequestDelegate next, Dictionary<string, object> _middleware)
         {
             moesifOptions = _middleware;
-            // Initialize client
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
-            debug = Debug();
-            _next = next;
-            // Initialize Transaction Id
-            transactionId = null;
-            // Create a new thread to get the application config
-            new Thread(async () =>
-            {
-                confDict = await GetConfig(client, confDict, cachedConfigETag);
-            }).Start();
-        }
 
-        // Create UserModel
-        public UserModel createUserModel(Dictionary<string, object> user) {
-            var userAgentString = new object();
-            var user_metadata = new object();
-            var user_sessionToken = new object();
-            var modifiedTime = new object();
-            var ipAddress = new object();
-            var userModel = new UserModel()
-            {
-                UserId = user["user_id"].ToString(),
-                UserAgentString = user.TryGetValue("user_agent_string", out userAgentString) ? userAgentString.ToString() : null,
-                Metadata = user.TryGetValue("metadata", out user_metadata) ? user_metadata : null,
-                SessionToken = user.TryGetValue("session_token", out user_sessionToken) ? user_sessionToken.ToString() : null,
-                ModifiedTime = user.TryGetValue("modified_time", out modifiedTime) ? (DateTime)modifiedTime : DateTime.UtcNow,
-                IpAddress = user.TryGetValue("ip_address", out ipAddress) ? ipAddress.ToString() : null
-            };
-            return userModel;
+            try {
+                // Initialize client
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
+                debug = Debug();
+                _next = next;
+                // Initialize Transaction Id
+                transactionId = null;
+                // Create a new thread to get the application config
+                new Thread(async () =>
+                {
+                    confDict = await GetConfig(client, confDict, cachedConfigETag);
+                }).Start(); 
+                
+            } catch (Exception e) {
+                throw new Exception("Please provide the application Id to send events to Moesif");
+            }
         }
 
         // Function to update user
-        public async void UpdateUser(Dictionary<string, object> userProfile){
-
-            if(!userProfile.Any()) {
-                Console.WriteLine("Expecting the input to be of the type - dictionary while updating user");
-            }
-            else {
-                if(userProfile.ContainsKey("user_id")) {
-                    
-                    UserModel userModel = createUserModel(userProfile);
-
-                    // Perform API call
-                    try
-                    {
-                        await client.Api.UpdateUserAsync(userModel);
-                        if (debug)
-                        {
-                            Console.WriteLine("User Updated Successfully");
-                        }  
-                    }
-                    catch (APIException inst)
-                    {
-                        if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
-                        {
-                            Console.WriteLine("Unauthorized access updating user to Moesif. Please check your Appplication Id.");
-                        }
-                        if (debug)
-                        {
-                            Console.WriteLine("Error updating user to Moesif, with status code:");
-                            Console.WriteLine(inst.ResponseCode);
-                        }
-                    }
-                }
-                else {
-                    Console.WriteLine("To update an user, an user_id field is required");
-                }
-            }
+        public void UpdateUser(Dictionary<string, object> userProfile) {
+            UserHelper user = new UserHelper();
+            user.UpdateUser(client, userProfile, debug);
         }
 
         // Function to update users in batch
-        public async void UpdateUsersBatch(List<Dictionary<string, object>> userProfiles)
-        {
-            if (!userProfiles.Any())
-            {
-                Console.WriteLine("Expecting the input to be of the type - List of dictionary while updating users in batch");
-            }
-            else
-            {
-                List<UserModel> userModels = new List<UserModel>();
-                foreach (Dictionary<string, object> user in userProfiles)
-                {
-                    if (user.ContainsKey("user_id"))
-                    {
-                        UserModel userModel = createUserModel(user);
-                        userModels.Add(userModel);
-                    }
-                    else
-                    {
-                        Console.WriteLine("To update an user, an user_id field is required");
-                    }
-                }
+        public void UpdateUsersBatch(List<Dictionary<string, object>> userProfiles) {
+            UserHelper user = new UserHelper();
+            user.UpdateUsersBatch(client, userProfiles, debug);
+        }
 
-                // Perform API call
-                try
-                {
-                    await client.Api.UpdateUsersBatchAsync(userModels);
-                    if (debug)
-                    {
-                        Console.WriteLine("Users Updated Successfully");
-                    }
-                }
-                catch (APIException inst)
-                {
-                    if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
-                    {
-                        Console.WriteLine("Unauthorized access updating users to Moesif. Please check your Appplication Id.");
-                    }
-                    if (debug)
-                    {
-                        Console.WriteLine("Error updating users to Moesif, with status code:");
-                        Console.WriteLine(inst.ResponseCode);
-                    }
-                }
-            }
+        // Function to update company
+        public void UpdateCompany(Dictionary<string, object> companyProfile) {
+            CompanyHelper company = new CompanyHelper();
+            company.UpdateCompany(client, companyProfile, debug);
+        }
+
+        // Function to update companies in batch
+        public void UpdateCompaniesBatch(List<Dictionary<string, object>> companyProfiles) {
+            CompanyHelper company = new CompanyHelper();
+            company.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
         public async Task Invoke(Microsoft.AspNetCore.Http.HttpContext httpContext)
@@ -263,21 +188,42 @@ namespace Moesif.Middleware
                 userId = null;
                 if (IdentifyUser != null)
                 {
-                    userId = IdentifyUser(httpContext.Request, httpContext.Response);
+                    try 
+                    {
+                        userId = IdentifyUser(httpContext.Request, httpContext.Response);
+                    }
+                        catch
+                    {
+                        Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
+                    }
                 }
 
                 // Session Token
                 sessionToken = null;
                 if (GetSessionToken != null)
                 {
-                    sessionToken = GetSessionToken(httpContext.Request, httpContext.Response);
+                    try 
+                    {
+                        sessionToken = GetSessionToken(httpContext.Request, httpContext.Response);    
+                    }
+                    catch 
+                    {
+                        Console.WriteLine("Can not execute GetSessionToken function. Please check moesif settings.");
+                    }
                 }
 
                 // Metadata
                 metadata = null;
                 if (GetMetadata != null)
                 {
-                    metadata = GetMetadata(httpContext.Request, httpContext.Response);
+                    try
+                    {
+                        metadata = GetMetadata(httpContext.Request, httpContext.Response);
+                    }
+                    catch 
+                    {
+                        Console.WriteLine("Can not execute GetMetadata function. Please check moesif settings.");
+                    }
                 }
 
                 // Get Skip
@@ -511,84 +457,69 @@ namespace Moesif.Middleware
                 Metadata = metadata
             };
 
-            string applicationId = null;
-            var applicationId_out = new object();
-            var getApplicationId = moesifOptions.TryGetValue("ApplicationId", out applicationId_out);
-            if (getApplicationId)
+            // Get Mask Event
+            var maskEvent_out = new object();
+            var getMaskEvent = moesifOptions.TryGetValue("MaskEventModel", out maskEvent_out);
+
+            // Check to see if we need to send event to Moesif
+            Func<EventModel, EventModel> MaskEvent = null;
+
+            if (getMaskEvent)
             {
-                applicationId = applicationId_out.ToString();
+                MaskEvent = (Func<EventModel, EventModel>)(maskEvent_out);
             }
 
-            if (applicationId_out == null || applicationId == null)
+            // Mask event
+            if (MaskEvent != null)
             {
-                Console.WriteLine("Please provide the application Id to send events to Moesif");
-            }
-            else
-            {
-                // Get Mask Event
-                var maskEvent_out = new object();
-                var getMaskEvent = moesifOptions.TryGetValue("MaskEventModel", out maskEvent_out);
-
-                // Check to see if we need to send event to Moesif
-                Func<EventModel, EventModel> MaskEvent = null;
-
-                if (getMaskEvent)
-                {
-                    MaskEvent = (Func<EventModel, EventModel>)(maskEvent_out);
-                }
-
-                // Mask event
-                if (MaskEvent != null)
-                {
-                    try
-                    {
-                        eventModel = MaskEvent(eventModel);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
-                    }
-                }
-
-                // Send Events
                 try
                 {
-                    double samplingPercentage = Convert.ToDouble(confDict["sample_rate"]);
-
-                    Random random = new Random();
-                    double randomPercentage = random.NextDouble() * 100;
-                    if (samplingPercentage >= randomPercentage) {
-                        var createEventResponse = await client.Api.CreateEventAsync(eventModel);
-                        var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
-                        cachedConfigETag = confDict["ETag"].ToString();
-
-                        if (!(string.IsNullOrEmpty(eventResponseConfigETag)) && 
-                            cachedConfigETag != eventResponseConfigETag &&
-                            DateTime.UtcNow > ((DateTime)confDict["last_updated_time"]).AddMinutes(5)) {
-                            confDict = await GetConfig(client, confDict, eventResponseConfigETag);
-                        }
-                        if (debug)
-                        {
-                            Console.WriteLine("Event sent successfully to Moesif");
-                        }    
-                    }
-                    else {
-                        if (debug) {
-                            Console.WriteLine("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
-                        }
-                    }
+                    eventModel = MaskEvent(eventModel);
                 }
-                catch (APIException inst)
+                catch
                 {
-                    if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
-                    {
-                        Console.WriteLine("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
+                    Console.WriteLine("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
+                }
+            }
+
+            // Send Events
+            try
+            {
+                double samplingPercentage = Convert.ToDouble(confDict["sample_rate"]);
+
+                Random random = new Random();
+                double randomPercentage = random.NextDouble() * 100;
+                if (samplingPercentage >= randomPercentage) {
+                    var createEventResponse = await client.Api.CreateEventAsync(eventModel);
+                    var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
+                    cachedConfigETag = confDict["ETag"].ToString();
+
+                    if (!(string.IsNullOrEmpty(eventResponseConfigETag)) && 
+                        cachedConfigETag != eventResponseConfigETag &&
+                        DateTime.UtcNow > ((DateTime)confDict["last_updated_time"]).AddMinutes(5)) {
+                        confDict = await GetConfig(client, confDict, eventResponseConfigETag);
                     }
                     if (debug)
                     {
-                        Console.WriteLine("Error sending event to Moesif, with status code:");
-                        Console.WriteLine(inst.ResponseCode);
+                        Console.WriteLine("Event sent successfully to Moesif");
+                    }    
+                }
+                else {
+                    if (debug) {
+                        Console.WriteLine("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
                     }
+                }
+            }
+            catch (APIException inst)
+            {
+                if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
+                {
+                    Console.WriteLine("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
+                }
+                if (debug)
+                {
+                    Console.WriteLine("Error sending event to Moesif, with status code:");
+                    Console.WriteLine(inst.ResponseCode);
                 }
             }
         }

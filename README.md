@@ -69,6 +69,36 @@ to add custom metadata that will be associated with the event. The metadata must
 #### __`LocalDebug`__
 _boolean_, set to True to print internal log messages for debugging SDK integration issues.
 
+#### __`Capture_Outgoing_Requests`__
+(optional), Set to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package. The options below is applied to outgoing API calls. When the request is outgoing, for options functions that take request and response as input arguments, the request and response objects passed in are [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects.
+
+How to configure your application to start capturing outgoing API calls.
+
+```csharp
+using System.Net.Http;
+using Moesif.Middleware.Helpers;
+
+// moesifOptions is an object of type Dictionary<string, object> which holds configuration options for your application.
+MoesifCaptureOutgoingRequestHandler handler = new MoesifCaptureOutgoingRequestHandler(new HttpClientHandler(), moesifOptions);
+HttpClient client = new HttpClient(handler);
+```
+
+##### __`GetMetadataOutgoing`__
+(optional) _(HttpRequestMessage, HttpResponseMessage) => dictionary_, getMetadata is a function that returns an object that allows you
+to add custom metadata that will be associated with the event. The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a VM instance_id, a trace_id, or a tenant_id with the request.
+
+##### __`GetSessionTokenOutgoing`__
+(optional) _(HttpRequestMessage, HttpResponseMessage) => string_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
+
+##### __`IdentifyUserOutgoing`__
+(optional) _(HttpRequestMessage, HttpResponseMessage) => string_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns a string that is the user id used by your system. While Moesif identify users automatically, if your set up is very different from the standard implementations, it would be helpful to provide this function.
+
+##### __`SkipOutgoing`__
+(optional) _(HttpRequestMessage, HttpResponseMessage) => boolean_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns true if you want to skip this particular event.
+
+##### __`MaskEventModelOutgoing`__
+(optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif CSharp API Documentation](https://www.moesif.com/docs/api?csharp#).
+
 ### Example:
 
 ```csharp
@@ -182,6 +212,75 @@ usersBatch.Add(userB);
 
 MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
 moesifMiddleware.UpdateUsersBatch(usersBatch);
+```
+
+## Update Company
+
+### UpdateCompany method
+A method is attached to the moesif middleware object to update the company profile or metadata.
+The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+
+```csharp
+Dictionary<string, object> metadata = new Dictionary<string, object>
+{
+    {"email", "johndoe@acmeinc.com"},
+    {"string_field", "value_1"},
+    {"number_field", 0},
+    {"object_field", new Dictionary<string, string> {
+        {"field_a", "value_a"},
+        {"field_b", "value_b"}
+        }
+    }
+};
+
+Dictionary<string, object> company = new Dictionary<string, object>
+{
+    {"company_id", "csharpapicompany"},
+    {"company_domain", "acmeinc.com"},
+    {"metadata", metadata},
+};
+
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+moesifMiddleware.UpdateCompany(company);
+```
+
+### UpdateCompaniesBatch method
+A method is attached to the moesif middleware object to update the companies profile or metadata in batch.
+The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+
+```csharp
+List<Dictionary<string, object>> companiesBatch = new List<Dictionary<string, object>>();
+Dictionary<string, object> metadata = new Dictionary<string, object>
+{
+    {"email", "johndoe@acmeinc.com"},
+    {"string_field", "value_1"},
+    {"number_field", 0},
+    {"object_field", new Dictionary<string, string> {
+        {"field_a", "value_a"},
+        {"field_b", "value_b"}
+        }
+    }
+};
+
+Dictionary<string, object> companyA = new Dictionary<string, object>
+{
+    {"user_id", "csharpapicompany"},
+    {"company_domain", "acmeinc.com"},
+    {"metadata", metadata},
+};
+
+Dictionary<string, object> companyB = new Dictionary<string, object>
+{
+    {"user_id", "csharpapicompany1"},
+    {"company_domain", "nowhere.com"},
+    {"metadata", metadata},
+};
+
+companiesBatch.Add(companyA);
+companiesBatch.Add(companyB);
+
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 ```
 
 ## How to test
