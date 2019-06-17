@@ -21,6 +21,8 @@ namespace Moesif.Middleware.Helpers
 
         public string userIdOutgoing;
 
+        public string companyIdOutgoing;
+
         public Dictionary<string, object> moesifConfigOptions = new Dictionary<string, object>();
 
         public bool debug;
@@ -278,12 +280,37 @@ namespace Moesif.Middleware.Helpers
                 }
             }
 
+            // Get CompanyId outgoing
+            var company_out = new object();
+            var getCompanyId = moesifConfigOptions.TryGetValue("IdentifyCompanyOutgoing", out company_out);
+
+            Func<HttpRequestMessage, HttpResponseMessage, string> IdentifyCompany = null;
+            if (getCompanyId)
+            {
+                IdentifyCompany = (Func<HttpRequestMessage, HttpResponseMessage, string>)(company_out);
+            }
+
+            // CompanyId
+            companyIdOutgoing = null;
+            if (IdentifyCompany != null)
+            {
+                try
+                {
+                    companyIdOutgoing = IdentifyCompany(request, response);
+                }
+                catch
+                {
+                    Console.WriteLine("Can not execute IdentifyCompanyOutgoing function. Please check moesif settings.");
+                }
+            }
+
             // Prepare Moesif Event Model
             var eventModel = new EventModel()
             {
                 Request = eventReq,
                 Response = eventRsp,
                 UserId = userIdOutgoing,
+                CompanyId = companyIdOutgoing,
                 SessionToken = sessionTokenOutgoing,
                 Metadata = metadataOutgoing
             };

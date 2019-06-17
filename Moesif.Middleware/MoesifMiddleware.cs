@@ -23,6 +23,8 @@ namespace Moesif.Middleware
 
         public string userId;
 
+        public string companyId;
+
         public string sessionToken;
 
         public Dictionary<string, object> metadata;
@@ -195,6 +197,29 @@ namespace Moesif.Middleware
                         catch
                     {
                         Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
+                    }
+                }
+
+                // CompanyId
+                var company_out = new object();
+                var getCompanyId = moesifOptions.TryGetValue("IdentifyCompany", out company_out);
+
+                Func<HttpRequest, HttpResponse, string> IdentifyCompany = null;
+                if (getCompanyId)
+                {
+                    IdentifyCompany = (Func<HttpRequest, HttpResponse, string>)(company_out);
+                }
+
+                companyId = null;
+                if (IdentifyCompany != null)
+                {
+                    try
+                    {
+                        companyId = IdentifyCompany(httpContext.Request, httpContext.Response);
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Can not execute IdentifyCompany function. Please check moesif settings.");
                     }
                 }
 
@@ -453,6 +478,7 @@ namespace Moesif.Middleware
                 Request = event_request,
                 Response = event_response,
                 UserId = userId,
+                CompanyId = companyId,
                 SessionToken = sessionToken,
                 Metadata = metadata
             };
