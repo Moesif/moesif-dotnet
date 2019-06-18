@@ -53,6 +53,9 @@ You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.co
 #### __`IdentifyUser`__
 (optional) _(HttpRequest, HttpResponse) => string_, a function that takes a request and a response, and returns a string that is the user id used by your system. While Moesif identify users automatically, if your set up is very different from the standard implementations, it would be helpful to provide this function.
 
+#### __`IdentifyCompany`__
+(optional) _(HttpRequest, HttpResponse) => string_, a function that takes a request and a response, and returns a string that is the company id for this event.
+
 #### __`GetSessionToken`__
 (optional) _(HttpRequest, HttpResponse) => string_, a function that takes a request and a response, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
 
@@ -93,6 +96,9 @@ to add custom metadata that will be associated with the event. The metadata must
 ##### __`IdentifyUserOutgoing`__
 (optional) _(HttpRequestMessage, HttpResponseMessage) => string_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns a string that is the user id used by your system. While Moesif identify users automatically, if your set up is very different from the standard implementations, it would be helpful to provide this function.
 
+##### __`IdentifyCompanyOutgoing`__
+(optional) _(HttpRequestMessage, HttpResponseMessage) => string_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns a string that is the company id for this event.
+
 ##### __`SkipOutgoing`__
 (optional) _(HttpRequestMessage, HttpResponseMessage) => boolean_, a function that takes a HttpRequestMessage and a HttpResponseMessage, and returns true if you want to skip this particular event.
 
@@ -104,6 +110,10 @@ to add custom metadata that will be associated with the event. The metadata must
 ```csharp
 public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) =>  {
     return "my_user_id";  
+} ;
+
+public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) =>  {
+    return "12345";  
 } ;
 
 public static Func<HttpRequest, HttpResponse, string> GetSessionToken = (HttpRequest req, HttpResponse res) => {
@@ -140,6 +150,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
     {"LocalDebug", true},
     {"ApiVersion", "1.0.0"},
     {"IdentifyUser", IdentifyUser},
+    {"IdentifyCompany", IdentifyCompany},
     {"GetSessionToken", GetSessionToken},
     {"GetMetadata", GetMetadata},
     {"Skip", Skip},

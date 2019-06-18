@@ -36,8 +36,35 @@ namespace Moesif.Middleware.Test
             return metadata;
         };
 
+        public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) => {
+            return "user_id";
+        };
+
+        public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) => {
+            return "12345";
+        };
+
+        public static Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = (HttpRequest req, HttpResponse res) => {
+            Dictionary<string, object> metadata = new Dictionary<string, object>
+            {
+                {"email", "johndoe@acmeinc.com"},
+                {"string_field", "value_1"},
+                {"number_field", 0},
+                {"object_field", new Dictionary<string, string> {
+                    {"field_a", "value_a"},
+                    {"field_b", "value_b"}
+                    }
+                }
+            };
+            return metadata;
+        };
+
         public static Func<HttpRequestMessage, HttpResponseMessage, string> IdentifyUserOutgoing = (HttpRequestMessage req, HttpResponseMessage res) => {
             return "my_user_id";
+        };
+
+        public static Func<HttpRequestMessage, HttpResponseMessage, string> IdentifyCompanyOutgoing = (HttpRequestMessage req, HttpResponseMessage res) => {
+            return "my_company_id";
         };
 
         public static Func<HttpRequestMessage, HttpResponseMessage, string> GetSessionTokenOutgoing = (HttpRequestMessage req, HttpResponseMessage res) => {
@@ -58,9 +85,13 @@ namespace Moesif.Middleware.Test
             moesifOptions.Add("ApplicationId", "Your Application Id");
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("ApiVersion", "1.0.0");
+            moesifOptions.Add("IdentifyUser", IdentifyUser);
+            moesifOptions.Add("IdentifyCompany", IdentifyCompany);
+            moesifOptions.Add("GetMetadata", GetMetadata);
             moesifOptions.Add("GetMetadataOutgoing", GetMetadataOutgoing);
             moesifOptions.Add("GetSessionTokenOutgoing", GetSessionTokenOutgoing);
             moesifOptions.Add("IdentifyUserOutgoing", IdentifyUserOutgoing);
+            moesifOptions.Add("IdentifyCompanyOutgoing", IdentifyCompanyOutgoing);
             moesifOptions.Add("SkipOutgoing", SkipOutgoing);
             moesifOptions.Add("MaskEventModelOutgoing", MaskEventModelOutgoing);
 
