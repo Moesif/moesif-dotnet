@@ -37,7 +37,6 @@ Also, add moesifOptions to your settings file,
 Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 {
     {"ApplicationId", "Your Application ID Found in Settings on Moesif"},
-    {"LocalDebug", true},
     {"LogBody", true},
     ...
     # For other options see below.
