@@ -27,6 +27,8 @@ namespace Moesif.Middleware.Helpers
 
         public bool debug;
 
+        public bool logBodyOutgoing;
+
         public static string Base64Encode(string plainText)
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -49,6 +51,22 @@ namespace Moesif.Middleware.Helpers
             return localDebug;
         }
 
+        public bool LogBodyOutgoing()
+        {
+            bool localLogBody;
+            var log_body_out = new object();
+            var getLogBody = moesifConfigOptions.TryGetValue("LogBodyOutgoing", out log_body_out);
+            if (getLogBody)
+            {
+                localLogBody = Convert.ToBoolean(log_body_out);
+            }
+            else
+            {
+                localLogBody = true;
+            }
+            return localLogBody;
+        }
+
         public MoesifCaptureOutgoingRequestHandler(HttpMessageHandler innerHandler, Dictionary<string, object> moesifOptions) : base(innerHandler)
         {
             moesifConfigOptions = moesifOptions;
@@ -56,6 +74,7 @@ namespace Moesif.Middleware.Helpers
             try {
                 client = new MoesifApiClient(moesifConfigOptions["ApplicationId"].ToString());
                 debug = Debug(); 
+                logBodyOutgoing = LogBodyOutgoing();
                 
             } catch (Exception e) {
                 throw new Exception("Please provide the application Id to send events to Moesif");
@@ -127,7 +146,7 @@ namespace Moesif.Middleware.Helpers
             reqBody = null;
             string requestTransferEncoding;
             requestTransferEncoding = null;
-            if (request.Content != null) {
+            if (logBodyOutgoing && request.Content != null) {
                 try
                 {
                     if (debug)
@@ -172,7 +191,7 @@ namespace Moesif.Middleware.Helpers
             rspBody = null;
             string responseTransferEncoding;
             responseTransferEncoding = null;
-            if (response.Content != null) {
+            if (logBodyOutgoing && response.Content != null) {
                 try
                 {
                     if (debug) {
