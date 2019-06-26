@@ -33,11 +33,15 @@ app.UseMiddleware<MoesifMiddleware>(moesifOptions);
 Also, add moesifOptions to your settings file,
 
 ```
-moesifOptions = {
-    'ApplicationId': 'Your Application ID Found in Settings on Moesif',
+// moesifOptions is an object of type Dictionary<string, object> which holds configuration options for your application.
+Dictionary<string, object> moesifOptions = new Dictionary<string, object>
+{
+    {"ApplicationId", "Your Application ID Found in Settings on Moesif"},
+    {"LocalDebug", true},
+    {"LogBody", true},
     ...
-    # other options see below.
-}
+    # For other options see below.
+};
 ```
 
 You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
