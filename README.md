@@ -5,7 +5,7 @@
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-Middleware to capture _incoming_ API calls from .NET apps and send to the Moesif API Analytics platform.
+Middleware SDK that captures _incoming_ or _outgoing_ API calls from .NET apps and sends to Moesif API Analytics.
 
 [Source Code on GitHub](https://github.com/Moesif/moesif-dotnet)
 
