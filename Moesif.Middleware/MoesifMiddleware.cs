@@ -41,6 +41,8 @@ namespace Moesif.Middleware
 
         public bool debug;
 
+        public bool logBody;
+
         public string transactionId;
 
         public bool Debug()
@@ -57,6 +59,22 @@ namespace Moesif.Middleware
                 localDebug = false;
             }
             return localDebug;
+        }
+
+        public bool LogBody()
+        {
+            bool localLogBody;
+            var log_body_out = new object();
+            var getLogBody = moesifOptions.TryGetValue("LogBody", out log_body_out);
+            if (getLogBody)
+            {
+                localLogBody = Convert.ToBoolean(log_body_out);
+            }
+            else
+            {
+                localLogBody = true;
+            }
+            return localLogBody;
         }
 
         // Get application configuration
@@ -97,6 +115,7 @@ namespace Moesif.Middleware
                 // Initialize client
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
                 debug = Debug();
+                logBody = LogBody();
                 _next = next;
                 // Initialize Transaction Id
                 transactionId = null;
@@ -365,14 +384,16 @@ namespace Moesif.Middleware
 
             var reqBody = new object();
             reqBody = null;
-            try
-            {
-                reqBody = ApiHelper.JsonDeserialize<object>(bodyAsText);
-            }
-            catch (Exception inst)
-            {
-                Console.WriteLine("error encountered while trying to serialize request body");
-                Console.WriteLine(inst);
+            if (logBody) {
+                try
+                {
+                    reqBody = ApiHelper.JsonDeserialize<object>(bodyAsText);
+                }
+                catch (Exception inst)
+                {
+                    Console.WriteLine("error encountered while trying to serialize request body");
+                    Console.WriteLine(inst);
+                }
             }
 
             string ip = null;
@@ -450,14 +471,16 @@ namespace Moesif.Middleware
 
             var rspBody = new object();
             rspBody = null;
-            try
-            {
-                rspBody = ApiHelper.JsonDeserialize<object>(text);
-            }
-            catch (Exception inst)
-            {
-                Console.WriteLine("error encountered while trying to serialize response body");
-                Console.WriteLine(inst);
+            if (logBody) {
+                try
+                {
+                    rspBody = ApiHelper.JsonDeserialize<object>(text);
+                }
+                catch (Exception inst)
+                {
+                    Console.WriteLine("error encountered while trying to serialize response body");
+                    Console.WriteLine(inst);
+                }
             }
 
             var eventRsp = new EventResponseModel()

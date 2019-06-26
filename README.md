@@ -70,7 +70,10 @@ to add custom metadata that will be associated with the event. The metadata must
 (optional), _string_, api version associated with this particular event.
 
 #### __`LocalDebug`__
-_boolean_, set to True to print internal log messages for debugging SDK integration issues.
+_boolean_, set to true to print internal log messages for debugging SDK integration issues.
+
+#### __`LogBody`__
+_boolean_, set to false to not log the request and response body to Moesif.
 
 #### __`Capture_Outgoing_Requests`__
 (optional), Set to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package. The options below is applied to outgoing API calls. When the request is outgoing, for options functions that take request and response as input arguments, the request and response objects passed in are [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects.
@@ -104,6 +107,9 @@ to add custom metadata that will be associated with the event. The metadata must
 
 ##### __`MaskEventModelOutgoing`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif CSharp API Documentation](https://www.moesif.com/docs/api?csharp#).
+
+#### __`LogBodyOutgoing`__
+_boolean_, set to false to not log the request and response body to Moesif.
 
 ### Example:
 

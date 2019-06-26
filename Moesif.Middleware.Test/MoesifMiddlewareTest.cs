@@ -84,6 +84,8 @@ namespace Moesif.Middleware.Test
 
             moesifOptions.Add("ApplicationId", "Your Application Id");
             moesifOptions.Add("LocalDebug", true);
+            moesifOptions.Add("LogBody", true);
+            moesifOptions.Add("LogBodyOutgoing", true);
             moesifOptions.Add("ApiVersion", "1.0.0");
             moesifOptions.Add("IdentifyUser", IdentifyUser);
             moesifOptions.Add("IdentifyCompany", IdentifyCompany);
