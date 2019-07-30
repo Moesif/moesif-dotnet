@@ -36,15 +36,20 @@ Also, add moesifOptions to your settings file,
 // moesifOptions is an object of type Dictionary<string, object> which holds configuration options for your application.
 Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 {
-    {"ApplicationId", "Your Application ID Found in Settings on Moesif"},
+    {"ApplicationId", "Your Moesif Application Id"},
     {"LogBody", true},
     ...
     # For other options see below.
 };
 ```
 
-You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
+Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moesif.com/).
+After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
 
+You can always find your Moesif Application Id at any time by logging 
+into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
+ and then clicking _Installation_.
+ 
 ## Configuration options
 
 #### __`ApplicationId`__
