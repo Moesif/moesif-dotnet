@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 
@@ -29,7 +30,7 @@ namespace Moesif.Middleware.Helpers
         }
 
         // Function to update user
-        public async void UpdateUser(Moesif.Api.MoesifApiClient client, Dictionary<string, object> userProfile, bool debug)
+        public async void UpdateUser(MoesifApiClient client, Dictionary<string, object> userProfile, bool debug)
         {
 
             if (!userProfile.Any())
@@ -73,7 +74,7 @@ namespace Moesif.Middleware.Helpers
         }
 
         // Function to update users in batch
-        public async void UpdateUsersBatch(Moesif.Api.MoesifApiClient client, List<Dictionary<string, object>> userProfiles, bool debug)
+        public async void UpdateUsersBatch(MoesifApiClient client, List<Dictionary<string, object>> userProfiles, bool debug)
         {
             if (!userProfiles.Any())
             {

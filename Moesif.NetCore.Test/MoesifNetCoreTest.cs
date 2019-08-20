@@ -13,9 +13,9 @@ using System.IO;
 using System.Net;
 using Moesif.Api.Models;
 
-namespace Moesif.Middleware.Test
+namespace Moesif.NetCore.Test
 {
-    public class MoesifMiddlewareTest{
+    public class MoesifNetCoreTest{
 
         public Dictionary<string, object> moesifOptions = new Dictionary<string, object>();
 
@@ -80,9 +80,9 @@ namespace Moesif.Middleware.Test
             return event_model;
         };
 
-        public MoesifMiddlewareTest() {
+        public MoesifNetCoreTest() {
 
-            moesifOptions.Add("ApplicationId", "Your Application Id");
+            moesifOptions.Add("ApplicationId", "Your Moesif Application Id");
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
             moesifOptions.Add("LogBodyOutgoing", true);
