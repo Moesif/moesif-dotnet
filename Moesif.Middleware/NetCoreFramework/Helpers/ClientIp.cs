@@ -3,9 +3,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Http;
 
-namespace Moesif.Middleware.Helpers
+#if NETCORE
+using Microsoft.AspNetCore.Http;
+#endif
+
+#if NETCORE
+namespace Moesif.Middleware.NetCoreFramework.Helpers
 {
     public class ClientIp
     {
@@ -97,3 +101,4 @@ namespace Moesif.Middleware.Helpers
         }
     }
 }
+#endif
