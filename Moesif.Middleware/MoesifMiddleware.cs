@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
-using Moesif.Middleware.NetCoreFramework;
+using Moesif.Middleware.NetCore;
 #endif
 
 #if NET461
@@ -17,11 +17,11 @@ namespace Moesif.Middleware
 {
     public class MoesifMiddleware
     {
-        MoesifMiddlewareNetCoreFramework netCoreMoesifMiddleware;
+        MoesifMiddlewareNetCore netCoreMoesifMiddleware;
 
         public MoesifMiddleware(RequestDelegate next, Dictionary<string, object> _middleware)
         {
-            netCoreMoesifMiddleware = new MoesifMiddlewareNetCoreFramework(next, _middleware);
+            netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(next, _middleware);
         }
 
         public async Task Invoke(HttpContext httpContext) {

@@ -14,13 +14,13 @@ using Moesif.Middleware.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Http.Extensions;
-using Moesif.Middleware.NetCoreFramework.Helpers;
+using Moesif.Middleware.NetCore.Helpers;
 #endif
 
 #if NETCORE
-namespace Moesif.Middleware.NetCoreFramework
+namespace Moesif.Middleware.NetCore
 {
-    public class MoesifMiddlewareNetCoreFramework
+    public class MoesifMiddlewareNetCore
     {
         private readonly RequestDelegate _next;
 
@@ -118,7 +118,7 @@ namespace Moesif.Middleware.NetCoreFramework
             return appConfigDict;
         }
 
-        public MoesifMiddlewareNetCoreFramework(RequestDelegate next, Dictionary<string, object> _middleware)
+        public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware)
         {
             moesifOptions = _middleware;
 

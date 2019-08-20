@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 #endif
 
 #if NETCORE
-namespace Moesif.Middleware.NetCoreFramework.Helpers
+namespace Moesif.Middleware.NetCore.Helpers
 {
     public class ClientIp
     {

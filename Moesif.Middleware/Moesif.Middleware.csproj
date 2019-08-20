@@ -33,10 +33,10 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
-    <Folder Include="NetCoreFramework\" />
+    <Folder Include="NetCore\" />
     <Folder Include="NetFramework\" />
     <Folder Include="NetFramework\Helpers\" />
-    <Folder Include="NetCoreFramework\Helpers\" />
+    <Folder Include="NetCore\Helpers\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Helpers\ClientIp.cs" />
