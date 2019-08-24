@@ -192,6 +192,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
     {"Skip", Skip},
     {"MaskEventModel", MaskEventModel}
 };
+```
 
 ## NET Framework installation
 
