@@ -13,16 +13,16 @@ namespace Moesif.Middleware.Helpers
         public CompanyModel createCompanyModel(Dictionary<string, object> company)
         {
             var companyDomain = new object();
-            var user_metadata = new object();
-            var user_sessionToken = new object();
+            var userMetadata = new object();
+            var userSessionToken = new object();
             var modifiedTime = new object();
             var ipAddress = new object();
             var companyModel = new CompanyModel()
             {
                 CompanyId = company["company_id"].ToString(),
                 CompanyDomain = company.TryGetValue("company_domain", out companyDomain) ? companyDomain.ToString() : null,
-                Metadata = company.TryGetValue("metadata", out user_metadata) ? user_metadata : null,
-                SessionToken = company.TryGetValue("session_token", out user_sessionToken) ? user_sessionToken.ToString() : null,
+                Metadata = company.TryGetValue("metadata", out userMetadata) ? userMetadata : null,
+                SessionToken = company.TryGetValue("session_token", out userSessionToken) ? userSessionToken.ToString() : null,
                 ModifiedTime = company.TryGetValue("modified_time", out modifiedTime) ? (DateTime)modifiedTime : DateTime.UtcNow,
                 IpAddress = company.TryGetValue("ip_address", out ipAddress) ? ipAddress.ToString() : null
             };
