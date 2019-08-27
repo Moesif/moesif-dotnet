@@ -55,7 +55,7 @@
       <HintPath>..\packages\Unirest-APIMATIC.1.0.1.27\lib\net45\unirest-net.dll</HintPath>
     </Reference>
     <Reference Include="Moesif.Api">
-      <HintPath>..\packages\Moesif.Api.1.1.4\lib\Moesif.Api.dll</HintPath>
+      <HintPath>..\packages\Moesif.Api.1.1.5\lib\Moesif.Api.dll</HintPath>
     </Reference>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core.4.4.0\lib\net45\Castle.Core.dll</HintPath>

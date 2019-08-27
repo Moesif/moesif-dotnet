@@ -13,16 +13,18 @@ namespace Moesif.Middleware.Helpers
         public UserModel createUserModel(Dictionary<string, object> user)
         {
             var userAgentString = new object();
-            var user_metadata = new object();
-            var user_sessionToken = new object();
+            var companyId = new object();
+            var userMetadata = new object();
+            var userSessionToken = new object();
             var modifiedTime = new object();
             var ipAddress = new object();
             var userModel = new UserModel()
             {
                 UserId = user["user_id"].ToString(),
+                CompanyId = user.TryGetValue("company_id", out companyId) ? companyId.ToString() : null,
                 UserAgentString = user.TryGetValue("user_agent_string", out userAgentString) ? userAgentString.ToString() : null,
-                Metadata = user.TryGetValue("metadata", out user_metadata) ? user_metadata : null,
-                SessionToken = user.TryGetValue("session_token", out user_sessionToken) ? user_sessionToken.ToString() : null,
+                Metadata = user.TryGetValue("metadata", out userMetadata) ? userMetadata : null,
+                SessionToken = user.TryGetValue("session_token", out userSessionToken) ? userSessionToken.ToString() : null,
                 ModifiedTime = user.TryGetValue("modified_time", out modifiedTime) ? (DateTime)modifiedTime : DateTime.UtcNow,
                 IpAddress = user.TryGetValue("ip_address", out ipAddress) ? ipAddress.ToString() : null
             };
