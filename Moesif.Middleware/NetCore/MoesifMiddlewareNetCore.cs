@@ -12,7 +12,6 @@ using Moesif.Middleware.Helpers;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Http.Extensions;
 using Moesif.Middleware.NetCore.Helpers;
 #endif
@@ -343,7 +342,7 @@ namespace Moesif.Middleware.NetCore
         {
             var body = request.Body;
 
-            request.EnableRewind();
+            request.EnableBuffering();
 
             var buffer = new byte[Convert.ToInt32(request.ContentLength)];
 
