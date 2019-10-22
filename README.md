@@ -68,8 +68,8 @@ into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu
  
 ### .NET Core example
 
-Checkout the [Moesif .Net Core Example](https://github.com/Moesif/moesif-netcore-example)
-using .NET Core 2.0
+Checkout the [examples](https://github.com/Moesif/moesif-netcore-example)
+using .NET Core 2.0 and .NET Core 3.0
 
 ### .NET Core options
 
@@ -512,6 +512,7 @@ Moesif has validated Moesif.Middleware against the following framework.
 |               | Framework Version  |
 | ------------- | -----------------  | 
 | .NET Core     |         2.0        |
+| .NET Core     |         3.0        |
 | .NET Framework |        4.6.1       |
 
 ## Other integrations
