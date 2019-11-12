@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Moesif.Api;
 using Moesif.Api.Models;
+using Moesif.Api.Controllers;
 using Moesif.Api.Exceptions;
 using System.Threading;
 using Moesif.Middleware.Helpers;
@@ -34,10 +35,28 @@ namespace Moesif.Middleware.NetFramework
         public MoesifApiClient client;
 
         // Initialize config dictionary
-        public Dictionary<string, object> confDict = new Dictionary<string, object>();
+        public AppConfig appConfig;
 
-        // Initialize cached_config_etag
-        public string cachedConfigETag = null;
+        // Initialized config response
+        public Api.Http.Response.HttpStringResponse config;
+
+        // Initialized samplingPercentage
+        public int samplingPercentage;
+
+        // Initialized configETag
+        public string configETag;
+
+        // Initialized lastUpdatedTime
+        public DateTime lastUpdatedTime;
+
+        // Enable Batching
+        public bool isBatchingEnabled;
+
+        // Queue batch size
+        public int batchSize;
+
+        // Moesif Queue
+        public Queue<EventModel> MoesifQueue;
 
         public bool debug;
 
@@ -83,36 +102,36 @@ namespace Moesif.Middleware.NetFramework
             return localLogBody;
         }
 
-        // Get application configuration
-        public async Task<Dictionary<string, object>> GetConfig(MoesifApiClient client, Dictionary<string, object> appConfigDict, string cachedETag)
+        public bool EnableBatching()
         {
-            // Remove cached ETag if exist
-            if (!(string.IsNullOrEmpty(cachedETag)) && confDict.ContainsKey(cachedETag))
+            bool localEnableBatching;
+            var batching_out = new object();
+            var getEnableBatching = moesifOptions.TryGetValue("EnableBatching", out batching_out);
+            if (getEnableBatching)
             {
-                confDict.Remove(cachedETag);
+                localEnableBatching = Convert.ToBoolean(batching_out);
             }
-
-            // Call the api to get the application config
-            var appConfig = await client.Api.GetAppConfigAsync();
-
-            // Set default config
-            if (string.IsNullOrEmpty(appConfig.Body))
-            {
-                appConfigDict["ETag"] = null;
-                appConfigDict["sample_rate"] = 100;
-                appConfigDict["last_updated_time"] = DateTime.UtcNow;
-            }
-            // Set application config
             else
             {
-                var rspBody = ApiHelper.JsonDeserialize<Dictionary<string, object>>(appConfig.Body);
-                appConfigDict["ETag"] = appConfig.Headers["X-Moesif-Config-ETag"];
-                appConfigDict["sample_rate"] = rspBody["sample_rate"];
-                appConfigDict["last_updated_time"] = DateTime.UtcNow;
+                localEnableBatching = false;
             }
+            return localEnableBatching;
+        }
 
-            // Return config dictionary
-            return appConfigDict;
+        public int BatchSize()
+        {
+            int localBatchSize;
+            var batch_size_out = new object();
+            var getBatchSize = moesifOptions.TryGetValue("BatchSize", out batch_size_out);
+            if (getBatchSize)
+            {
+                localBatchSize = Convert.ToInt32(batch_size_out);
+            }
+            else
+            {
+                localBatchSize = 25;
+            }
+            return localBatchSize;
         }
 
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
@@ -127,12 +146,91 @@ namespace Moesif.Middleware.NetFramework
                 logBody = LogBody();
                 // Initialize Transaction Id
                 transactionId = null;
-                // Create a new thread to get the application config
-                new Thread(async () =>
-                {
-                    confDict = await GetConfig(client, confDict, cachedConfigETag);
-                }).Start();
+                // Create a new instance of AppConfig
+                appConfig = new AppConfig();
 
+                // Enable batching
+                isBatchingEnabled = EnableBatching();
+
+                // Batch Size
+                batchSize = BatchSize();
+
+                // Default configuration values
+                samplingPercentage = 100;
+                configETag = null;
+                lastUpdatedTime = DateTime.UtcNow;
+
+                if (isBatchingEnabled)
+                {
+                    // Initialize queue
+                    MoesifQueue = new Queue<EventModel>();
+
+                    // Create a new thread to read the queue and send event to moesif
+                    new Thread(async () =>
+                    {
+                        Thread.CurrentThread.IsBackground = true;
+                        try
+                        {
+                            // Get Application config
+                            config = await appConfig.getConfig(client, debug);
+                            if (!string.IsNullOrEmpty(config.ToString()))
+                            {
+                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (debug)
+                            {
+                                Console.WriteLine("Error while parsing application configuration on initialization");
+                            }
+                        }
+                        try
+                        {
+                            var startTimeSpan = TimeSpan.Zero;
+                            var periodTimeSpan = TimeSpan.FromSeconds(5);
+                            Tasks task = new Tasks();
+
+                            var timer = new Timer((e) =>
+                            {
+                                var updatedConfig = task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
+                                (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Result.Item1, updatedConfig.Result.Item2, updatedConfig.Result.Item3, updatedConfig.Result.Item4);
+                            }, null, startTimeSpan, periodTimeSpan);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (debug)
+                            {
+                                Console.WriteLine("Error while scheduling events batch job every 5 seconds");
+                            }
+                        }
+                    }).Start();
+                }
+                else
+                {
+                    // Create a new thread to get the application config
+                    new Thread(async () =>
+                    {
+                        Thread.CurrentThread.IsBackground = true;
+                        try
+                        {
+                            // Get Application config
+                            config = await appConfig.getConfig(client, debug);
+                            if (!string.IsNullOrEmpty(config.ToString()))
+                            {
+                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            if (debug)
+                            {
+                                Console.WriteLine("Error while parsing application configuration on initialization");
+                            }
+                        }
+                    }).Start();
+                }
             }
             catch (Exception e)
             {
@@ -595,25 +693,51 @@ namespace Moesif.Middleware.NetFramework
             // Send Events
             try
             {
-                double samplingPercentage = Convert.ToDouble(confDict["sample_rate"]);
+                // Get Sampling percentage
+                samplingPercentage = appConfig.getSamplingPercentage(config, userId, companyId);
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
                 {
-                    var createEventResponse = await client.Api.CreateEventAsync(eventModel);
-                    var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
-                    cachedConfigETag = confDict["ETag"].ToString();
+                    if (isBatchingEnabled)
+                    {
+                        if (debug)
+                        {
+                            Console.WriteLine("Add Event to the batch");
+                        }
+                        // Add event to queue
+                        MoesifQueue.Enqueue(eventModel);
+                    } else {
+                        var createEventResponse = await client.Api.CreateEventAsync(eventModel);
+                        var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
 
-                    if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
-                        cachedConfigETag != eventResponseConfigETag &&
-                        DateTime.UtcNow > ((DateTime)confDict["last_updated_time"]).AddMinutes(5))
-                    {
-                        confDict = await GetConfig(client, confDict, eventResponseConfigETag);
-                    }
-                    if (debug)
-                    {
-                        Console.WriteLine("Event sent successfully to Moesif");
+                        if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
+                            !(string.IsNullOrEmpty(configETag)) &&
+                            configETag != eventResponseConfigETag &&
+                            DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
+                        {
+                             try
+                            {
+                                // Get Application config
+                                config = await appConfig.getConfig(client, debug);
+                                if (!string.IsNullOrEmpty(config.ToString()))
+                                {
+                                    (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                if (debug)
+                                {
+                                    Console.WriteLine("Error while updating the application configuration");
+                                }
+                            }
+                        }
+                        if (debug)
+                        {
+                            Console.WriteLine("Event sent successfully to Moesif");
+                        }
                     }
                 }
                 else
