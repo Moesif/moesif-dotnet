@@ -191,7 +191,7 @@ namespace Moesif.Middleware.NetCore
                         try
                         {
                             var startTimeSpan = TimeSpan.Zero;
-                            var periodTimeSpan = TimeSpan.FromSeconds(5);
+                            var periodTimeSpan = TimeSpan.FromSeconds(1);
                             Tasks task = new Tasks();
 
                             var timer = new Timer((e) =>
