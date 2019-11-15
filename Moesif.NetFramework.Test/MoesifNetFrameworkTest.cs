@@ -132,8 +132,8 @@ namespace Moesif.NetFramework.Test
 
             Dictionary<string, string> campaign = new Dictionary<string, string>
             {
-                {"UtmSource", "Newsletter" },
-                {"UtmMedium", "Email" }
+                {"utm_source", "NewsletterNet" },
+                {"utm_medium", "EmailNet" }
             };
 
             Dictionary<string, object> user = new Dictionary<string, object>
@@ -201,8 +201,8 @@ namespace Moesif.NetFramework.Test
 
             Dictionary<string, string> campaign = new Dictionary<string, string>
             {
-                {"UtmSource", "Adwords" },
-                {"UtmMedium", "Twitter" }
+                {"utm_source", "AdwordsNet" },
+                {"utm_medium", "TwitterNet" }
             };
 
             Dictionary<string, object> company = new Dictionary<string, object>

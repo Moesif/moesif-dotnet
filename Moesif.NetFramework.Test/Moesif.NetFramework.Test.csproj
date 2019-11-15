@@ -54,9 +54,6 @@
     <Reference Include="unirest-net">
       <HintPath>..\packages\Unirest-APIMATIC.1.0.1.27\lib\net45\unirest-net.dll</HintPath>
     </Reference>
-    <Reference Include="Moesif.Api">
-      <HintPath>..\packages\Moesif.Api.1.1.5\lib\Moesif.Api.dll</HintPath>
-    </Reference>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core.4.4.0\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
@@ -119,6 +116,9 @@
       <HintPath>..\packages\Microsoft.Extensions.Logging.3.0.0-preview8.19405.4\lib\netstandard2.0\Microsoft.Extensions.Logging.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
+    <Reference Include="Moesif.Api">
+      <HintPath>..\packages\Moesif.Api.1.1.6\lib\Moesif.Api.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MoesifNetFrameworkTest.cs" />
