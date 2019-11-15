@@ -17,6 +17,8 @@ namespace Moesif.Middleware.Helpers
             var userSessionToken = new object();
             var modifiedTime = new object();
             var ipAddress = new object();
+            var campaign = new object();
+            var campaignHelper = new CampaignHelper();
             var companyModel = new CompanyModel()
             {
                 CompanyId = company["company_id"].ToString(),
@@ -24,7 +26,8 @@ namespace Moesif.Middleware.Helpers
                 Metadata = company.TryGetValue("metadata", out userMetadata) ? userMetadata : null,
                 SessionToken = company.TryGetValue("session_token", out userSessionToken) ? userSessionToken.ToString() : null,
                 ModifiedTime = company.TryGetValue("modified_time", out modifiedTime) ? (DateTime)modifiedTime : DateTime.UtcNow,
-                IpAddress = company.TryGetValue("ip_address", out ipAddress) ? ipAddress.ToString() : null
+                IpAddress = company.TryGetValue("ip_address", out ipAddress) ? ipAddress.ToString() : null,
+                Campaign = company.TryGetValue("campaign", out campaign) ? campaignHelper.createCampaignModel(ApiHelper.JsonDeserialize<Dictionary<string, object>>(ApiHelper.JsonSerialize(campaign))) : null
             };
             return companyModel;
         }
