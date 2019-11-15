@@ -37,11 +37,11 @@ namespace Moesif.NetCore.Test
         };
 
         public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) => {
-            return "user_id";
+            return "my_user_id";
         };
 
         public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) => {
-            return "12345";
+            return "my_company_id";
         };
 
         public static Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = (HttpRequest req, HttpResponse res) => {
@@ -155,10 +155,18 @@ namespace Moesif.NetCore.Test
                 }
             };
 
+            Dictionary<string, string> campaign = new Dictionary<string, string>
+            {
+                {"utm_source", "Newsletter" },
+                {"utm_medium", "Email" }
+            };
+
             Dictionary<string, object> user = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser"},
+                {"user_id", "12345"},
+                {"company_id", "67890"},
                 {"metadata", metadata},
+                {"campaign", campaign},
             };
 
             moesifMiddleware.UpdateUser(user);
@@ -183,13 +191,15 @@ namespace Moesif.NetCore.Test
 
             Dictionary<string, object> userA = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser"},
+                {"user_id", "12345"},
+                {"company_id", "67890"},
                 {"metadata", metadata},
             };
 
             Dictionary<string, object> userB = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser1"},
+                {"user_id", "1234"},
+                {"company_id", "6789"},
                 {"modified_time", DateTime.UtcNow},
                 {"metadata", metadata},
             };
@@ -215,11 +225,18 @@ namespace Moesif.NetCore.Test
                 }
             };
 
+            Dictionary<string, string> campaign = new Dictionary<string, string>
+            {
+                {"utm_source", "Adwords" },
+                {"utm_medium", "Twitter" }
+            };
+
             Dictionary<string, object> company = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany"},
+                {"company_id", "12345"},
                 {"company_domain", "acmeinc.com"},
                 {"metadata", metadata},
+                {"campaign", campaign},
             };
 
             moesifMiddleware.UpdateCompany(company);

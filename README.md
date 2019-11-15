@@ -386,10 +386,18 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
     }
 };
 
+Dictionary<string, string> campaign = new Dictionary<string, string>
+{
+    {"utm_source", "Newsletter" },
+    {"utm_medium", "Email" }
+};
+
 Dictionary<string, object> user = new Dictionary<string, object>
 {
-    {"user_id", "csharpapiuser"},
+    {"user_id", "12345"},
+    {"company_id", "67890"},
     {"metadata", metadata},
+    {"campaign", campaign},
 };
 
 MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
@@ -416,13 +424,15 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
 
 Dictionary<string, object> userA = new Dictionary<string, object>
 {
-    {"user_id", "csharpapiuser"},
+    {"user_id", "12345"},
+    {"company_id", "67890"},
     {"metadata", metadata},
 };
 
 Dictionary<string, object> userB = new Dictionary<string, object>
 {
-    {"user_id", "csharpapiuser1"},
+    {"user_id", "1234"},
+    {"company_id", "6789"},
     {"modified_time", DateTime.UtcNow},
     {"metadata", metadata},
 };
@@ -453,11 +463,18 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
     }
 };
 
+Dictionary<string, string> campaign = new Dictionary<string, string>
+{
+    {"utm_source", "Adwords" },
+    {"utm_medium", "Twitter" }
+};
+
 Dictionary<string, object> company = new Dictionary<string, object>
 {
-    {"company_id", "csharpapicompany"},
+    {"company_id", "12345"},
     {"company_domain", "acmeinc.com"},
     {"metadata", metadata},
+    {"campaign", campaign},
 };
 
 MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
@@ -484,14 +501,14 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
 
 Dictionary<string, object> companyA = new Dictionary<string, object>
 {
-    {"user_id", "csharpapicompany"},
+    {"user_id", "12345"},
     {"company_domain", "acmeinc.com"},
     {"metadata", metadata},
 };
 
 Dictionary<string, object> companyB = new Dictionary<string, object>
 {
-    {"user_id", "csharpapicompany1"},
+    {"user_id", "67890"},
     {"company_domain", "nowhere.com"},
     {"metadata", metadata},
 };

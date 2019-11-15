@@ -130,10 +130,18 @@ namespace Moesif.NetFramework.Test
                 }
             };
 
+            Dictionary<string, string> campaign = new Dictionary<string, string>
+            {
+                {"UtmSource", "Newsletter" },
+                {"UtmMedium", "Email" }
+            };
+
             Dictionary<string, object> user = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser"},
+                {"user_id", "12345"},
+                {"company_id", "67890"},
                 {"metadata", metadata},
+                {"campaign", campaign},
             };
 
             moesifMiddleware.UpdateUser(user);
@@ -157,13 +165,15 @@ namespace Moesif.NetFramework.Test
 
             Dictionary<string, object> userA = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser"},
+                {"user_id", "12345"},
+                {"company_id", "67890"},
                 {"metadata", metadata},
             };
 
             Dictionary<string, object> userB = new Dictionary<string, object>
             {
-                {"user_id", "csharpapiuser1"},
+                {"user_id", "1234"},
+                {"company_id", "6789"},
                 {"modified_time", DateTime.UtcNow},
                 {"metadata", metadata},
             };
@@ -189,11 +199,18 @@ namespace Moesif.NetFramework.Test
                 }
             };
 
+            Dictionary<string, string> campaign = new Dictionary<string, string>
+            {
+                {"UtmSource", "Adwords" },
+                {"UtmMedium", "Twitter" }
+            };
+
             Dictionary<string, object> company = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany"},
+                {"company_id", "12345"},
                 {"company_domain", "acmeinc.com"},
                 {"metadata", metadata},
+                {"campaign", campaign},
             };
 
             moesifMiddleware.UpdateCompany(company);
@@ -217,14 +234,14 @@ namespace Moesif.NetFramework.Test
 
             Dictionary<string, object> companyA = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany"},
+                {"company_id", "12345"},
                 {"company_domain", "acmeinc.com"},
                 {"metadata", metadata},
             };
 
             Dictionary<string, object> companyB = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany1"},
+                {"company_id", "67890"},
                 {"company_domain", "nowhere.com"},
                 {"metadata", metadata},
             };
