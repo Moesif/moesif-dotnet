@@ -640,7 +640,8 @@ namespace Moesif.Middleware.NetCore
                 UserId = userId,
                 CompanyId = companyId,
                 SessionToken = sessionToken,
-                Metadata = metadata
+                Metadata = metadata,
+                Direction = "Incoming"
             };
 
             // Get Mask Event

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Moesif.Middleware</id>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <title>MoesifMiddleware</title>
     <authors>Moesif</authors>
 	  <owners>Moesif</owners>
@@ -17,7 +17,7 @@
     <language>en-US</language>
     <tags>moesif restful rest graphql web3 api analytics log logging error debug</tags>
 	<dependencies>
-    <dependency id="Moesif.Api" version="1.1.5" />
+    <dependency id="Moesif.Api" version="1.1.7" />
 	</dependencies>
   </metadata>
   <files>

@@ -662,7 +662,8 @@ namespace Moesif.Middleware.NetFramework
                 UserId = userId,
                 CompanyId = companyId,
                 SessionToken = sessionToken,
-                Metadata = metadata
+                Metadata = metadata,
+                Direction = "Incoming"
             };
 
             // Get Mask Event
