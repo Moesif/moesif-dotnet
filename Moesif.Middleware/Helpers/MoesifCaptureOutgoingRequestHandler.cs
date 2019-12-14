@@ -331,7 +331,8 @@ namespace Moesif.Middleware.Helpers
                 UserId = userIdOutgoing,
                 CompanyId = companyIdOutgoing,
                 SessionToken = sessionTokenOutgoing,
-                Metadata = metadataOutgoing
+                Metadata = metadataOutgoing,
+                Direction = "Outgoing"
             };
 
             // Mask Outgoing Event Model
