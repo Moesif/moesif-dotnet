@@ -147,23 +147,22 @@ _boolean_, default true. Set to false to not log the request and response body t
 
 ```csharp
 public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) =>  {
-    return "my_user_id";  
-} ;
-
-public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) =>  {
     return "12345";  
 } ;
 
+public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) =>  {
+    return "67890";  
+} ;
+
 public static Func<HttpRequest, HttpResponse, string> GetSessionToken = (HttpRequest req, HttpResponse res) => {
-    return "23jdf0owekfmcn4u3qypxg09w4d8ayrcdx8nu2ng]s98y18cx98q3yhwmnhcfx43f";
+    return "XXXXXXXXXXXXXXXXXX";
 };
 
 public static Func<HttpRequest, HttpResponse, Dictionary<string, string>> GetMetadata = (HttpRequest req, HttpResponse res) => {
     Dictionary<string, string> metadata = new Dictionary<string, string>
     {
-        { "email", "abc@email.com" },
-        { "name", "abcdef" },
-        { "image", "123" }
+        { "data_center", "westus" },
+        { "transaction_value", 23 }
     };
     return metadata;
 };
@@ -184,7 +183,7 @@ public static Func<EventModel, EventModel> MaskEventModel = (EventModel event_mo
 
 static public Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 {
-    {"ApplicationId", "Your Application ID Found in Settings on Moesif"},
+    {"ApplicationId", "Your Moesif Application Id"},
     {"LocalDebug", true},
     {"LogBody", true},
     {"ApiVersion", "1.0.0"},
@@ -369,72 +368,99 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 ```
 ## Update User
 
-### UpdateUser method
-A method is attached to the moesif middleware object to update the users profile or metadata.
-The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+### Update a Single User
+A method to create and update the users profiles in Moesif.
+The metadata field can be any custom data you want to set on the user. 
+Only the `user_id` field is required.
 
 ```csharp
+// Campaign object is optional, but useful if you want to track ROI of acquisition channels
+// See https://www.moesif.com/docs/api#users for campaign schema
+Dictionary<string, object> campaign = new Dictionary<string, object>
+{
+    {"utm_source", "google"},
+    {"utm_medium", "cpc"},
+    {"utm_campaign", "adwords"},
+    {"utm_term", "api+tooling"},
+    {"utm_content", "landing"}
+};
+
+// metadata can be any custom dictionary
 Dictionary<string, object> metadata = new Dictionary<string, object>
 {
-    {"email", "johndoe@acmeinc.com"},
-    {"string_field", "value_1"},
-    {"number_field", 0},
-    {"object_field", new Dictionary<string, string> {
-        {"field_a", "value_a"},
-        {"field_b", "value_b"}
-        }
+    {"email", "john@acmeinc.com"},
+    {"first_name", "John"},
+    {"last_name", "Doe"},
+    {"title", "Software Engineer"},
+    {"sales_info", new Dictionary<string, string> {
+        {"stage", "Customer"},
+        {"lifetime_value", 24000},
+        {"account_owner", "mary@contoso.com"}
     }
 };
 
-Dictionary<string, string> campaign = new Dictionary<string, string>
-{
-    {"utm_source", "Newsletter" },
-    {"utm_medium", "Email" }
-};
-
+// Only user_id is required
 Dictionary<string, object> user = new Dictionary<string, object>
 {
     {"user_id", "12345"},
-    {"company_id", "67890"},
-    {"metadata", metadata},
+    {"company_id", "67890"}, // If set, associate user with a company object
     {"campaign", campaign},
+    {"metadata", metadata},
 };
 
 MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+
+// Update the user asynchronously
 moesifMiddleware.UpdateUser(user);
 ```
 
-### UpdateUsersBatch method
+### Update Users in Batch
 A method is attached to the moesif middleware object to update the users profile or metadata in batch.
 The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
 
 ```csharp
 List<Dictionary<string, object>> usersBatch = new List<Dictionary<string, object>>();
-Dictionary<string, object> metadata = new Dictionary<string, object>
+
+Dictionary<string, object> metadataA = new Dictionary<string, object>
 {
-    {"email", "johndoe@acmeinc.com"},
-    {"string_field", "value_1"},
-    {"number_field", 0},
-    {"object_field", new Dictionary<string, string> {
-        {"field_a", "value_a"},
-        {"field_b", "value_b"}
-        }
+    {"email", "john@acmeinc.com"},
+    {"first_name", "John"},
+    {"last_name", "Doe"},
+    {"title", "Software Engineer"},
+    {"sales_info", new Dictionary<string, string> {
+        {"stage", "Customer"},
+        {"lifetime_value", 24000},
+        {"account_owner", "mary@contoso.com"}
     }
 };
 
+// Only user_id is required
 Dictionary<string, object> userA = new Dictionary<string, object>
 {
     {"user_id", "12345"},
-    {"company_id", "67890"},
-    {"metadata", metadata},
+    {"company_id", "67890"}, // If set, associate user with a company object
+    {"metadata", metadataA},
 };
 
+Dictionary<string, object> metadataB = new Dictionary<string, object>
+{
+    {"email", "mary@acmeinc.com"},
+    {"first_name", "Mary"},
+    {"last_name", "Jane"},
+    {"title", "Software Engineer"},
+    {"sales_info", new Dictionary<string, string> {
+        {"stage", "Customer"},
+        {"lifetime_value", 24000},
+        {"account_owner", "mary@contoso.com"}
+    }
+};
+
+// Only user_id is required
 Dictionary<string, object> userB = new Dictionary<string, object>
 {
-    {"user_id", "1234"},
-    {"company_id", "6789"},
-    {"modified_time", DateTime.UtcNow},
-    {"metadata", metadata},
+    {"user_id", "54321"},
+    {"company_id", "67890"}, // If set, associate user with a company object
+    {"metadata", metadataB},
 };
 
 usersBatch.Add(userA);
@@ -446,71 +472,94 @@ moesifMiddleware.UpdateUsersBatch(usersBatch);
 
 ## Update Company
 
-### UpdateCompany method
-A method is attached to the moesif middleware object to update the company profile or metadata.
-The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+### Update a Single Company
+A method to create or update the company profiles in Moesif.
+The metadata field can be any custom data you want to set on the company. 
+Only the `company_id` field is required.
 
 ```csharp
-Dictionary<string, object> metadata = new Dictionary<string, object>
+// Campaign object is optional, but useful if you want to track ROI of acquisition channels
+// See https://www.moesif.com/docs/api#update-a-company for campaign schema
+Dictionary<string, object> campaign = new Dictionary<string, object>
 {
-    {"email", "johndoe@acmeinc.com"},
-    {"string_field", "value_1"},
-    {"number_field", 0},
-    {"object_field", new Dictionary<string, string> {
-        {"field_a", "value_a"},
-        {"field_b", "value_b"}
-        }
-    }
+    {"utm_source", "google"},
+    {"utm_medium", "cpc"},
+    {"utm_campaign", "adwords"},
+    {"utm_term", "api+tooling"},
+    {"utm_content", "landing"}
 };
 
-Dictionary<string, string> campaign = new Dictionary<string, string>
+// metadata can be any custom dictionary
+Dictionary<string, object> metadata = new Dictionary<string, object>
 {
-    {"utm_source", "Adwords" },
-    {"utm_medium", "Twitter" }
+    {"org_name", "Acme, Inc"},
+    {"plan_name", "Free"},
+    {"deal_stage", "Lead"},
+    {"mrr", 24000},
+    {"demographics", new Dictionary<string, string> {
+        {"alexa_ranking", 500000},
+        {"employee_count", 47}
+    }
 };
 
 Dictionary<string, object> company = new Dictionary<string, object>
 {
-    {"company_id", "12345"},
-    {"company_domain", "acmeinc.com"},
-    {"metadata", metadata},
+    {"company_id", "67890"}, // The only required field is your company id
+    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
     {"campaign", campaign},
+    {"metadata", metadata},
 };
 
 MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+
+// Update the company asynchronously
 moesifMiddleware.UpdateCompany(company);
 ```
 
-### UpdateCompaniesBatch method
+### Update Companies in Batch
 A method is attached to the moesif middleware object to update the companies profile or metadata in batch.
 The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
 
 ```csharp
 List<Dictionary<string, object>> companiesBatch = new List<Dictionary<string, object>>();
-Dictionary<string, object> metadata = new Dictionary<string, object>
+// metadata can be any custom dictionary
+Dictionary<string, object> metadataA = new Dictionary<string, object>
 {
-    {"email", "johndoe@acmeinc.com"},
-    {"string_field", "value_1"},
-    {"number_field", 0},
-    {"object_field", new Dictionary<string, string> {
-        {"field_a", "value_a"},
-        {"field_b", "value_b"}
-        }
+    {"org_name", "Acme, Inc"},
+    {"plan_name", "Free"},
+    {"deal_stage", "Lead"},
+    {"mrr", 24000},
+    {"demographics", new Dictionary<string, string> {
+        {"alexa_ranking", 500000},
+        {"employee_count", 47}
     }
 };
 
 Dictionary<string, object> companyA = new Dictionary<string, object>
 {
-    {"user_id", "12345"},
-    {"company_domain", "acmeinc.com"},
-    {"metadata", metadata},
+    {"company_id", "67890"}, // The only required field is your company id
+    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
+    {"metadata", metadataA},
+};
+
+// metadata can be any custom dictionary
+Dictionary<string, object> metadataB = new Dictionary<string, object>
+{
+    {"org_name", "Contoso, Inc"},
+    {"plan_name", "Starter"},
+    {"deal_stage", "Lead"},
+    {"mrr", 48000},
+    {"demographics", new Dictionary<string, string> {
+        {"alexa_ranking", 500000},
+        {"employee_count", 59}
+    }
 };
 
 Dictionary<string, object> companyB = new Dictionary<string, object>
 {
-    {"user_id", "67890"},
-    {"company_domain", "nowhere.com"},
-    {"metadata", metadata},
+    {"company_id", "09876"}, // The only required field is your company id
+    {"company_domain", "contoso.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
+    {"metadata", metadataB},
 };
 
 companiesBatch.Add(companyA);
