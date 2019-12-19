@@ -366,12 +366,12 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 };
 
 ```
-## Update User
+## Update a Single User
 
-### Update a Single User
-A method to create and update the users profiles in Moesif.
-The metadata field can be any custom data you want to set on the user. 
+Create or update a user profile in Moesif.
+The metadata field can be any customer demographic or other info you want to store.
 Only the `user_id` field is required.
+For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-user).
 
 ```csharp
 // Campaign object is optional, but useful if you want to track ROI of acquisition channels
@@ -414,9 +414,12 @@ MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, D
 moesifMiddleware.UpdateUser(user);
 ```
 
-### Update Users in Batch
-A method is attached to the moesif middleware object to update the users profile or metadata in batch.
-The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+## Update Users in Batch
+
+Similar to UpdateUser, but used to update a list of users in one batch. 
+Only the `user_id` field is required.
+This method is a convenient helper that calls the Moesif API lib.
+For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-users-in-batch).
 
 ```csharp
 List<Dictionary<string, object>> usersBatch = new List<Dictionary<string, object>>();
@@ -470,12 +473,12 @@ MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, D
 moesifMiddleware.UpdateUsersBatch(usersBatch);
 ```
 
-## Update Company
-
-### Update a Single Company
-A method to create or update the company profiles in Moesif.
-The metadata field can be any custom data you want to set on the company. 
+## Update a Single Company
+Create or update a company profile in Moesif.
+The metadata field can be any company demographic or other info you want to store.
 Only the `company_id` field is required.
+This method is a convenient helper that calls the Moesif API lib.
+For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-company).
 
 ```csharp
 // Campaign object is optional, but useful if you want to track ROI of acquisition channels
@@ -516,9 +519,13 @@ MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, D
 moesifMiddleware.UpdateCompany(company);
 ```
 
-### Update Companies in Batch
-A method is attached to the moesif middleware object to update the companies profile or metadata in batch.
-The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+## Update Companies in Batch
+
+Similar to updateCompany, but used to update a list of companies in one batch. 
+Only the `company_id` field is required.
+This method is a convenient helper that calls the Moesif API lib.
+For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-companies-in-batch).
+
 
 ```csharp
 List<Dictionary<string, object>> companiesBatch = new List<Dictionary<string, object>>();
