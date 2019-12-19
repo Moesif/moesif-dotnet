@@ -86,5 +86,10 @@ namespace Moesif.Middleware.Helpers
 
             return configBody.TryGetValue("sample_rate", out defaultRate) ? Int32.Parse(defaultRate.ToString()) : 100;
         }
+
+        public int calculateWeight(int sampleRate)
+        {
+            return (int)(sampleRate == 0 ? 1 : Math.Floor(100.00 / sampleRate));
+        }
     }
 }
