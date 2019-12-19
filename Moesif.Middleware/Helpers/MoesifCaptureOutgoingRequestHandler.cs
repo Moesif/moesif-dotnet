@@ -29,6 +29,21 @@ namespace Moesif.Middleware.Helpers
 
         public bool logBodyOutgoing;
 
+        // Initialize config dictionary
+        public AppConfig appConfig;
+
+        // Initialized config response
+        public Api.Http.Response.HttpStringResponse config;
+
+        // App Config samplingPercentage
+        public int samplingPercentage;
+
+        // App Config configETag
+        public string configETag;
+
+        // App Config lastUpdatedTime
+        public DateTime lastUpdatedTime;
+
         public static string Base64Encode(string plainText)
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -75,8 +90,38 @@ namespace Moesif.Middleware.Helpers
                 client = new MoesifApiClient(moesifConfigOptions["ApplicationId"].ToString());
                 debug = Debug(); 
                 logBodyOutgoing = LogBodyOutgoing();
-                
-            } catch (Exception e) {
+                // Create a new instance of AppConfig
+                appConfig = new AppConfig();
+                // Default configuration values
+                samplingPercentage = 100;
+                configETag = null;
+                lastUpdatedTime = DateTime.UtcNow;
+
+                // Create a new thread to get the application config
+                new Thread(async () =>
+                {
+                    Thread.CurrentThread.IsBackground = true;
+                    try
+                    {
+                        // Get Application config
+                        config = await appConfig.getConfig(client, debug);
+                        if (!string.IsNullOrEmpty(config.ToString()))
+                        {
+                            (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (debug)
+                        {
+                            Console.WriteLine("Error while parsing application configuration on initialization");
+                        }
+                    }
+                }).Start();
+
+            }
+            catch (Exception e)
+            {
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
         }
@@ -363,10 +408,52 @@ namespace Moesif.Middleware.Helpers
             // Send Event
             try
             {
-                await client.Api.CreateEventAsync(eventModel);
-                if (debug)
+                // Get Sampling percentage
+                samplingPercentage = appConfig.getSamplingPercentage(config, eventModel.UserId, eventModel.CompanyId);
+
+                Random random = new Random();
+                double randomPercentage = random.NextDouble() * 100;
+                if (samplingPercentage >= randomPercentage)
                 {
-                    Console.WriteLine("Event sent successfully to Moesif");
+
+                    eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
+
+                    var createEventResponse = await client.Api.CreateEventAsync(eventModel);
+                    var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
+
+                    if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
+                        !(string.IsNullOrEmpty(configETag)) &&
+                        configETag != eventResponseConfigETag &&
+                        DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
+                    {
+                        try
+                        {
+                            // Get Application config
+                            config = await appConfig.getConfig(client, debug);
+                            if (!string.IsNullOrEmpty(config.ToString()))
+                            {
+                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (debug)
+                            {
+                                Console.WriteLine("Error while updating the application configuration");
+                            }
+                        }
+                    }
+                    if (debug)
+                    {
+                        Console.WriteLine("Event sent successfully to Moesif");
+                    }
+                }
+                else
+                {
+                    if (debug)
+                    {
+                        Console.WriteLine("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
+                    }
                 }
             }
             catch (APIException inst)

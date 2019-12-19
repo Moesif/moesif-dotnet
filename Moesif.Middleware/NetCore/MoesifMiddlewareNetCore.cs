@@ -679,6 +679,8 @@ namespace Moesif.Middleware.NetCore
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
                 {
+                    eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
+
                     if (isBatchingEnabled)
                     {
                         if (debug)
