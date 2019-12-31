@@ -332,7 +332,7 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
     {"email", "johndoe@acmeinc.com"},
     {"string_field", "value_1"},
     {"number_field", 0},
-    {"object_field", new Dictionary<string, string> {
+    {"object_field", new Dictionary<string, object> {
         {"field_a", "value_a"},
         {"field_b", "value_b"}
         }
@@ -502,7 +502,7 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
     {"plan_name", "Free"},
     {"deal_stage", "Lead"},
     {"mrr", 24000},
-    {"demographics", new Dictionary<string, int> {
+    {"demographics", new Dictionary<string, object> {
             {"alexa_ranking", 500000},
             {"employee_count", 47}
         }
@@ -540,7 +540,7 @@ Dictionary<string, object> metadataA = new Dictionary<string, object>
     {"plan_name", "Free"},
     {"deal_stage", "Lead"},
     {"mrr", 24000},
-    {"demographics", new Dictionary<string, int> {
+    {"demographics", new Dictionary<string, object> {
             {"alexa_ranking", 500000},
             {"employee_count", 47}
         }
