@@ -561,7 +561,7 @@ Dictionary<string, object> metadataB = new Dictionary<string, object>
     {"plan_name", "Starter"},
     {"deal_stage", "Lead"},
     {"mrr", 48000},
-    {"demographics", new Dictionary<string, int> {
+    {"demographics", new Dictionary<string, object> {
             {"alexa_ranking", 500000},
             {"employee_count", 59}
         }
