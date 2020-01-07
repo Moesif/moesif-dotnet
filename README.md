@@ -409,7 +409,12 @@ Dictionary<string, object> user = new Dictionary<string, object>
     {"metadata", metadata},
 };
 
-MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+// .NET Core
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, object> moesifOptions)
+
+// .NET Framework
+// MoesifMiddleware moesifMiddleware = new MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> moesifOptions)
+
 
 // Update the user asynchronously
 moesifMiddleware.UpdateUser(user);
@@ -472,7 +477,12 @@ Dictionary<string, object> userB = new Dictionary<string, object>
 usersBatch.Add(userA);
 usersBatch.Add(userB);
 
-MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+// .NET Core
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, object> moesifOptions)
+
+// .NET Framework
+// MoesifMiddleware moesifMiddleware = new MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> moesifOptions)
+
 moesifMiddleware.UpdateUsersBatch(usersBatch);
 ```
 
@@ -517,7 +527,11 @@ Dictionary<string, object> company = new Dictionary<string, object>
     {"metadata", metadata},
 };
 
-MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+// .NET Core
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, object> moesifOptions)
+
+// .NET Framework
+// MoesifMiddleware moesifMiddleware = new MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> moesifOptions)
 
 // Update the company asynchronously
 moesifMiddleware.UpdateCompany(company);
@@ -578,7 +592,12 @@ Dictionary<string, object> companyB = new Dictionary<string, object>
 companiesBatch.Add(companyA);
 companiesBatch.Add(companyB);
 
-MoesifMiddleware moesifMiddleware = new MoesifMiddleware(RequestDelegate next, Dictionary<string, object> moesifOptions)
+// .NET Core
+MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, object> moesifOptions)
+
+// .NET Framework
+// MoesifMiddleware moesifMiddleware = new MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> moesifOptions)
+
 moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 ```
 

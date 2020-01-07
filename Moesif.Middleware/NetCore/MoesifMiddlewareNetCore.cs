@@ -135,6 +135,22 @@ namespace Moesif.Middleware.NetCore
             return localBatchSize;
         }
 
+        public MoesifMiddlewareNetCore(Dictionary<string, object> _middleware)
+        {
+            moesifOptions = _middleware;
+
+            try
+            {
+                // Initialize client
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
+                debug = Debug();
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Please provide the application Id to send events to Moesif");
+            }
+        }
+
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware)
         {
             moesifOptions = _middleware;

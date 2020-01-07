@@ -97,7 +97,7 @@ namespace Moesif.NetCore.Test
             moesifOptions.Add("SkipOutgoing", SkipOutgoing);
             moesifOptions.Add("MaskEventModelOutgoing", MaskEventModelOutgoing);
 
-            moesifMiddleware = new MoesifMiddleware(next: (innerHttpContext) => Task.FromResult(0), _middleware: moesifOptions);
+            moesifMiddleware = new MoesifMiddleware((innerHttpContext) => Task.FromResult(0), moesifOptions);
         }
 
         [Fact]
@@ -260,14 +260,14 @@ namespace Moesif.NetCore.Test
 
             Dictionary<string, object> companyA = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany"},
+                {"company_id", "12345"},
                 {"company_domain", "acmeinc.com"},
                 {"metadata", metadata},
             };
 
             Dictionary<string, object> companyB = new Dictionary<string, object>
             {
-                {"company_id", "csharpapicompany1"},
+                {"company_id", "67890"},
                 {"company_domain", "nowhere.com"},
                 {"metadata", metadata},
             };
