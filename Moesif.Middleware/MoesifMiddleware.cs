@@ -24,6 +24,8 @@ namespace Moesif.Middleware
             netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(next, _middleware);
         }
 
+        public MoesifMiddleware(Dictionary<string, object> _middleware) => netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(_middleware);
+
         public async Task Invoke(HttpContext httpContext) {
             await netCoreMoesifMiddleware.Invoke(httpContext);
         }
