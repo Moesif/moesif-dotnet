@@ -198,7 +198,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 
 ## NET Framework installation
 
-In `Startup.cs` file in your project directory, please add `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` to the pipeline.
+In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddleware>(moesifOptions);` to the pipeline.
 
 To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware. 
 
