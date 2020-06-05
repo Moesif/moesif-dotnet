@@ -220,7 +220,7 @@ public class Startup {
 
     public void Configuration(IAppBuilder app)
     {
-        app.UseMiddleware<MoesifMiddleware>(moesifOptions);
+        app.Use<MoesifMiddleware>(moesifOptions);
     }
 }
 ```
