@@ -234,18 +234,18 @@ into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu
 
 ### Add OWIN dependencies
 
- #### IIS integrated pipeline
- If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the SystemWeb package if not done so already:
- Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info. 
+#### IIS integrated pipeline
+If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the SystemWeb package if not done so already:
+Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info. 
 
- ```bash
+```bash
 Install-Package Microsoft.Owin.Host.SystemWeb
- ```
+```
 
- Moesif does not support IIS running in Classic mode (Backwards compatibility for IIS 6.0) is not supported. Unless your app predates IIS 6.0 and requires classic mode, you should switch to integrated mode.  
+Moesif does not support IIS running in Classic mode (Backwards compatibility for IIS 6.0). Unless your app predates IIS 6.0 and requires classic mode, you should switch to integrated mode.  
 {: .notice--primary}
 
- #### Self-Host executable
+#### Self-Host executable
 While uncommon, if your application is a self-hosted executable that does not run on IIS, you may have to install the SelfHost package if not done so already:
 
 [For Web API applications](https://docs.microsoft.com/en-us/aspnet/web-api/overview/hosting-aspnet-web-api/use-owin-to-self-host-web-api):
