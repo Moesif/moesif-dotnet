@@ -17,7 +17,7 @@ Install the Nuget Package:
 Install-Package Moesif.Middleware
 ```
 
-This SDK supports both .NET Core 2.0 or higher and .NET Framework 4.5 or higher.
+This SDK supports both .NET Core 2.0 or higher and .NET Framework 4.5 or higher. Jump to installation for your specific framework:
 
 - [.Net Core installation](#net-core-installation)
 - [.NET Framework installation](#net-framework-installation)
@@ -63,7 +63,7 @@ Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moe
 After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
 
 You can always find your Moesif Application Id at any time by logging 
-into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
+into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu,
  and then clicking _Installation_.
  
 ### .NET Core example
@@ -96,7 +96,7 @@ to add custom metadata that will be associated with the event. The metadata must
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif CSharp API Documentation](https://www.moesif.com/docs/api?csharp#).
 
 #### __`ApiVersion`__
-(optional), _string_, api version associated with this particular event.
+(optional), _string_, API version associated with this particular event.
 
 #### __`LocalDebug`__
 _boolean_, set to true to print internal log messages for debugging SDK integration issues.
@@ -229,12 +229,40 @@ Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moe
 After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
 
 You can always find your Moesif Application Id at any time by logging 
-into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
+into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu,
  and then clicking _Installation_.
+
+### Add OWIN dependencies
+
+ #### IIS integrated pipeline
+ If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the SystemWeb package if not done so already:
+ Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info. 
+
+ ```bash
+Install-Package Microsoft.Owin.Host.SystemWeb
+ ```
+
+ Moesif does not support IIS running in Classic mode (Backwards compatibility for IIS 6.0) is not supported. Unless your app predates IIS 6.0 and requires classic mode, you should switch to integrated mode.  
+{: .notice--primary}
+
+ #### Self-Host executable
+While uncommon, if your application is a self-hosted executable that does not run on IIS, you may have to install the SelfHost package if not done so already:
+
+[For Web API applications](https://docs.microsoft.com/en-us/aspnet/web-api/overview/hosting-aspnet-web-api/use-owin-to-self-host-web-api):
+
+```bash
+Install-Package Microsoft.AspNet.WebApi.OwinSelfHost
+```
+
+[For ASP.NET applications](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/getting-started-with-owin-and-katana#self-host-owin-in-a-console-application):
+
+```bash
+Install-Package Microsoft.Owin.SelfHost -Pre
+```
 
 ### .NET Framework Example
 Checkout the [Moesif .NET Framework Example](https://github.com/Moesif/moesif-netframework-example)
-using .NET Framwork 4.6.1
+using .NET Framework 4.6.1
 
 ### .NET Framework options
 
