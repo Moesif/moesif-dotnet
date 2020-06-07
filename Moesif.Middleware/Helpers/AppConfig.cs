@@ -54,6 +54,28 @@ namespace Moesif.Middleware.Helpers
             }
         }
 
+        public async Task<(Api.Http.Response.HttpStringResponse, string, int, DateTime)> GetAppConfig(string configETag, int samplingPercentage, DateTime lastUpdatedTime, MoesifApiClient client, bool debug)
+        {
+            Api.Http.Response.HttpStringResponse config = null;
+            try
+            {
+                // Get Application config
+                config = await getConfig(client, debug);
+                if (!string.IsNullOrEmpty(config.ToString()))
+                {
+                    (configETag, samplingPercentage, lastUpdatedTime) = parseConfiguration(config, debug);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (debug)
+                {
+                    Console.WriteLine("Error while parsing application configuration");
+                }
+            }
+            return (config, configETag, samplingPercentage, lastUpdatedTime);
+        }
+
         public int getSamplingPercentage(Api.Http.Response.HttpStringResponse config, String userId, string companyId)
         {
             // Get sampling percentage
