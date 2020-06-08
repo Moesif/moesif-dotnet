@@ -79,6 +79,10 @@ namespace Moesif.Middleware.Helpers
         public int getSamplingPercentage(Api.Http.Response.HttpStringResponse config, string userId, string companyId)
         {
             // Get sampling percentage
+            if (config == null)
+            {
+                return 100;
+            }
 
             var userDefaultRate = new object();
 
@@ -96,12 +100,12 @@ namespace Moesif.Middleware.Helpers
                 ? ApiHelper.JsonDeserialize<Dictionary<string, object>>(companyDefaultRate.ToString())
                 : null;
 
-            if (!string.IsNullOrEmpty(userId) && userSampleRate.Count > 0 && userSampleRate.ContainsKey(userId))
+            if (userSampleRate != null && !string.IsNullOrEmpty(userId) && userSampleRate.Count > 0 && userSampleRate.ContainsKey(userId))
             {
                 return Int32.Parse(userSampleRate[userId].ToString());
             }
 
-            if (!string.IsNullOrEmpty(companyId) && companySampleRate.Count > 0 && companySampleRate.ContainsKey(companyId))
+            if (companySampleRate != null && !string.IsNullOrEmpty(companyId) && companySampleRate.Count > 0 && companySampleRate.ContainsKey(companyId))
             {
                 return Int32.Parse(companySampleRate[companyId].ToString());
             }

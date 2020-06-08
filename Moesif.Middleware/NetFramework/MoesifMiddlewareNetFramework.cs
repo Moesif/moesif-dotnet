@@ -329,7 +329,7 @@ namespace Moesif.Middleware.NetFramework
             try
             {
                 // If available, get sampling percentage based on config else default to 100
-                samplingPercentage = config != null ? appConfig.getSamplingPercentage(config, userId, companyId): 100;
+                samplingPercentage = appConfig.getSamplingPercentage(config, userId, companyId);
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
