@@ -13,7 +13,7 @@ using System.Web;
 using System.Xml.Serialization;
 using Moesif.Middleware.Helpers;
 
-#if NET461
+#if NET45
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework.Helpers;
 

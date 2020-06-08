@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Moesif.Middleware.NetCore;
 #endif
 
-#if NET461
+#if NET45
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework;
 #endif
@@ -57,7 +57,7 @@ namespace Moesif.Middleware
 }
 #endif
 
-#if NET461
+#if NET45
 namespace Moesif.Middleware
 {
     public class MoesifMiddleware: OwinMiddleware

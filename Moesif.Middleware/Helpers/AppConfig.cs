@@ -76,7 +76,7 @@ namespace Moesif.Middleware.Helpers
             return (config, configETag, samplingPercentage, lastUpdatedTime);
         }
 
-        public int getSamplingPercentage(Api.Http.Response.HttpStringResponse config, String userId, string companyId)
+        public int getSamplingPercentage(Api.Http.Response.HttpStringResponse config, string userId, string companyId)
         {
             // Get sampling percentage
 

@@ -11,13 +11,13 @@ using Moesif.Api.Exceptions;
 using System.Threading;
 using Moesif.Middleware.Helpers;
 
-#if NET461
+#if NET45
 using Microsoft.Owin;
 using System.Web;
 using Moesif.Middleware.NetFramework.Helpers;
 #endif
 
-#if NET461
+#if NET45
 namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
