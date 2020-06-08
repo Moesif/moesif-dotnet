@@ -5,7 +5,8 @@
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
-
+bin/
+nuget.exe
 
 ### Windows ###
 # Windows image file caches
