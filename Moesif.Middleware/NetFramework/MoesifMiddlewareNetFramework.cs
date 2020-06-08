@@ -335,8 +335,8 @@ namespace Moesif.Middleware.NetFramework
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
                 {
-                    // If available, get weight based on config else default to 1
-                    eventModel.Weight = config != null ? appConfig.calculateWeight(samplingPercentage): 1;
+                    // If available, get weight based on sampling percentage else default to 1
+                    eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
 
                     if (isBatchingEnabled)
                     {
