@@ -146,39 +146,31 @@ _boolean_, default true. Set to false to not log the request and response body t
 ### Example configuration:
 
 ```csharp
-public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) =>  {
-    return "12345";  
-} ;
+public static Func<HttpRequest, HttpResponse, string> IdentifyUser = (HttpRequest req, HttpResponse res) => {
+    // Implement your custom logic to return user id
+    return req.HttpContext?.User?.Identity?.Name;
+};
 
-public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) =>  {
-    return "67890";  
-} ;
+public static Func<HttpRequest, HttpResponse, string> IdentifyCompany = (HttpRequest req, HttpResponse res) => {
+    return req.Headers["X-Organization-Id"];
+};
 
 public static Func<HttpRequest, HttpResponse, string> GetSessionToken = (HttpRequest req, HttpResponse res) => {
-    return "XXXXXXXXXXXXXXXXXX";
+    return req.Headers["Authorization"];
 };
 
-public static Func<HttpRequest, HttpResponse, Dictionary<string, string>> GetMetadata = (HttpRequest req, HttpResponse res) => {
-    Dictionary<string, string> metadata = new Dictionary<string, string>
+public static Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = (HttpRequest req, HttpResponse res) => {
+    Dictionary<string, object> metadata = new Dictionary<string, object>
     {
-        { "data_center", "westus" },
-        { "transaction_value", 23 }
+        {"string_field", "value_1"},
+        {"number_field", 0},
+        {"object_field", new Dictionary<string, string> {
+            {"field_a", "value_a"},
+            {"field_b", "value_b"}
+            }
+        }
     };
     return metadata;
-};
-
-public static Func<HttpRequest, HttpResponse, bool> Skip = (HttpRequest req, HttpResponse res) => {
-    string uri = new Uri(req.GetDisplayUrl()).ToString();
-    if (uri.Contains("test"))
-    {
-        return true;
-    }
-    return false;
-};
-
-public static Func<EventModel, EventModel> MaskEventModel = (EventModel event_model) => {
-    event_model.UserId = "masked_user_id";
-    return event_model;
 };
 
 static public Dictionary<string, object> moesifOptions = new Dictionary<string, object>
@@ -186,13 +178,15 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
     {"ApplicationId", "Your Moesif Application Id"},
     {"LocalDebug", true},
     {"LogBody", true},
-    {"ApiVersion", "1.0.0"},
+    {"LogBodyOutgoing", true},
+    {"ApiVersion", "1.1.0"},
     {"IdentifyUser", IdentifyUser},
     {"IdentifyCompany", IdentifyCompany},
     {"GetSessionToken", GetSessionToken},
     {"GetMetadata", GetMetadata},
-    {"Skip", Skip},
-    {"MaskEventModel", MaskEventModel}
+    {"GetMetadataOutgoing", GetMetadataOutgoing},
+    {"EnableBatching", false},
+    {"BatchSize", 25}
 };
 ```
 
@@ -235,7 +229,7 @@ into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu
 ### Add OWIN dependencies
 
 #### IIS integrated pipeline
-If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the SystemWeb package if not done so already:
+If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the OWIN SystemWeb package if not done so already:
 Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info. 
 
 ```bash
@@ -248,21 +242,24 @@ Moesif does not support IIS running in Classic mode (Backwards compatibility for
 #### Self-Host executable
 While uncommon, if your application is a self-hosted executable that does not run on IIS, you may have to install the SelfHost package if not done so already:
 
-[For Web API applications](https://docs.microsoft.com/en-us/aspnet/web-api/overview/hosting-aspnet-web-api/use-owin-to-self-host-web-api):
+[For .NET Web API applications](https://docs.microsoft.com/en-us/aspnet/web-api/overview/hosting-aspnet-web-api/use-owin-to-self-host-web-api):
 
 ```bash
 Install-Package Microsoft.AspNet.WebApi.OwinSelfHost
 ```
 
-[For ASP.NET applications](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/getting-started-with-owin-and-katana#self-host-owin-in-a-console-application):
+[For all other .NET applications](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/getting-started-with-owin-and-katana#self-host-owin-in-a-console-application):
 
 ```bash
 Install-Package Microsoft.Owin.SelfHost -Pre
 ```
 
-### .NET Framework Example
-Checkout the [Moesif .NET Framework Example](https://github.com/Moesif/moesif-netframework-example)
-using .NET Framework 4.6.1
+### .NET Framework Examples
+The following examples are available for .NET Framework with Moesif:
+
+- [.NET MVC Example](https://github.com/Moesif/moesif-netframework-example) using .NET Framework 4.6.1 and IIS
+- [.NET Web API Example](https://github.com/Moesif/moesif-aspnet-webapi-selfhost-example) using .NET Framework 4.6.1 and IIS
+- [.NET Web API SelfHost Example](https://github.com/Moesif/moesif-aspnet-webapi-selfhost-example) using .NET Framework 4.6.1 _(SelfHost is uncommon)_
 
 ### .NET Framework options
 
@@ -341,58 +338,47 @@ _boolean_, default true. Set to false to not log the request and response body t
 ### Example Configuration:
 
 ```csharp
-public static Func<IOwinRequest, IOwinResponse, string> IdentifyUser = (IOwinRequest req, IOwinResponse res) =>
-{
-    return "my_user_id";
+public static Func<IOwinRequest, IOwinResponse, string> IdentifyUser = (IOwinRequest req, IOwinResponse res) => {
+    // Implement your custom logic to return user id
+    return req?.Context?.Authentication?.User?.Identity?.Name;
 };
 
 public static Func<IOwinRequest, IOwinResponse, string> IdentifyCompany = (IOwinRequest req, IOwinResponse res) => {
-    return "my_company_id";
+    return req.Headers["X-Organization-Id"];
 };
 
 public static Func<IOwinRequest, IOwinResponse, string> GetSessionToken = (IOwinRequest req, IOwinResponse res) => {
-    return "23jdf0owekfmcn4u3qypxg09w4d8ayrcdx8nu2ng]s98y18cx98q3yhwmnhcfx43f";
+    return req.Headers["Authorization"];
 };
 
 public static Func<IOwinRequest, IOwinResponse, Dictionary<string, object>> GetMetadata = (IOwinRequest req, IOwinResponse res) => {
-Dictionary<string, object> metadata = new Dictionary<string, object>
-{
-    {"email", "johndoe@acmeinc.com"},
-    {"string_field", "value_1"},
-    {"number_field", 0},
-    {"object_field", new Dictionary<string, object> {
-        {"field_a", "value_a"},
-        {"field_b", "value_b"}
+    Dictionary<string, object> metadata = new Dictionary<string, object>
+    {
+        {"string_field", "value_1"},
+        {"number_field", 0},
+        {"object_field", new Dictionary<string, string> {
+            {"field_a", "value_a"},
+            {"field_b", "value_b"}
+            }
         }
-    }
-};
-return metadata;
-};
-
-public static Func<IOwinRequest, IOwinResponse, bool> Skip = (IOwinRequest req, IOwinResponse res) => {
-string uri = req.Uri.ToString();
-return uri.Contains("skip") ;
-};
-
-public static Func<EventModel, EventModel> MaskEventModel = (EventModel event_model) => {
-    event_model.UserId = "masked_user_id";
-    return event_model;
+    };
+    return metadata;
 };
 
 static public Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 {
-    {"ApplicationId", "Your Application ID Found in Settings on Moesif"},
+    {"ApplicationId", "Your Moesif Application Id"},
     {"LocalDebug", true},
     {"LogBody", true},
-    {"ApiVersion", "1.0.0"},
+    {"LogBodyOutgoing", true},
+    {"ApiVersion", "1.1.0"},
     {"IdentifyUser", IdentifyUser},
     {"IdentifyCompany", IdentifyCompany},
     {"GetSessionToken", GetSessionToken},
     {"GetMetadata", GetMetadata},
-    {"Skip", Skip},
-    {"MaskEventModel", MaskEventModel}
+    {"EnableBatching", false},
+    {"BatchSize", 25}
 };
-
 ```
 ## Update a Single User
 
@@ -639,13 +625,14 @@ moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 
 ## Tested versions
 
-Moesif has validated Moesif.Middleware against the following framework.
+Moesif has validated `Moesif.Middleware` against the following framework.
 
 |                | Framework Version  |
 | -------------- | -----------------  | 
-| .NET Core      |         2.0        |
-| .NET Core      |         3.0        |
-| .NET Framework |        4.6.1       |
+| .NET Core|2.0-3.0|
+| .NET Framework MVC |4.5-4.7|
+| .NET Framework Web API|4.5-4.7|
+| .NET Framework Web API SelfHost|4.5-4.7|
 
 ## Other integrations
 
