@@ -349,6 +349,10 @@ namespace Moesif.Middleware.NetCore
                         Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
                     }
                 }
+                else 
+                {
+                    userId = httpContext?.User?.Identity?.Name;
+                }
 
                 // CompanyId
                 var company_out = new object();

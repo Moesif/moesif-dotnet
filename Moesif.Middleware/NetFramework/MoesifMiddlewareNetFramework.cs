@@ -155,11 +155,15 @@ namespace Moesif.Middleware.NetFramework
         public async override Task Invoke(IOwinContext httpContext) 
         {
             // Buffering mvc reponse
-            HttpResponse httpResponse = HttpContext.Current.Response;
-            StreamHelper outputCaptureMVC = new StreamHelper(httpResponse.Filter);
-            httpResponse.Filter = outputCaptureMVC;
+            StreamHelper outputCaptureMVC = null;
+            HttpResponse httpResponse = HttpContext.Current?.Response;
+            if (httpResponse != null)
+            {
+                outputCaptureMVC = new StreamHelper(httpResponse.Filter);
+                httpResponse.Filter = outputCaptureMVC;
+            }
 
-            // Biffering Owin response
+            // Buffering Owin response
             IOwinResponse owinResponse = httpContext.Response;
             StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
             owinResponse.Body = outputCaptureOwin;
@@ -176,13 +180,14 @@ namespace Moesif.Middleware.NetFramework
             await Next.Invoke(httpContext);
 
             // Select stream to use 
-            StreamHelper streamToUse = outputCaptureMVC.CopyStream.Length == 0 ? outputCaptureOwin : outputCaptureMVC;
+            StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
            
             // Prepare Moesif Event Response model
             var response = await ToResponse(httpContext.Response, streamToUse);
 
             // UserId
-            userId = LoggerHelper.GetConfigStringValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            var userId = httpContext?.Authentication?.User?.Identity?.Name;
+            userId = LoggerHelper.GetConfigStringValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
             // CompanyId
             companyId = LoggerHelper.GetConfigStringValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // SessionToken
@@ -211,7 +216,14 @@ namespace Moesif.Middleware.NetFramework
                 LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
 
                 //Send event to Moesif async
-                LogEventAsync(request, response);
+                if (debug)
+                {
+                    await LogEventAsync(request, response);
+                }
+                else
+                {
+                    LogEventAsync(request, response);
+                }
             }
         }
 
@@ -222,8 +234,18 @@ namespace Moesif.Middleware.NetFramework
 
             // RequestBody
             string contentEncoding = "";
+            string body = null;
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            var body = LoggerHelper.GetRequestContents(request, contentEncoding);
+            
+            try 
+            { 
+                body = await LoggerHelper.GetRequestContents(request, contentEncoding);
+            }
+            catch 
+            {
+                LoggerHelper.LogDebugMessage(debug, "Cannot read request body.");
+            }
+
             var bodyWrapper = LoggerHelper.Serialize(body, request.ContentType);
 
             // Add Transaction Id to the Request Header

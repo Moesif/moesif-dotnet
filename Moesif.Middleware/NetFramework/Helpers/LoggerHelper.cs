@@ -30,21 +30,6 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return headers;
         }
 
-        public static void CopyToMemoryStream(this Stream source, MemoryStream destination)
-        {
-            if (source.CanSeek)
-            {
-                int pos = (int)destination.Position;
-                int length = (int)(source.Length - source.Position) + pos;
-                destination.SetLength(length);
-
-                while (pos < length)
-                    pos += source.Read(destination.GetBuffer(), pos, length - pos);
-            }
-            else
-                source.CopyTo((Stream)destination);
-        }
-
         public static bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue) 
         {
             var config_out = new object();
@@ -86,7 +71,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return objectValue;
         }
 
-        public static string GetConfigStringValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
+        public static string GetConfigStringValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug, string value = null)
         {
             var string_out = new object();
             var getStringValue = moesifOptions.TryGetValue(configName, out string_out);
@@ -97,7 +82,6 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 GetValue = (Func<IOwinRequest, IOwinResponse, string>)(string_out);
             }
 
-            string value = null;
             if (GetValue != null)
             {
                 try
@@ -143,51 +127,48 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return null;
         }
 
-        public static string GetRequestContents(IOwinRequest request, string contentEncoding)
+        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding)
         {
             string requestBody;
-
-            if (request == null || request.Body == null)
+            if (request == null || request.Body == null || !request.Body.CanRead)
             {
                 return string.Empty;
             }
-            var pos = request.Body.Position;
-            request.Body.Position = 0;
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            var memoryStream = new MemoryStream();
+            await request.Body.CopyToAsync(memoryStream);
+            memoryStream.Seek(0L, SeekOrigin.Begin);
+            request.Body = memoryStream;
+
+            if (contentEncoding != null && contentEncoding.ToLower().Contains("gzip"))
             {
-                request.Body.CopyToMemoryStream(memoryStream);
-                if (contentEncoding != null && contentEncoding.ToLower().Contains("gzip"))
+                try
                 {
-                    try
+                    using (GZipStream decompressedStream = new GZipStream(memoryStream, CompressionMode.Decompress))
                     {
-                        using (GZipStream decompressedStream = new GZipStream(memoryStream, CompressionMode.Decompress))
-                        {
-                            using (StreamReader readStream = new StreamReader(decompressedStream))
-                            {
-                                requestBody = readStream.ReadToEnd();
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        using (StreamReader readStream = new StreamReader(memoryStream))
+                        using (StreamReader readStream = new StreamReader(decompressedStream))
                         {
                             requestBody = readStream.ReadToEnd();
                         }
                     }
                 }
-                else
+                catch
                 {
                     using (StreamReader readStream = new StreamReader(memoryStream))
                     {
                         requestBody = readStream.ReadToEnd();
                     }
                 }
-
-                request.Body.Position = pos;
-                return requestBody;
             }
+            else
+            {
+                using (StreamReader readStream = new StreamReader(memoryStream))
+                {
+                    requestBody = readStream.ReadToEnd();
+                }
+            }
+
+            return requestBody;
         }
 
         public static void LogDebugMessage(bool debug, String msg) 
@@ -232,7 +213,8 @@ namespace Moesif.Middleware.NetFramework.Helpers
             var copyHeaders = new Dictionary<string, string>();
             try
             {
-                copyHeaders = headers.ToDictionary(k => k.Key, k => k.Value.First(), StringComparer.OrdinalIgnoreCase);
+                copyHeaders = headers.ToLookup(k => k.Key, k => string.Join(",", k.Value.Distinct()), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(k => k.Key, k => string.Join(",", k.ToList().Distinct()), StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception inst)
             {
