@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Moesif.Middleware</id>
-    <version>1.1.6</version>
+    <version>1.2.0</version>
     <title>MoesifMiddleware</title>
     <authors>Moesif</authors>
 	  <owners>Moesif</owners>
