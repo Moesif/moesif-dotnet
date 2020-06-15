@@ -127,9 +127,8 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return null;
         }
 
-        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding)
+        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize)
         {
-            string requestBody;
             if (request == null || request.Body == null || !request.Body.CanRead)
             {
                 return string.Empty;
@@ -139,36 +138,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             await request.Body.CopyToAsync(memoryStream);
             memoryStream.Seek(0L, SeekOrigin.Begin);
             request.Body = memoryStream;
-
-            if (contentEncoding != null && contentEncoding.ToLower().Contains("gzip"))
-            {
-                try
-                {
-                    using (GZipStream decompressedStream = new GZipStream(memoryStream, CompressionMode.Decompress))
-                    {
-                        using (StreamReader readStream = new StreamReader(decompressedStream))
-                        {
-                            requestBody = readStream.ReadToEnd();
-                        }
-                    }
-                }
-                catch
-                {
-                    using (StreamReader readStream = new StreamReader(memoryStream))
-                    {
-                        requestBody = readStream.ReadToEnd();
-                    }
-                }
-            }
-            else
-            {
-                using (StreamReader readStream = new StreamReader(memoryStream))
-                {
-                    requestBody = readStream.ReadToEnd();
-                }
-            }
-
-            return requestBody;
+            return Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
         public static void LogDebugMessage(bool debug, String msg) 

@@ -227,12 +227,16 @@ namespace Moesif.Middleware.NetFramework
 
             // RequestBody
             string contentEncoding = "";
+            string contentLength = "";
+            int parsedContentLength = 100000;
+
             string body = null;
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            
-            try 
+            reqHeaders.TryGetValue("Content-Length", out contentLength);
+            int.TryParse(contentLength, out parsedContentLength);
+            try
             { 
-                body = await LoggerHelper.GetRequestContents(request, contentEncoding);
+                body = await LoggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength);
             }
             catch 
             {

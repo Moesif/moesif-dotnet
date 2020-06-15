@@ -452,19 +452,28 @@ namespace Moesif.Middleware.NetCore
             }
 
             // RequestBody
-            string contentEncoding = "";
+            request.EnableBuffering(bufferThreshold: 1000000);
             string bodyAsText = null;
+
+            string contentEncoding = "";
+            string contentLength = "";
+            int parsedContentLength = 100000;
+
+            string body = null;
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            reqHeaders.TryGetValue("Content-Length", out contentLength);
+            int.TryParse(contentLength, out parsedContentLength);
+
             try
             {
-                bodyAsText = await LoggerHelper.GetRequestContents(request, contentEncoding);
-                Console.WriteLine(bodyAsText);
+                bodyAsText = Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
+                request.Body.Position = 0;
             }
             catch (Exception inst)
             {
                 if (debug)
                 {
-                    Console.WriteLine("Cannot read request body");
+                    Console.WriteLine("Error encountered while copying request body");
                     Console.WriteLine(inst);
                 }
             }
