@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 
-namespace Moesif.Middleware.NetFramework.Helpers
+namespace Moesif.Middleware.Helpers
 {
     public class StreamHelper : Stream
     {
