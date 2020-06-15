@@ -257,9 +257,8 @@ Install-Package Microsoft.Owin.SelfHost -Pre
 ### .NET Framework Examples
 The following examples are available for .NET Framework with Moesif:
 
-- [.NET MVC Example](https://github.com/Moesif/moesif-netframework-example) using .NET Framework 4.6.1 and IIS
-- [.NET Web API Example](https://github.com/Moesif/moesif-aspnet-webapi-selfhost-example) using .NET Framework 4.6.1 and IIS
-- [.NET Web API SelfHost Example](https://github.com/Moesif/moesif-aspnet-webapi-selfhost-example) using .NET Framework 4.6.1 _(SelfHost is uncommon)_
+- [.NET Framework Example](https://github.com/Moesif/moesif-netframework-example) using .NET Framework 4.6.1 and IIS
+- [.NET Framework SelfHost Example](https://github.com/Moesif/moesif-aspnet-webapi-selfhost-example) using .NET Framework 4.6.1 _(SelfHost is uncommon)_
 
 ### .NET Framework options
 

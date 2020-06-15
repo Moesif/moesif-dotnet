@@ -9,18 +9,18 @@ namespace Moesif.Middleware.Helpers
 {
     public class Tasks
     {
-        public List<EventModel> QueueGetAll(Queue<EventModel> MoesifQueue, int batchSize)
+        public List<EventModel> QueueGetAll(Queue<EventModel> moesifQueue, int batchSize)
         {
             List<EventModel> events = new List<EventModel>();
             foreach (var eventsRetrieved in Enumerable.Range(0, batchSize))
             {
                 try
                 {
-                    if (eventsRetrieved == batchSize)
+                    if (eventsRetrieved == batchSize || moesifQueue.Count == 0)
                     {
                         break;
                     }
-                    events.Add(MoesifQueue.Dequeue());
+                    events.Add(moesifQueue.Dequeue());
                 }
                 catch (Exception ex)
                 {

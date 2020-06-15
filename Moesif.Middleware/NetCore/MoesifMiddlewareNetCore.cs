@@ -56,8 +56,14 @@ namespace Moesif.Middleware.NetCore
         // Queue batch size
         public int batchSize;
 
+        public int batchMaxTime; // Time in seconds for next batch
+
         // Moesif Queue
         public Queue<EventModel> MoesifQueue;
+
+        public DateTime lastWorkerRun = DateTime.MinValue;
+
+        private Timer eventsWorker;
 
         public bool debug;
 
@@ -178,82 +184,63 @@ namespace Moesif.Middleware.NetCore
                 configETag = null;
                 lastUpdatedTime = DateTime.UtcNow;
 
-                // Check if batching is enabled
-                if (isBatchingEnabled)
+                // Initialize queue
+                MoesifQueue = new Queue<EventModel>();
+
+                // Create a new thread to read the queue and send event to moesif
+                new Thread(async () =>
                 {
-                    // Initialize queue
-                    MoesifQueue = new Queue<EventModel>();
-
-                    // Create a new thread to read the queue and send event to moesif
-                    new Thread(async () =>
+                    Thread.CurrentThread.IsBackground = true;
+                    try
                     {
-                        Thread.CurrentThread.IsBackground = true;
-                        try
+                        // Get Application config
+                        config = await appConfig.getConfig(client, debug);
+                        if (!string.IsNullOrEmpty(config.ToString()))
                         {
-                            // Get Application config
-                            config = await appConfig.getConfig(client, debug);
-                            if (!string.IsNullOrEmpty(config.ToString()))
-                            {
-                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                            }
+                            (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
                         }
-                        catch (Exception ex)
-                        {
-                            if (debug)
-                            {
-                                Console.WriteLine("Error while parsing application configuration on initialization");
-                            }
-                        }
-                        try
-                        {
-                            var startTimeSpan = TimeSpan.Zero;
-                            var periodTimeSpan = TimeSpan.FromSeconds(1);
-                            Tasks task = new Tasks();
-
-                            var timer = new Timer((e) =>
-                            {
-                                var updatedConfig = task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
-                                (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Result.Item1, updatedConfig.Result.Item2, updatedConfig.Result.Item3, updatedConfig.Result.Item4);
-                            }, null, startTimeSpan, periodTimeSpan);
-                        }
-                        catch (Exception ex)
-                        {
-                            if (debug)
-                            {
-                                Console.WriteLine("Error while scheduling events batch job every 5 seconds");
-                            }
-                        }
-                    }).Start();
-                }
-                else
-                {
-                    // Create a new thread to get the application config
-                    new Thread(async () =>
+                    }
+                    catch (Exception ex)
                     {
-                        Thread.CurrentThread.IsBackground = true;
-                        try
+                        if (debug)
                         {
-                            // Get Application config
-                            config = await appConfig.getConfig(client, debug);
-                            if (!string.IsNullOrEmpty(config.ToString()))
-                            {
-                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                            }
-
+                            Console.WriteLine("Error while parsing application configuration on initialization");
                         }
-                        catch (Exception ex)
-                        {
-                            if (debug)
-                            {
-                                Console.WriteLine("Error while parsing application configuration on initialization");
-                            }
-                        }
-                    }).Start();
-                } 
+                    }
+                    if (isBatchingEnabled)
+                    {
+                        ScheduleWorker();
+                    }
+                }).Start();
             }
             catch (Exception e)
             {
                 throw new Exception("Please provide the application Id to send events to Moesif");
+            }
+        }
+
+
+        private void ScheduleWorker()
+        {
+            try
+            {
+                var startTimeSpan = TimeSpan.Zero;
+                var periodTimeSpan = TimeSpan.FromSeconds(batchMaxTime);
+                Tasks task = new Tasks();
+
+                eventsWorker = new Timer((e) =>
+                {
+                    lastWorkerRun = DateTime.UtcNow;
+                    var updatedConfig = task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
+                    (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Result.Item1, updatedConfig.Result.Item2, updatedConfig.Result.Item3, updatedConfig.Result.Item4);
+                }, null, startTimeSpan, periodTimeSpan);
+            }
+            catch (Exception ex)
+            {
+                if (debug)
+                {
+                    Console.WriteLine("Error while scheduling events batch job");
+                }
             }
         }
 
@@ -289,156 +276,140 @@ namespace Moesif.Middleware.NetCore
         {
             var request = await FormatRequest(httpContext.Request);
 
-            var originalBodyStream = httpContext.Response.Body;
-
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
             {
                 httpContext.Response.Headers.Add("X-Moesif-Transaction-Id", transactionId);
             }
 
-            using (var responseBody = new MemoryStream())
+            // Buffering Owin response
+            var owinResponse = httpContext.Response;
+            StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
+            owinResponse.Body = outputCaptureOwin;
+
+            await _next(httpContext);
+
+            var response = FormatResponse(httpContext.Response, outputCaptureOwin);
+
+            // User Id 
+            var user_out = new object();
+            var getUserId = moesifOptions.TryGetValue("IdentifyUser", out user_out);
+
+            Func<HttpRequest, HttpResponse, string> IdentifyUser = null;
+            if (getUserId)
             {
-                httpContext.Response.Body = responseBody;
+                IdentifyUser = (Func<HttpRequest, HttpResponse, string>)(user_out);
+            }
 
-                await _next(httpContext);
+            // SessionToken
+            var token_out = new object();
+            var getSessionToken = moesifOptions.TryGetValue("GetSessionToken", out token_out);
 
-                var response = await FormatResponse(httpContext.Response);
+            Func<HttpRequest, HttpResponse, string> GetSessionToken = null;
+            if (getSessionToken)
+            {
+                GetSessionToken = (Func<HttpRequest, HttpResponse, string>)(token_out);
+            }
 
-                // User Id 
-                var user_out = new object();
-                var getUserId = moesifOptions.TryGetValue("IdentifyUser", out user_out);
+            // Get Metadata
+            var metadata_out = new object();
+            var getMetadata = moesifOptions.TryGetValue("GetMetadata", out metadata_out);
 
-                Func<HttpRequest, HttpResponse, string> IdentifyUser = null;
-                if (getUserId)
+            Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = null;
+
+            if (getMetadata)
+            {
+                GetMetadata = (Func<HttpRequest, HttpResponse, Dictionary<string, object>>)(metadata_out);
+            }
+
+            // UserId
+            userId = null;
+            if (IdentifyUser != null)
+            {
+                try
                 {
-                    IdentifyUser = (Func<HttpRequest, HttpResponse, string>)(user_out);
+                    userId = IdentifyUser(httpContext.Request, httpContext.Response);
                 }
-
-                // SessionToken
-                var token_out = new object();
-                var getSessionToken = moesifOptions.TryGetValue("GetSessionToken", out token_out);
-
-                Func<HttpRequest, HttpResponse, string> GetSessionToken = null;
-                if (getSessionToken)
+                catch
                 {
-                    GetSessionToken = (Func<HttpRequest, HttpResponse, string>)(token_out);
+                    Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
                 }
+            }
+            else 
+            {
+                userId = httpContext?.User?.Identity?.Name;
+            }
 
-                // Get Metadata
-                var metadata_out = new object();
-                var getMetadata = moesifOptions.TryGetValue("GetMetadata", out metadata_out);
+            // CompanyId
+            var company_out = new object();
+            var getCompanyId = moesifOptions.TryGetValue("IdentifyCompany", out company_out);
 
-                Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = null;
+            Func<HttpRequest, HttpResponse, string> IdentifyCompany = null;
+            if (getCompanyId)
+            {
+                IdentifyCompany = (Func<HttpRequest, HttpResponse, string>)(company_out);
+            }
 
-                if (getMetadata)
+            companyId = null;
+            if (IdentifyCompany != null)
+            {
+                try
                 {
-                    GetMetadata = (Func<HttpRequest, HttpResponse, Dictionary<string, object>>)(metadata_out);
+                    companyId = IdentifyCompany(httpContext.Request, httpContext.Response);
                 }
-
-                // UserId
-                userId = null;
-                if (IdentifyUser != null)
+                catch
                 {
-                    try
-                    {
-                        userId = IdentifyUser(httpContext.Request, httpContext.Response);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
-                    }
+                    Console.WriteLine("Can not execute IdentifyCompany function. Please check moesif settings.");
                 }
-                else 
+            }
+
+            // Session Token
+            sessionToken = null;
+            if (GetSessionToken != null)
+            {
+                try
                 {
-                    userId = httpContext?.User?.Identity?.Name;
+                    sessionToken = GetSessionToken(httpContext.Request, httpContext.Response);
                 }
-
-                // CompanyId
-                var company_out = new object();
-                var getCompanyId = moesifOptions.TryGetValue("IdentifyCompany", out company_out);
-
-                Func<HttpRequest, HttpResponse, string> IdentifyCompany = null;
-                if (getCompanyId)
+                catch
                 {
-                    IdentifyCompany = (Func<HttpRequest, HttpResponse, string>)(company_out);
+                    Console.WriteLine("Can not execute GetSessionToken function. Please check moesif settings.");
                 }
+            }
 
-                companyId = null;
-                if (IdentifyCompany != null)
+            // Metadata
+            metadata = null;
+            if (GetMetadata != null)
+            {
+                try
                 {
-                    try
-                    {
-                        companyId = IdentifyCompany(httpContext.Request, httpContext.Response);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Can not execute IdentifyCompany function. Please check moesif settings.");
-                    }
+                    metadata = GetMetadata(httpContext.Request, httpContext.Response);
                 }
-
-                // Session Token
-                sessionToken = null;
-                if (GetSessionToken != null)
+                catch
                 {
-                    try
-                    {
-                        sessionToken = GetSessionToken(httpContext.Request, httpContext.Response);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Can not execute GetSessionToken function. Please check moesif settings.");
-                    }
+                    Console.WriteLine("Can not execute GetMetadata function. Please check moesif settings.");
                 }
+            }
 
-                // Metadata
-                metadata = null;
-                if (GetMetadata != null)
+            // Get Skip
+            var skip_out = new object();
+            var getSkip = moesifOptions.TryGetValue("Skip", out skip_out);
+
+            // Check to see if we need to send event to Moesif
+            Func<HttpRequest, HttpResponse, bool> ShouldSkip = null;
+
+            if (getSkip)
+            {
+                ShouldSkip = (Func<HttpRequest, HttpResponse, bool>)(skip_out);
+            }
+
+            if (ShouldSkip != null)
+            {
+                if (ShouldSkip(httpContext.Request, httpContext.Response))
                 {
-                    try
+                    if (debug)
                     {
-                        metadata = GetMetadata(httpContext.Request, httpContext.Response);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Can not execute GetMetadata function. Please check moesif settings.");
-                    }
-                }
-
-                // Get Skip
-                var skip_out = new object();
-                var getSkip = moesifOptions.TryGetValue("Skip", out skip_out);
-
-                // Check to see if we need to send event to Moesif
-                Func<HttpRequest, HttpResponse, bool> ShouldSkip = null;
-
-                if (getSkip)
-                {
-                    ShouldSkip = (Func<HttpRequest, HttpResponse, bool>)(skip_out);
-                }
-
-                if (ShouldSkip != null)
-                {
-                    if (ShouldSkip(httpContext.Request, httpContext.Response))
-                    {
-                        if (debug)
-                        {
-                            Console.WriteLine("Skipping the event");
-                        }
-
-                        await responseBody.CopyToAsync(originalBodyStream);
-                    }
-                    else
-                    {
-                        if (debug)
-                        {
-                            Console.WriteLine("Calling the API to send the event to Moesif");
-                        }
-
-                        //Send event to Moesif async
-                        Middleware(request, response);
-
-                        await responseBody.CopyToAsync(originalBodyStream);
+                        Console.WriteLine("Skipping the event");
                     }
                 }
                 else
@@ -449,27 +420,23 @@ namespace Moesif.Middleware.NetCore
                     }
 
                     //Send event to Moesif async
-                    Middleware(request, response);
-
-                    await responseBody.CopyToAsync(originalBodyStream);
+                    await Task.Run(async () => await LogEventAsync(request, response));
                 }
+            }
+            else
+            {
+                if (debug)
+                {
+                    Console.WriteLine("Calling the API to send the event to Moesif");
+                }
+
+                //Send event to Moesif async
+                await Task.Run(async () => await LogEventAsync(request, response));
             }
         }
 
         private async Task<EventRequestModel> FormatRequest(HttpRequest request)
         {
-            var body = request.Body;
-
-            request.EnableBuffering();
-
-            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
-
-            await request.Body.ReadAsync(buffer, 0, buffer.Length);
-
-            var bodyAsText = Encoding.UTF8.GetString(buffer);
-
-            request.Body = body;
-
             var reqHeaders = new Dictionary<string, string>();
             try
             {
@@ -480,6 +447,24 @@ namespace Moesif.Middleware.NetCore
                 if (debug)
                 {
                     Console.WriteLine("error encountered while copying request header");
+                    Console.WriteLine(inst);
+                }
+            }
+
+            // RequestBody
+            string contentEncoding = "";
+            string bodyAsText = null;
+            reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            try
+            {
+                bodyAsText = await LoggerHelper.GetRequestContents(request, contentEncoding);
+                Console.WriteLine(bodyAsText);
+            }
+            catch (Exception inst)
+            {
+                if (debug)
+                {
+                    Console.WriteLine("Cannot read request body");
                     Console.WriteLine(inst);
                 }
             }
@@ -589,14 +574,8 @@ namespace Moesif.Middleware.NetCore
             return eventReq;
         }
 
-        private async Task<EventResponseModel> FormatResponse(HttpResponse response)
+        private EventResponseModel FormatResponse(HttpResponse response, StreamHelper stream)
         {
-            response.Body.Seek(0, SeekOrigin.Begin);
-
-            string text = await new StreamReader(response.Body).ReadToEndAsync();
-
-            response.Body.Seek(0, SeekOrigin.Begin);
-
             var rspHeaders = new Dictionary<string, string>();
             try
             {
@@ -610,6 +589,11 @@ namespace Moesif.Middleware.NetCore
                     Console.WriteLine(inst);
                 }
             }
+
+            // ResponseBody
+            string contentEncoding = "";
+            rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            string text = stream.ReadStream(contentEncoding);
 
             // Add Transaction Id to Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -651,7 +635,7 @@ namespace Moesif.Middleware.NetCore
             return eventRsp;
         }
 
-        private async Task Middleware(EventRequestModel event_request, EventResponseModel event_response)
+        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response)
         {
             var eventModel = new EventModel()
             {
@@ -709,6 +693,14 @@ namespace Moesif.Middleware.NetCore
                         }
                         // Add event to the batch
                         MoesifQueue.Enqueue(eventModel);
+                        if (eventsWorker == null || (lastWorkerRun.AddMinutes(1) < DateTime.UtcNow))
+                        {
+                            if (debug)
+                            {
+                                Console.WriteLine("Scheduling worker thread. lastWorkerRun=" + lastWorkerRun.ToString());
+                            }
+                            ScheduleWorker();
+                        }
                     }
                     else
                     {
