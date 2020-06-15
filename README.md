@@ -1,4 +1,4 @@
-# Moesif Middleware for DotNet
+# Moesif Middleware for .NET
 
 [![Built For][ico-built-for]][link-built-for]
 [![Latest Version][ico-version]][link-package]
@@ -17,7 +17,7 @@ Install the Nuget Package:
 Install-Package Moesif.Middleware
 ```
 
-This SDK supports both .NET Core 2.0 or higher and .NET Framework 4.5 or higher. Jump to installation for your specific framework:
+This SDK supports both .NET Core 2.1 or higher and .NET Framework 4.5 or higher. Jump to installation for your specific framework:
 
 - [.Net Core installation](#net-core-installation)
 - [.NET Framework installation](#net-framework-installation)
