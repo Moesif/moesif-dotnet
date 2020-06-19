@@ -614,6 +614,23 @@ MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, obje
 moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 ```
 
+## Troubleshooting
+
+### Legacy website broken/Can I activate on API only?
+If your .NET app is a traditional monolith consisting of both an API and website, you can choose to activate the middleware
+on just your API only. Some legacy apps may have delicate and custom middleware chains. 
+An easy way to do that is via `MapWhen`:
+
+```csharp
+    app.MapWhen(context => context.Request.Path.ToString().Contains("/api"), appBuilder =>
+    {
+
+        appBuilder.Use<MoesifMiddleware>(new System.Collections.Generic.Dictionary<string, object> {
+            {"ApplicationId", "Your Moesif Application Id"}
+        });
+    });
+```
+
 ## How to test
 
 1. Manually clone the git repo
