@@ -22,12 +22,6 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public string userId;
-
-        public string companyId;
-
-        public string sessionToken;
-
         public Dictionary<string, object> metadata;
 
         public Dictionary<string, object> moesifOptions;
@@ -62,8 +56,6 @@ namespace Moesif.Middleware.NetFramework
 
         public bool logBody;
 
-        public string transactionId;
-
         public DateTime lastWorkerRun = DateTime.MinValue;
 
         private Timer eventsWorker;
@@ -81,7 +73,6 @@ namespace Moesif.Middleware.NetFramework
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", false); // Enable batching
                 batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
                 batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
-                transactionId = null; // Initialize Transaction Id
                 appConfig = new AppConfig(); // Create a new instance of AppConfig
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
@@ -170,8 +161,12 @@ namespace Moesif.Middleware.NetFramework
             StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
             owinResponse.Body = outputCaptureOwin;
 
+            // Initialize Transaction Id
+            string transactionId = null;
+            EventRequestModel request;
+
             // Prepare Moeif Event Request Model
-            var request = await ToRequest(httpContext.Request);
+            (request, transactionId) = await ToRequest(httpContext.Request, transactionId);
 
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -185,15 +180,15 @@ namespace Moesif.Middleware.NetFramework
             StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
            
             // Prepare Moesif Event Response model
-            var response = ToResponse(httpContext.Response, streamToUse);
+            var response = ToResponse(httpContext.Response, streamToUse, transactionId);
 
             // UserId
-            var userId = httpContext?.Authentication?.User?.Identity?.Name;
+            string userId = httpContext?.Authentication?.User?.Identity?.Name;
             userId = LoggerHelper.GetConfigStringValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
             // CompanyId
-            companyId = LoggerHelper.GetConfigStringValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            string companyId = LoggerHelper.GetConfigStringValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // SessionToken
-            sessionToken = LoggerHelper.GetConfigStringValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            string sessionToken = LoggerHelper.GetConfigStringValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // Metadata
             metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
@@ -216,11 +211,11 @@ namespace Moesif.Middleware.NetFramework
             else
             {
                 LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
-                await Task.Run(async () => await LogEventAsync(request, response));
+                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken));
             }
         }
 
-        private async Task<EventRequestModel> ToRequest(IOwinRequest request)
+        private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
         {
             // Request headers
             var reqHeaders = LoggerHelper.ToHeaders(request.Headers, debug);
@@ -276,10 +271,10 @@ namespace Moesif.Middleware.NetFramework
                 TransferEncoding = bodyWrapper.Item2
             };
 
-            return eventReq;
+            return (eventReq, transactionId);
         }
 
-        private EventResponseModel ToResponse(IOwinResponse response, StreamHelper outputStream)
+        private EventResponseModel ToResponse(IOwinResponse response, StreamHelper outputStream, string transactionId)
         {
 
             var rspHeaders = LoggerHelper.ToHeaders(response.Headers, debug);
@@ -306,7 +301,7 @@ namespace Moesif.Middleware.NetFramework
             return eventRsp;
         }
 
-        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response)
+        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken)
         {
             var eventModel = new EventModel()
             {
