@@ -43,7 +43,7 @@ namespace Moesif.Middleware.Helpers
             try
             {
                 var rspBody = ApiHelper.JsonDeserialize<Dictionary<string, object>>(config.Body);
-                return (config.Headers["X-Moesif-Config-ETag"], Int32.Parse(rspBody["sample_rate"].ToString()), DateTime.UtcNow);
+                return (config.Headers.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"], Int32.Parse(rspBody["sample_rate"].ToString()), DateTime.UtcNow);
             }
             catch (Exception ex)
             {

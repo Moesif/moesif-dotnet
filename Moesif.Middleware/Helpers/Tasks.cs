@@ -45,7 +45,7 @@ namespace Moesif.Middleware.Helpers
                 {
                     // Send Batch Request
                     var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
-                    var batchEventResponseConfigETag = createBatchEventResponse["X-Moesif-Config-ETag"];
+                    var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
 
                     if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
                         !(string.IsNullOrEmpty(configETag)) &&

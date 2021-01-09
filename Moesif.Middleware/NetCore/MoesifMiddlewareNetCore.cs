@@ -23,14 +23,6 @@ namespace Moesif.Middleware.NetCore
     {
         private readonly RequestDelegate _next;
 
-        public string userId;
-
-        public string companyId;
-
-        public string sessionToken;
-
-        public Dictionary<string, object> metadata;
-
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -74,8 +66,6 @@ namespace Moesif.Middleware.NetCore
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
-
-        public string transactionId;
 
         public bool Debug()
         {
@@ -168,8 +158,6 @@ namespace Moesif.Middleware.NetCore
                 debug = Debug();
                 logBody = LogBody();
                 _next = next;
-                // Initialize Transaction Id
-                transactionId = null;
                 // Create a new instance of AppConfig
                 appConfig = new AppConfig();
 
@@ -274,7 +262,10 @@ namespace Moesif.Middleware.NetCore
 
         public async Task Invoke(HttpContext httpContext)
         {
-            var request = await FormatRequest(httpContext.Request);
+            // Initialize Transaction Id
+            string transactionId = null;
+            EventRequestModel request;
+            (request, transactionId) = await FormatRequest(httpContext.Request, transactionId);
 
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -289,7 +280,7 @@ namespace Moesif.Middleware.NetCore
 
             await _next(httpContext);
 
-            var response = FormatResponse(httpContext.Response, outputCaptureOwin);
+            var response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
 
             // User Id 
             var user_out = new object();
@@ -323,7 +314,7 @@ namespace Moesif.Middleware.NetCore
             }
 
             // UserId
-            userId = null;
+            string userId = null;
             if (IdentifyUser != null)
             {
                 try
@@ -350,7 +341,7 @@ namespace Moesif.Middleware.NetCore
                 IdentifyCompany = (Func<HttpRequest, HttpResponse, string>)(company_out);
             }
 
-            companyId = null;
+            string companyId = null;
             if (IdentifyCompany != null)
             {
                 try
@@ -364,7 +355,7 @@ namespace Moesif.Middleware.NetCore
             }
 
             // Session Token
-            sessionToken = null;
+            string sessionToken = null;
             if (GetSessionToken != null)
             {
                 try
@@ -378,7 +369,7 @@ namespace Moesif.Middleware.NetCore
             }
 
             // Metadata
-            metadata = null;
+            Dictionary<string, object> metadata = null;
             if (GetMetadata != null)
             {
                 try
@@ -420,7 +411,7 @@ namespace Moesif.Middleware.NetCore
                     }
 
                     //Send event to Moesif async
-                    await Task.Run(async () => await LogEventAsync(request, response));
+                    await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
                 }
             }
             else
@@ -431,11 +422,11 @@ namespace Moesif.Middleware.NetCore
                 }
 
                 //Send event to Moesif async
-                await Task.Run(async () => await LogEventAsync(request, response));
+                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
             }
         }
 
-        private async Task<EventRequestModel> FormatRequest(HttpRequest request)
+        private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
             var reqHeaders = new Dictionary<string, string>();
             try
@@ -580,10 +571,10 @@ namespace Moesif.Middleware.NetCore
                 TransferEncoding = requestTransferEncoding
             };
 
-            return eventReq;
+            return (eventReq, transactionId);
         }
 
-        private EventResponseModel FormatResponse(HttpResponse response, StreamHelper stream)
+        private EventResponseModel FormatResponse(HttpResponse response, StreamHelper stream, string transactionId)
         {
             var rspHeaders = new Dictionary<string, string>();
             try
@@ -644,7 +635,7 @@ namespace Moesif.Middleware.NetCore
             return eventRsp;
         }
 
-        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response)
+        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken, Dictionary<string, object> metadata)
         {
             var eventModel = new EventModel()
             {
@@ -714,7 +705,7 @@ namespace Moesif.Middleware.NetCore
                     else
                     {
                         var createEventResponse = await client.Api.CreateEventAsync(eventModel);
-                        var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
+                        var eventResponseConfigETag = createEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
 
                         if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
                             !(string.IsNullOrEmpty(configETag)) &&

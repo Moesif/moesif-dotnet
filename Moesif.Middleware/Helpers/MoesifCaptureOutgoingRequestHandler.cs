@@ -419,7 +419,7 @@ namespace Moesif.Middleware.Helpers
                     eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
 
                     var createEventResponse = await client.Api.CreateEventAsync(eventModel);
-                    var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
+                    var eventResponseConfigETag = createEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
 
                     if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
                         !(string.IsNullOrEmpty(configETag)) &&
