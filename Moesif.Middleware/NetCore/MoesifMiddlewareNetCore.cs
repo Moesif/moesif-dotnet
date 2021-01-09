@@ -23,8 +23,6 @@ namespace Moesif.Middleware.NetCore
     {
         private readonly RequestDelegate _next;
 
-        public Dictionary<string, object> metadata;
-
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -371,7 +369,7 @@ namespace Moesif.Middleware.NetCore
             }
 
             // Metadata
-            metadata = null;
+            Dictionary<string, object> metadata = null;
             if (GetMetadata != null)
             {
                 try
@@ -413,7 +411,7 @@ namespace Moesif.Middleware.NetCore
                     }
 
                     //Send event to Moesif async
-                    await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken));
+                    await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
                 }
             }
             else
@@ -424,7 +422,7 @@ namespace Moesif.Middleware.NetCore
                 }
 
                 //Send event to Moesif async
-                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken));
+                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
             }
         }
 
@@ -637,7 +635,7 @@ namespace Moesif.Middleware.NetCore
             return eventRsp;
         }
 
-        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken)
+        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken, Dictionary<string, object> metadata)
         {
             var eventModel = new EventModel()
             {

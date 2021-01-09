@@ -22,8 +22,6 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public Dictionary<string, object> metadata;
-
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -190,7 +188,7 @@ namespace Moesif.Middleware.NetFramework
             // SessionToken
             string sessionToken = LoggerHelper.GetConfigStringValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // Metadata
-            metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
             // Get Skip
             var skip_out = new object();
@@ -211,7 +209,7 @@ namespace Moesif.Middleware.NetFramework
             else
             {
                 LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
-                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken));
+                await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
             }
         }
 
@@ -301,7 +299,7 @@ namespace Moesif.Middleware.NetFramework
             return eventRsp;
         }
 
-        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken)
+        private async Task LogEventAsync(EventRequestModel event_request, EventResponseModel event_response, string userId, string companyId, string sessionToken, Dictionary<string, object> metadata)
         {
             var eventModel = new EventModel()
             {
