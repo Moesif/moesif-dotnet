@@ -157,7 +157,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             }
 
             // Only try parse if is JSON or looks like JSON
-            if (contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
+            if (contentType != null && contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
             {
                 try
                 {
