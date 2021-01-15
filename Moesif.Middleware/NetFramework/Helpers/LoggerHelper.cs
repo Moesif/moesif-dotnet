@@ -151,13 +151,13 @@ namespace Moesif.Middleware.NetFramework.Helpers
 
         public static Tuple<object, string> Serialize(string data, string contentType)
         {
-            if (string.IsNullOrEmpty(data) || string.IsNullOrEmpty(contentType))
+            if (string.IsNullOrEmpty(data))
             {
                 return new Tuple<object, string>(null, null);
             }
 
             // Only try parse if is JSON or looks like JSON
-            if (contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
+            if (contentType != null && contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
             {
                 try
                 {
