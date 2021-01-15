@@ -151,7 +151,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
 
         public static Tuple<object, string> Serialize(string data, string contentType)
         {
-            if (string.IsNullOrEmpty(data))
+            if (string.IsNullOrEmpty(data) || string.IsNullOrEmpty(contentType))
             {
                 return new Tuple<object, string>(null, null);
             }
