@@ -110,7 +110,7 @@ namespace Moesif.Middleware.NetCore
             }
             else
             {
-                localEnableBatching = false;
+                localEnableBatching = true;
             }
             return localEnableBatching;
         }
