@@ -68,7 +68,7 @@ namespace Moesif.Middleware.NetFramework
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
-                isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", false); // Enable batching
+                isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
                 batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
                 appConfig = new AppConfig(); // Create a new instance of AppConfig
