@@ -43,37 +43,48 @@ namespace Moesif.Middleware.Helpers
 
                 if ((batchEvents.Any()))
                 {
-                    // Send Batch Request
-                    var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
-                    var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
-
-                    if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
-                        !(string.IsNullOrEmpty(configETag)) &&
-                        configETag != batchEventResponseConfigETag &&
-                        DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
+                    try
                     {
-                        try
+                        // Send Batch Request
+                        var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
+                        var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
+
+                        if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
+                            !(string.IsNullOrEmpty(configETag)) &&
+                            configETag != batchEventResponseConfigETag &&
+                            DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
                         {
-                            Api.Http.Response.HttpStringResponse config;
-                            // Get Application config
-                            config = await appConfig.getConfig(client, debug);
-                            if (!string.IsNullOrEmpty(config.ToString()))
+                            try
                             {
-                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                                return (config, configETag, samplingPercentage, lastUpdatedTime);
+                                Api.Http.Response.HttpStringResponse config;
+                                // Get Application config
+                                config = await appConfig.getConfig(client, debug);
+                                if (!string.IsNullOrEmpty(config.ToString()))
+                                {
+                                    (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                                    return (config, configETag, samplingPercentage, lastUpdatedTime);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                if (debug)
+                                {
+                                    Console.WriteLine("Error while updating the application configuration");
+                                }
                             }
                         }
-                        catch (Exception ex)
+                        if (debug)
                         {
-                            if (debug)
-                            {
-                                Console.WriteLine("Error while updating the application configuration");
-                            }
+                            Console.WriteLine("Events sent successfully to Moesif");
                         }
                     }
-                    if (debug)
+                    catch (Exception ex)
                     {
-                        Console.WriteLine("Events sent successfully to Moesif");
+                        if (debug)
+                        {
+                            Console.WriteLine("Could not connect to Moesif server.");
+                        }
+                        return (defaultConfig, configETag, samplingPercentage, lastUpdatedTime);
                     }
                 }
                 else

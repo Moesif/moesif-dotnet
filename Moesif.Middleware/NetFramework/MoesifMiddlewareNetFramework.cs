@@ -46,6 +46,8 @@ namespace Moesif.Middleware.NetFramework
 
         public int batchSize; // Queue batch size
 
+        public int queueSize; // Event Queue size 
+
         public int batchMaxTime; // Time in seconds for next batch
 
         public Queue<EventModel> MoesifQueue; // Moesif Queue
@@ -70,6 +72,7 @@ namespace Moesif.Middleware.NetFramework
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
+                queueSize = LoggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
                 batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
                 appConfig = new AppConfig(); // Create a new instance of AppConfig
                 userHelper = new UserHelper(); // Create a new instance of userHelper
@@ -98,25 +101,27 @@ namespace Moesif.Middleware.NetFramework
             }
         }
 
-        private void ScheduleWorker()
+        private void ScheduleWorker() 
         {
-            try
-            {
-                var startTimeSpan = TimeSpan.Zero;
-                var periodTimeSpan = TimeSpan.FromSeconds(batchMaxTime);
-                Tasks task = new Tasks();
+             new Thread(async () => // Create a new thread to read the queue and send event to moesif
+              {
 
-                eventsWorker = new Timer(async (e) =>
+              Tasks task = new Tasks();
+              while (true) 
+              {
+                Thread.Sleep(2000);
+                try 
                 {
                     lastWorkerRun = DateTime.UtcNow;
                     var updatedConfig = await task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
                     (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Item1, updatedConfig.Item2, updatedConfig.Item3, updatedConfig.Item4);
-                }, null, startTimeSpan, periodTimeSpan);
-            }
-            catch (Exception ex)
-            {
-                LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
-            }
+                }
+                catch (Exception ex)
+                {
+                    LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
+                }
+              }
+              }).Start();
         }
 
         // Function to update user
@@ -354,11 +359,19 @@ namespace Moesif.Middleware.NetFramework
                     {
                         LoggerHelper.LogDebugMessage(debug, "Add Event to the batch");
                         // Add event to queue
-                        MoesifQueue.Enqueue(eventModel);
-                        if (eventsWorker == null || (lastWorkerRun.AddMinutes(1) < DateTime.UtcNow))
+                        if (MoesifQueue.Count < queueSize) 
                         {
-                            LoggerHelper.LogDebugMessage(debug, "Scheduling worker thread. lastWorkerRun=" + lastWorkerRun.ToString());
-                            ScheduleWorker();
+                            MoesifQueue.Enqueue(eventModel);
+                            if (DateTime.Compare(lastWorkerRun, DateTime.MinValue) != 0 )
+                            {
+                                if (lastWorkerRun.AddMinutes(1) < DateTime.UtcNow) {
+                                    LoggerHelper.LogDebugMessage(debug, "Scheduling worker thread. lastWorkerRun=" + lastWorkerRun.ToString());
+                                    ScheduleWorker();
+                                }
+                            }
+                        } 
+                        else {
+                            LoggerHelper.LogDebugMessage(debug, "Queue is full, skip adding events ");
                         }
                     } else {
                         var createEventResponse = await client.Api.CreateEventAsync(eventModel);
