@@ -109,7 +109,7 @@ namespace Moesif.Middleware.NetFramework
               Tasks task = new Tasks();
               while (true) 
               {
-                Thread.Sleep(2000);
+                Thread.Sleep(batchMaxTime * 1000);
                 try 
                 {
                     lastWorkerRun = DateTime.UtcNow;
