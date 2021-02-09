@@ -30,6 +30,13 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return headers;
         }
 
+        public static string GetConfigStringValues(Dictionary<string, object> moesifOptions, String configName, string defaultValue)
+        {
+            var config_out = new object();
+            var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
+            return getConfigOption ? Convert.ToString(config_out) : defaultValue;
+        }
+
         public static bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue) 
         {
             var config_out = new object();
@@ -71,7 +78,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return objectValue;
         }
 
-        public static string GetConfigStringValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug, string value = null)
+        public static string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug, string value = null)
         {
             var string_out = new object();
             var getStringValue = moesifOptions.TryGetValue(configName, out string_out);
