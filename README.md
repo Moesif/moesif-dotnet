@@ -107,6 +107,12 @@ _boolean_, default true. Set to false to not log the request and response body t
 #### __`EnableBatching`__
 _boolean_, set to true for queuing sending data to Moesif.
 
+#### __`AuthorizationHeaderName`__
+(optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
+
+#### __`AuthorizationUserIdField`__
+(optional), _string_, Field name in JWT/OpenId token's payload for identifying users. Only applicable if authorization_header_name is set and is a Bearer token.
+
 #### __`Capture_Outgoing_Requests`__
 (optional), Set to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package. The options below is applied to outgoing API calls. When the request is outgoing, for options functions that take request and response as input arguments, the request and response objects passed in are [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects.
 
@@ -297,6 +303,12 @@ _boolean_, default true. Set to false to not log the request and response body t
 
 #### __`EnableBatching`__
 _boolean_, set to true for queuing sending data to Moesif.
+
+#### __`AuthorizationHeaderName`__
+(optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
+
+#### __`AuthorizationUserIdField`__
+(optional), _string_, Field name in JWT/OpenId token's payload for identifying users. Only applicable if authorization_header_name is set and is a Bearer token.
 
 #### __`Capture_Outgoing_Requests`__
 (optional), Set to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package. The options below is applied to outgoing API calls. When the request is outgoing, for options functions that take request and response as input arguments, the request and response objects passed in are [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects.
