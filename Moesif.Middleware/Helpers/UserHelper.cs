@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
+using System.Text;
+using System.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -125,5 +128,71 @@ namespace Moesif.Middleware.Helpers
             }
         }
 
+        public static string parseAuthorizationHeader(string token, string field)
+        {
+            try
+            {
+                var newToken = new JwtSecurityToken(jwtEncodedString: token);
+                bool hasClaim = newToken.Claims.Any(c => c.Type == field);
+                return hasClaim ? newToken.Claims.First(c => c.Type == field).Value : null;
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        }
+
+        public string fetchUserFromAuthorizationHeader(Dictionary<string, string> headers, string authorizationHeaderName, string authorizationUserIdField)
+        {
+            string userId = null;
+            try
+            {
+                if (!string.IsNullOrEmpty(authorizationHeaderName) && !string.IsNullOrEmpty(authorizationUserIdField))
+                {
+                    string[] authHeaderNames = authorizationHeaderName.ToLower().Replace(" ", "").Split(',');
+                    string token = null;
+
+                    headers = headers.ToDictionary(k => k.Key.ToLower(), k => k.Value);
+
+                    foreach (var authName in authHeaderNames)
+                    {
+                        if (headers.ContainsKey(authName))
+                        {
+                            token = headers[authName].Split(',')[0];
+                            break;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        if (token.Contains("Bearer"))
+                        {
+                            token = token.Substring("Bearer ".Length).Trim();
+                            userId = parseAuthorizationHeader(token, authorizationUserIdField);
+                        }
+                        else if (token.Contains("Basic"))
+                        {
+                            token = token.Substring("Basic ".Length).Trim();
+                            string decoded_token = Encoding.UTF8.GetString(Convert.FromBase64String(token));
+                            int seperatorIndex = decoded_token.IndexOf(':');
+                            userId = decoded_token.Substring(0, seperatorIndex);
+                        }
+                        else
+                        {
+                            userId = parseAuthorizationHeader(token, authorizationUserIdField);
+                        }
+                    }
+                    else
+                    {
+                        userId = null;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+            return userId;
+        }
     }
 }

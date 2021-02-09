@@ -52,13 +52,15 @@ namespace Moesif.Middleware.NetFramework
 
         public Queue<EventModel> MoesifQueue; // Moesif Queue
 
+        public string authorizationHeaderName; // A request header field name used to identify the User
+
+        public string authorizationUserIdField; // A field name used to parse the User from authorization header
+
         public bool debug;
 
         public bool logBody;
 
         public DateTime lastWorkerRun = DateTime.MinValue;
-
-        private Timer eventsWorker;
 
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
         {
@@ -78,6 +80,8 @@ namespace Moesif.Middleware.NetFramework
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+                authorizationHeaderName = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
+                authorizationUserIdField = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
                 samplingPercentage = 100; // Default sampling percentage
                 configETag = null; // Default configETag
                 lastUpdatedTime = DateTime.UtcNow; // Default lastUpdatedTime
@@ -187,11 +191,16 @@ namespace Moesif.Middleware.NetFramework
 
             // UserId
             string userId = httpContext?.Authentication?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigStringValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Fetch userId from authorization header
+                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+            }
             // CompanyId
-            string companyId = LoggerHelper.GetConfigStringValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // SessionToken
-            string sessionToken = LoggerHelper.GetConfigStringValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            string sessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // Metadata
             Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
 

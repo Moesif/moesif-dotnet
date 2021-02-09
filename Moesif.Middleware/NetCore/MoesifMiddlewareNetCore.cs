@@ -27,109 +27,41 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifApiClient client;
 
-        // Initialize config dictionary
-        public AppConfig appConfig;
+        public AppConfig appConfig; // Initialize config dictionary
 
-        // Initialized config response
-        public Api.Http.Response.HttpStringResponse config;
+        public UserHelper userHelper; // Initialize user helper
 
-        // App Config samplingPercentage
-        public int samplingPercentage;
+        public CompanyHelper companyHelper; // Initialize company helper
 
-        // App Config configETag
-        public string configETag;
+        public ClientIp clientIpHelper; // Initialize client ip helper
 
-        // App Config lastUpdatedTime
-        public DateTime lastUpdatedTime;
+        public Api.Http.Response.HttpStringResponse config; // Initialized config response
 
-        // Enable Batching
-        public bool isBatchingEnabled;
+        public int samplingPercentage; // App Config samplingPercentage
 
-        // Queue batch size
-        public int batchSize;
+        public string configETag; // App Config configETag
+
+        public DateTime lastUpdatedTime; // App Config lastUpdatedTime
+
+        public bool isBatchingEnabled; // Enable Batching
+
+        public int batchSize; // Queue batch size
+
+        public int queueSize; // Event Queue size
 
         public int batchMaxTime; // Time in seconds for next batch
 
-        // Moesif Queue
-        public Queue<EventModel> MoesifQueue;
+        public Queue<EventModel> MoesifQueue; // Moesif Queue
+
+        public string authorizationHeaderName; // A request header field name used to identify the User
+
+        public string authorizationUserIdField; // A field name used to parse the User from authorization header
 
         public DateTime lastWorkerRun = DateTime.MinValue;
-
-        private Timer eventsWorker;
 
         public bool debug;
 
         public bool logBody;
-
-        public static string Base64Encode(string plainText)
-        {
-            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
-        }
-
-        public bool Debug()
-        {
-            bool localDebug;
-            var debug_out = new object();
-            var getDebug = moesifOptions.TryGetValue("LocalDebug", out debug_out);
-            if (getDebug)
-            {
-                localDebug = Convert.ToBoolean(debug_out);
-            }
-            else
-            {
-                localDebug = false;
-            }
-            return localDebug;
-        }
-
-        public bool LogBody()
-        {
-            bool localLogBody;
-            var log_body_out = new object();
-            var getLogBody = moesifOptions.TryGetValue("LogBody", out log_body_out);
-            if (getLogBody)
-            {
-                localLogBody = Convert.ToBoolean(log_body_out);
-            }
-            else
-            {
-                localLogBody = true;
-            }
-            return localLogBody;
-        }
-
-        public bool EnableBatching()
-        {
-            bool localEnableBatching;
-            var batching_out = new object();
-            var getEnableBatching = moesifOptions.TryGetValue("EnableBatching", out batching_out);
-            if (getEnableBatching)
-            {
-                localEnableBatching = Convert.ToBoolean(batching_out);
-            }
-            else
-            {
-                localEnableBatching = true;
-            }
-            return localEnableBatching;
-        }
-
-        public int BatchSize()
-        {
-            int localBatchSize;
-            var batch_size_out = new object();
-            var getBatchSize = moesifOptions.TryGetValue("BatchSize", out batch_size_out);
-            if (getBatchSize)
-            {
-                localBatchSize = Convert.ToInt32(batch_size_out);
-            }
-            else
-            {
-                localBatchSize = 25;
-            }
-            return localBatchSize;
-        }
 
         public MoesifMiddlewareNetCore(Dictionary<string, object> _middleware)
         {
@@ -139,7 +71,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
-                debug = Debug();
+                debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
             }
             catch (Exception e)
             {
@@ -155,28 +87,24 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
-                debug = Debug();
-                logBody = LogBody();
+                debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+                logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
-                // Create a new instance of AppConfig
-                appConfig = new AppConfig();
+                appConfig = new AppConfig(); // Create a new instance of AppConfig
+                userHelper = new UserHelper(); // Create a new instance of userHelper
+                companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
+                clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+                isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
+                batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
+                queueSize = LoggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Queue Size
+                authorizationHeaderName = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
+                authorizationUserIdField = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
+                samplingPercentage = 100; // Default sampling percentage
+                configETag = null; // Default configETag
+                lastUpdatedTime = DateTime.UtcNow; // Default lastUpdatedTime
+                MoesifQueue = new Queue<EventModel>(); // Initialize queue
 
-                // Enable batching
-                isBatchingEnabled = EnableBatching();
-
-                // Batch Size
-                batchSize = BatchSize();
-
-                // Default configuration values
-                samplingPercentage = 100;
-                configETag = null;
-                lastUpdatedTime = DateTime.UtcNow;
-
-                // Initialize queue
-                MoesifQueue = new Queue<EventModel>();
-
-                // Create a new thread to read the queue and send event to moesif
-                new Thread(async () =>
+                new Thread(async () => // Create a new thread to read the queue and send event to moesif
                 {
                     Thread.CurrentThread.IsBackground = true;
                     try
@@ -190,10 +118,7 @@ namespace Moesif.Middleware.NetCore
                     }
                     catch (Exception ex)
                     {
-                        if (debug)
-                        {
-                            Console.WriteLine("Error while parsing application configuration on initialization");
-                        }
+                        LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
                     }
                     if (isBatchingEnabled)
                     {
@@ -207,57 +132,51 @@ namespace Moesif.Middleware.NetCore
             }
         }
 
-
         private void ScheduleWorker()
         {
-            try
+            new Thread(async () => // Create a new thread to read the queue and send event to moesif
             {
-                var startTimeSpan = TimeSpan.Zero;
-                var periodTimeSpan = TimeSpan.FromSeconds(batchMaxTime);
-                Tasks task = new Tasks();
 
-                eventsWorker = new Timer((e) =>
+                Tasks task = new Tasks();
+                while (true)
                 {
-                    lastWorkerRun = DateTime.UtcNow;
-                    var updatedConfig = task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
-                    (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Result.Item1, updatedConfig.Result.Item2, updatedConfig.Result.Item3, updatedConfig.Result.Item4);
-                }, null, startTimeSpan, periodTimeSpan);
-            }
-            catch (Exception ex)
-            {
-                if (debug)
-                {
-                    Console.WriteLine("Error while scheduling events batch job");
+                    Thread.Sleep(batchMaxTime * 1000);
+                    try
+                    {
+                        lastWorkerRun = DateTime.UtcNow;
+                        var updatedConfig = await task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
+                        (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Item1, updatedConfig.Item2, updatedConfig.Item3, updatedConfig.Item4);
+                    }
+                    catch (Exception ex)
+                    {
+                        LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
+                    }
                 }
-            }
+            }).Start();
         }
 
         // Function to update user
         public void UpdateUser(Dictionary<string, object> userProfile)
         {
-            UserHelper user = new UserHelper();
-            user.UpdateUser(client, userProfile, debug);
+            userHelper.UpdateUser(client, userProfile, debug);
         }
 
         // Function to update users in batch
         public void UpdateUsersBatch(List<Dictionary<string, object>> userProfiles)
         {
-            UserHelper user = new UserHelper();
-            user.UpdateUsersBatch(client, userProfiles, debug);
+            userHelper.UpdateUsersBatch(client, userProfiles, debug);
         }
 
         // Function to update company
         public void UpdateCompany(Dictionary<string, object> companyProfile)
         {
-            CompanyHelper company = new CompanyHelper();
-            company.UpdateCompany(client, companyProfile, debug);
+            companyHelper.UpdateCompany(client, companyProfile, debug);
         }
 
         // Function to update companies in batch
         public void UpdateCompaniesBatch(List<Dictionary<string, object>> companyProfiles)
         {
-            CompanyHelper company = new CompanyHelper();
-            company.UpdateCompaniesBatch(client, companyProfiles, debug);
+            companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
         public async Task Invoke(HttpContext httpContext)
@@ -282,105 +201,21 @@ namespace Moesif.Middleware.NetCore
 
             var response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
 
-            // User Id 
-            var user_out = new object();
-            var getUserId = moesifOptions.TryGetValue("IdentifyUser", out user_out);
-
-            Func<HttpRequest, HttpResponse, string> IdentifyUser = null;
-            if (getUserId)
-            {
-                IdentifyUser = (Func<HttpRequest, HttpResponse, string>)(user_out);
-            }
-
-            // SessionToken
-            var token_out = new object();
-            var getSessionToken = moesifOptions.TryGetValue("GetSessionToken", out token_out);
-
-            Func<HttpRequest, HttpResponse, string> GetSessionToken = null;
-            if (getSessionToken)
-            {
-                GetSessionToken = (Func<HttpRequest, HttpResponse, string>)(token_out);
-            }
-
-            // Get Metadata
-            var metadata_out = new object();
-            var getMetadata = moesifOptions.TryGetValue("GetMetadata", out metadata_out);
-
-            Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMetadata = null;
-
-            if (getMetadata)
-            {
-                GetMetadata = (Func<HttpRequest, HttpResponse, Dictionary<string, object>>)(metadata_out);
-            }
-
             // UserId
-            string userId = null;
-            if (IdentifyUser != null)
+            string userId = httpContext?.User?.Identity?.Name;
+            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            if (string.IsNullOrEmpty(userId))
             {
-                try
-                {
-                    userId = IdentifyUser(httpContext.Request, httpContext.Response);
-                }
-                catch
-                {
-                    Console.WriteLine("Can not execute IdentifyUser function. Please check moesif settings.");
-                }
-            }
-            else 
-            {
-                userId = httpContext?.User?.Identity?.Name;
+                // Fetch userId from authorization header
+                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
             }
 
             // CompanyId
-            var company_out = new object();
-            var getCompanyId = moesifOptions.TryGetValue("IdentifyCompany", out company_out);
-
-            Func<HttpRequest, HttpResponse, string> IdentifyCompany = null;
-            if (getCompanyId)
-            {
-                IdentifyCompany = (Func<HttpRequest, HttpResponse, string>)(company_out);
-            }
-
-            string companyId = null;
-            if (IdentifyCompany != null)
-            {
-                try
-                {
-                    companyId = IdentifyCompany(httpContext.Request, httpContext.Response);
-                }
-                catch
-                {
-                    Console.WriteLine("Can not execute IdentifyCompany function. Please check moesif settings.");
-                }
-            }
-
-            // Session Token
-            string sessionToken = null;
-            if (GetSessionToken != null)
-            {
-                try
-                {
-                    sessionToken = GetSessionToken(httpContext.Request, httpContext.Response);
-                }
-                catch
-                {
-                    Console.WriteLine("Can not execute GetSessionToken function. Please check moesif settings.");
-                }
-            }
-
+            string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            // SessionToken
+            string sessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
             // Metadata
-            Dictionary<string, object> metadata = null;
-            if (GetMetadata != null)
-            {
-                try
-                {
-                    metadata = GetMetadata(httpContext.Request, httpContext.Response);
-                }
-                catch
-                {
-                    Console.WriteLine("Can not execute GetMetadata function. Please check moesif settings.");
-                }
-            }
+            Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
             // Get Skip
             var skip_out = new object();
@@ -398,29 +233,18 @@ namespace Moesif.Middleware.NetCore
             {
                 if (ShouldSkip(httpContext.Request, httpContext.Response))
                 {
-                    if (debug)
-                    {
-                        Console.WriteLine("Skipping the event");
-                    }
+                    LoggerHelper.LogDebugMessage(debug, "Skipping the event");
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        Console.WriteLine("Calling the API to send the event to Moesif");
-                    }
-
+                    LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                     //Send event to Moesif async
                     await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
                 }
             }
             else
             {
-                if (debug)
-                {
-                    Console.WriteLine("Calling the API to send the event to Moesif");
-                }
-
+                LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                 //Send event to Moesif async
                 await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
             }
@@ -428,19 +252,8 @@ namespace Moesif.Middleware.NetCore
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
-            var reqHeaders = new Dictionary<string, string>();
-            try
-            {
-                reqHeaders = request.Headers.ToDictionary(k => k.Key, k => k.Value.ToString(), StringComparer.OrdinalIgnoreCase);
-            }
-            catch (Exception inst)
-            {
-                if (debug)
-                {
-                    Console.WriteLine("error encountered while copying request header");
-                    Console.WriteLine(inst);
-                }
-            }
+            // Request headers
+            var reqHeaders = LoggerHelper.ToHeaders(request.Headers, debug);
 
             // RequestBody
             request.EnableBuffering(bufferThreshold: 1000000);
@@ -450,105 +263,25 @@ namespace Moesif.Middleware.NetCore
             string contentLength = "";
             int parsedContentLength = 100000;
 
-            string body = null;
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
 
-            try
-            {
-                bodyAsText = Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
-                request.Body.Position = 0;
-            }
-            catch (Exception inst)
-            {
-                if (debug)
-                {
-                    Console.WriteLine("Error encountered while copying request body");
-                    Console.WriteLine(inst);
-                }
-            }
+            bodyAsText = LoggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
 
             // Add Transaction Id to the Request Header
-            var transation_id_out = new Object();
-            var captureTransactionId = moesifOptions.TryGetValue("DisableTransactionId", out transation_id_out);
-
-            bool GetCaptureTransactionId = false;
-            if (captureTransactionId)
+            bool disableTransactionId = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
+            if (!disableTransactionId)
             {
-                GetCaptureTransactionId = (bool)(transation_id_out);
+                transactionId = LoggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
+                reqHeaders = LoggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
 
-            if (!GetCaptureTransactionId)
-            {
-                if (reqHeaders.ContainsKey("X-Moesif-Transaction-Id"))
-                {
-                    string reqTransId = reqHeaders["X-Moesif-Transaction-Id"];
-                    if (!string.IsNullOrEmpty(reqTransId))
-                    {
-                        transactionId = reqTransId;
-                        if (string.IsNullOrEmpty(transactionId))
-                        {
-                            transactionId = Guid.NewGuid().ToString();
-                        }
-                    }
-                    else
-                    {
-                        transactionId = Guid.NewGuid().ToString();
-                    }
-                }
-                else
-                {
-                    transactionId = Guid.NewGuid().ToString();
-                }
-                // Add Transaction Id to the Request Header
-                reqHeaders["X-Moesif-Transaction-Id"] = transactionId;
-            }
+            // Serialize request body
+            var bodyWrapper = LoggerHelper.Serialize(bodyAsText, request.ContentType, logBody, debug);
 
-            var reqBody = new object();
-            reqBody = null;
-            string requestTransferEncoding;
-            requestTransferEncoding = null;
-            if (logBody)
-            {
-                try
-                {
-                    reqBody = ApiHelper.JsonDeserialize<object>(bodyAsText);
-                }
-                catch (Exception inst)
-                {
-                    if (debug)
-                    {
-                        Console.WriteLine("About to parse Request body as Base64 encoding");
-                    }
-                    // Get Request Body
-                    reqBody = Base64Encode(bodyAsText);
-                    requestTransferEncoding = "base64";
-                }
-            }
-
-            string ip = null;
-            try
-            {
-                List<string> proxyHeaders = new List<string> { "X-Client-Ip", "X-Forwarded-For","Cf-Connecting-Ip", "True-Client-Ip",
-                "X-Real-Ip", "X-Cluster-Client-Ip", "X-Forwarded", "Forwarded-For", "Forwarded"};
-
-                if (!proxyHeaders.Intersect(reqHeaders.Keys.ToList(), StringComparer.OrdinalIgnoreCase).Any())
-                {
-                    ip = request.HttpContext.Connection.RemoteIpAddress.ToString();
-                }
-                else
-                {
-                    ClientIp helpers = new ClientIp();
-                    ip = helpers.GetClientIp(reqHeaders, request);
-                }
-            }
-            catch (Exception inst)
-            {
-                Console.WriteLine("error encountered while trying to get the client IP address");
-                Console.WriteLine(inst);
-            }
-
+            // Client Ip Address
+            string ip = clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = new Uri(request.GetDisplayUrl()).ToString();
 
             string apiVersion = null;
@@ -567,28 +300,16 @@ namespace Moesif.Middleware.NetCore
                 ApiVersion = apiVersion,
                 IpAddress = ip,
                 Headers = reqHeaders,
-                Body = reqBody,
-                TransferEncoding = requestTransferEncoding
+                Body = bodyWrapper.Item1,
+                TransferEncoding = bodyWrapper.Item2
             };
-
             return (eventReq, transactionId);
         }
 
         private EventResponseModel FormatResponse(HttpResponse response, StreamHelper stream, string transactionId)
         {
-            var rspHeaders = new Dictionary<string, string>();
-            try
-            {
-                rspHeaders = response.Headers.ToDictionary(k => k.Key, k => k.Value.ToString());
-            }
-            catch (Exception inst)
-            {
-                if (debug)
-                {
-                    Console.WriteLine("error encountered while copying response header");
-                    Console.WriteLine(inst);
-                }
-            }
+            // Response headers
+            var rspHeaders = LoggerHelper.ToHeaders(response.Headers, debug);
 
             // ResponseBody
             string contentEncoding = "";
@@ -596,42 +317,19 @@ namespace Moesif.Middleware.NetCore
             string text = stream.ReadStream(contentEncoding);
 
             // Add Transaction Id to Response Header
-            if (!string.IsNullOrEmpty(transactionId))
-            {
-                rspHeaders["X-Moesif-Transaction-Id"] = transactionId;
-            }
+            rspHeaders = LoggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);
 
-            var rspBody = new object();
-            rspBody = null;
-            string responseTransferEncoding;
-            responseTransferEncoding = null;
-            if (logBody)
-            {
-                try
-                {
-                    rspBody = ApiHelper.JsonDeserialize<object>(text);
-                }
-                catch (Exception inst)
-                {
-                    if (debug)
-                    {
-                        Console.WriteLine("About to parse Response body as Base64 encoding");
-                    }
-                    // Get Response body
-                    rspBody = Base64Encode(text);
-                    responseTransferEncoding = "base64";
-                }
-            }
+            // Serialize Response body
+            var responseWrapper = LoggerHelper.Serialize(text, response.ContentType, logBody, debug);
 
             var eventRsp = new EventResponseModel()
             {
                 Time = DateTime.UtcNow,
                 Status = response.StatusCode,
                 Headers = rspHeaders,
-                Body = rspBody,
-                TransferEncoding = responseTransferEncoding
+                Body = responseWrapper.Item1,
+                TransferEncoding = responseWrapper.Item2
             };
-
             return eventRsp;
         }
 
@@ -669,7 +367,7 @@ namespace Moesif.Middleware.NetCore
                 }
                 catch
                 {
-                    Console.WriteLine("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
+                    LoggerHelper.LogDebugMessage(debug, "Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
                 }
             }
 
@@ -687,19 +385,25 @@ namespace Moesif.Middleware.NetCore
 
                     if (isBatchingEnabled)
                     {
-                        if (debug)
+                        LoggerHelper.LogDebugMessage(debug, "Add Event to the batch");
+
+                        if (MoesifQueue.Count < queueSize)
                         {
-                            Console.WriteLine("Add Event to the batch");
-                        }
-                        // Add event to the batch
-                        MoesifQueue.Enqueue(eventModel);
-                        if (eventsWorker == null || (lastWorkerRun.AddMinutes(1) < DateTime.UtcNow))
-                        {
-                            if (debug)
+                            // Add event to the batch
+                            MoesifQueue.Enqueue(eventModel);
+
+                            if (DateTime.Compare(lastWorkerRun, DateTime.MinValue) != 0)
                             {
-                                Console.WriteLine("Scheduling worker thread. lastWorkerRun=" + lastWorkerRun.ToString());
+                                if (lastWorkerRun.AddMinutes(1) < DateTime.UtcNow)
+                                {
+                                    LoggerHelper.LogDebugMessage(debug, "Scheduling worker thread. lastWorkerRun=" + lastWorkerRun.ToString());
+                                    ScheduleWorker();
+                                }
                             }
-                            ScheduleWorker();
+                        }
+                        else
+                        {
+                            LoggerHelper.LogDebugMessage(debug, "Queue is full, skip adding events ");
                         }
                     }
                     else
@@ -723,24 +427,15 @@ namespace Moesif.Middleware.NetCore
                             }
                             catch (Exception ex)
                             {
-                                if (debug)
-                                {
-                                    Console.WriteLine("Error while updating the application configuration");
-                                }
+                                LoggerHelper.LogDebugMessage(debug, "Error while updating the application configuration");
                             }
                         }
-                        if (debug)
-                        {
-                            Console.WriteLine("Event sent successfully to Moesif");
-                        }
+                        LoggerHelper.LogDebugMessage(debug, "Event sent successfully to Moesif");
                     }
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        Console.WriteLine("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
-                    }
+                    LoggerHelper.LogDebugMessage(debug, "Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
                 }
             }
             catch (APIException inst)
@@ -758,5 +453,4 @@ namespace Moesif.Middleware.NetCore
         }
     }
 }
-
 #endif
