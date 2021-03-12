@@ -86,8 +86,8 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.8", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 appConfig = new AppConfig(); // Create a new instance of AppConfig
@@ -135,6 +135,8 @@ namespace Moesif.Middleware.NetCore
 
         private void ScheduleWorker()
         {
+            LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
+
             new Thread(async () => // Create a new thread to read the queue and send event to moesif
             {
 
@@ -145,6 +147,7 @@ namespace Moesif.Middleware.NetCore
                     try
                     {
                         lastWorkerRun = DateTime.UtcNow;
+                        LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
                         var updatedConfig = await task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
                         (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Item1, updatedConfig.Item2, updatedConfig.Item3, updatedConfig.Item4);
                     }
