@@ -3,13 +3,14 @@ using System.Linq;
 using System.Collections.Generic;
 using Moesif.Api;
 using Moesif.Api.Models;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
 namespace Moesif.Middleware.Helpers
 {
     public class Tasks
     {
-        public List<EventModel> QueueGetAll(Queue<EventModel> moesifQueue, int batchSize)
+        public List<EventModel> QueueGetAll(ConcurrentQueue<EventModel> moesifQueue, int batchSize)
         {
             List<EventModel> events = new List<EventModel>();
             foreach (var eventsRetrieved in Enumerable.Range(0, batchSize))
@@ -20,7 +21,12 @@ namespace Moesif.Middleware.Helpers
                     {
                         break;
                     }
-                    events.Add(moesifQueue.Dequeue());
+                    EventModel localEventModel;
+                    moesifQueue.TryDequeue(out localEventModel);
+                    if (localEventModel != null)
+                    {
+                        events.Add(localEventModel);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -31,7 +37,7 @@ namespace Moesif.Middleware.Helpers
             return events;
         }
 
-        public async Task<(Api.Http.Response.HttpStringResponse, String, int, DateTime)> AsyncClientCreateEvent(MoesifApiClient client, Queue<EventModel> MoesifQueue,
+        public async Task<(Api.Http.Response.HttpStringResponse, String, int, DateTime)> AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
             int batchSize, bool debug, Api.Http.Response.HttpStringResponse defaultConfig, string configETag, int samplingPercentage, DateTime lastUpdatedTime,
             AppConfig appConfig)
         {

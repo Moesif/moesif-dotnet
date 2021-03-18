@@ -8,6 +8,7 @@ using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using System.Threading;
+using System.Collections.Concurrent;
 using Moesif.Middleware.Helpers;
 
 #if NETCORE
@@ -51,7 +52,7 @@ namespace Moesif.Middleware.NetCore
 
         public int batchMaxTime; // Time in seconds for next batch
 
-        public Queue<EventModel> MoesifQueue; // Moesif Queue
+        public ConcurrentQueue<EventModel> MoesifQueue; // Moesif Queue
 
         public string authorizationHeaderName; // A request header field name used to identify the User
 
@@ -103,7 +104,7 @@ namespace Moesif.Middleware.NetCore
                 samplingPercentage = 100; // Default sampling percentage
                 configETag = null; // Default configETag
                 lastUpdatedTime = DateTime.UtcNow; // Default lastUpdatedTime
-                MoesifQueue = new Queue<EventModel>(); // Initialize queue
+                MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
                 new Thread(async () => // Create a new thread to read the queue and send event to moesif
                 {
