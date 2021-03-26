@@ -17,12 +17,14 @@ Install the Nuget Package:
 Install-Package Moesif.Middleware
 ```
 
-This SDK supports both .NET Core 2.1 or higher and .NET Framework 4.5 or higher. Jump to installation for your specific framework:
+Jump to installation for your specific framework:
 
-- [.Net Core installation](#net-core-installation)
+- [.Net Core and .NET 5 installation](#net-core-installation)
 - [.NET Framework installation](#net-framework-installation)
 
 ## Net Core installation
+
+> The below installation is intended for .NET 5 or .NET Core 2.1 and higher. For .NET Framework, go to [.NET Framework installation](#net-framework-installation).
 
 In `Startup.cs` file in your project directory, please add `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` to the pipeline.
 
@@ -197,6 +199,8 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 ```
 
 ## NET Framework installation
+
+> The below installation is intended for .NET Framework 4.5 and higher. For .NET 5 or .NET 2.1 and higher, go to [.Net Core / .NET 5 installation](#net-core-installation).
 
 In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddleware>(moesifOptions);` to the pipeline.
 
@@ -643,6 +647,16 @@ An easy way to do that is via `MapWhen`:
     });
 ```
 
+### The response body not logged
+For .NET Core and .NET 5, you will need to set the following option to ensure the response body is logged:
+[More info](https://khalidabuhakmeh.com/dotnet-core-3-dot-0-allowsynchronousio-workaround) on this workaround.
+
+```csharp
+    .ConfigureKestrel((context, options) => {
+        options.AllowSynchronousIO = true;
+    });
+```
+
 ## How to test
 
 1. Manually clone the git repo
@@ -657,6 +671,7 @@ Moesif has validated `Moesif.Middleware` against the following framework.
 
 |                | Framework Version  |
 | -------------- | -----------------  | 
+| .NET |5.0|
 | .NET Core|2.0-3.0|
 | .NET Framework MVC |4.5-4.7|
 | .NET Framework Web API|4.5-4.7|
