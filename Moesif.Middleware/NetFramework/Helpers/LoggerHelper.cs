@@ -145,7 +145,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             await request.Body.CopyToAsync(memoryStream);
             memoryStream.Seek(0L, SeekOrigin.Begin);
             request.Body = memoryStream;
-            return Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
+            return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
         public static void LogDebugMessage(bool debug, String msg) 

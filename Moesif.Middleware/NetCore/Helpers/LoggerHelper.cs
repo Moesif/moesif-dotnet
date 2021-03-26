@@ -148,11 +148,11 @@ namespace Moesif.Middleware.NetCore.Helpers
             return copyHeaders;
         }
 
-        public static string GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug)
+        public static async Task<string> GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug)
         {
             try
             {
-                bodyAsText = Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
+                bodyAsText = await Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
                 request.Body.Position = 0;
             }
             catch (Exception inst)
