@@ -9,7 +9,7 @@ namespace Moesif.Middleware.Helpers
 {
     class Compression
     {
-       public static string UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize)
+       public static async Task<string> UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize)
         {
             if (!memoryStream.CanRead)
             {
@@ -29,7 +29,7 @@ namespace Moesif.Middleware.Helpers
                             bufferSize: bufferSize,
                             leaveOpen: true))
                         {
-                            bodyString = readStream.ReadToEnd();
+                            bodyString = await readStream.ReadToEndAsync();
                         }
                     }
                 }
@@ -41,7 +41,7 @@ namespace Moesif.Middleware.Helpers
                             bufferSize: bufferSize,
                             leaveOpen: true))
                     {
-                        bodyString = readStream.ReadToEnd();
+                        bodyString = await readStream.ReadToEndAsync();
                     }
                 }
             }
@@ -53,7 +53,7 @@ namespace Moesif.Middleware.Helpers
                             bufferSize: bufferSize,
                             leaveOpen: true))
                 {
-                    bodyString = readStream.ReadToEnd();
+                    bodyString = await readStream.ReadToEndAsync();
                 }
             }
 

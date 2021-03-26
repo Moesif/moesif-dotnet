@@ -272,7 +272,7 @@ namespace Moesif.Middleware.NetCore
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
 
-            bodyAsText = LoggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+            bodyAsText = await LoggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
 
             // Add Transaction Id to the Request Header
             bool disableTransactionId = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
