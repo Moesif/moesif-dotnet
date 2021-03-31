@@ -107,10 +107,10 @@ _boolean_, set to true to print internal log messages for debugging SDK integrat
 _boolean_, default true. Set to false to not log the request and response body to Moesif.
 
 #### __`EnableBatching`__
-_boolean_, set to true for queuing sending data to Moesif.
+_boolean_, default true. When true, the SDK will queue the events and send them in batches for performance. This can be set to false for debugging reasons or for certain serverless applications.
 
 #### __`AuthorizationHeaderName`__
-(optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
+(optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma-separated string. We will check headers in order like "X-Api-Key,Authorization".
 
 #### __`AuthorizationUserIdField`__
 (optional), _string_, Field name in JWT/OpenId token's payload for identifying users. Only applicable if authorization_header_name is set and is a Bearer token.
@@ -184,17 +184,11 @@ public static Func<HttpRequest, HttpResponse, Dictionary<string, object>> GetMet
 static public Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 {
     {"ApplicationId", "Your Moesif Application Id"},
-    {"LocalDebug", true},
-    {"LogBody", true},
-    {"LogBodyOutgoing", true},
     {"ApiVersion", "1.1.0"},
     {"IdentifyUser", IdentifyUser},
     {"IdentifyCompany", IdentifyCompany},
     {"GetSessionToken", GetSessionToken},
-    {"GetMetadata", GetMetadata},
-    {"GetMetadataOutgoing", GetMetadataOutgoing},
-    {"EnableBatching", false},
-    {"BatchSize", 25}
+    {"GetMetadata", GetMetadata}
 };
 ```
 
