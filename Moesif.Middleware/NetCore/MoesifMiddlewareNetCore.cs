@@ -114,19 +114,6 @@ namespace Moesif.Middleware.NetCore
                 new Thread(async () => // Create a new thread to read the queue and send event to moesif
                 {
                     Thread.CurrentThread.IsBackground = true;
-                    try
-                    {
-                        // Get Application config
-                        config = await appConfig.getConfig(client, debug);
-                        if (!string.IsNullOrEmpty(config.ToString()))
-                        {
-                            (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
-                    }
                     if (isBatchingEnabled)
                     {
                         ScheduleWorker();
@@ -153,7 +140,6 @@ namespace Moesif.Middleware.NetCore
                 Tasks task = new Tasks();
                 while (true)
                 {
-                    Thread.Sleep(appConfigSyncTime * 1000);
                     try
                     {
                         lastAppConfigWorkerRun = DateTime.UtcNow;
@@ -176,6 +162,7 @@ namespace Moesif.Middleware.NetCore
                     {
                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
                     }
+                    Thread.Sleep(appConfigSyncTime * 1000);
                 }
             }).Start();
         }

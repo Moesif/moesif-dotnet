@@ -97,8 +97,6 @@ namespace Moesif.Middleware.NetFramework
                 new Thread(async () => // Create a new thread to read the queue and send event to moesif
                 {
                     Thread.CurrentThread.IsBackground = true;
-                    var initConfig = await appConfig.GetAppConfig(configETag, samplingPercentage, lastUpdatedTime, client, debug);
-                    (config, configETag, samplingPercentage, lastUpdatedTime) = (initConfig.Item1, initConfig.Item2, initConfig.Item3, initConfig.Item4);
                     if (isBatchingEnabled)
                     {
                         ScheduleWorker();
@@ -125,7 +123,6 @@ namespace Moesif.Middleware.NetFramework
                 Tasks task = new Tasks();
                 while (true)
                 {
-                    Thread.Sleep(appConfigSyncTime * 1000);
                     try
                     {
                         lastAppConfigWorkerRun = DateTime.UtcNow;
@@ -148,6 +145,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
                     }
+                    Thread.Sleep(appConfigSyncTime * 1000);
                 }
             }).Start();
         }
