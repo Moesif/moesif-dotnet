@@ -106,9 +106,6 @@ _boolean_, set to true to print internal log messages for debugging SDK integrat
 #### __`LogBody`__
 _boolean_, default true. Set to false to not log the request and response body to Moesif.
 
-#### __`EnableBatching`__
-_boolean_, default true. When true, the SDK will queue the events and send them in batches for performance. This can be set to false for debugging reasons or for certain serverless applications.
-
 #### __`AuthorizationHeaderName`__
 (optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma-separated string. We will check headers in order like "X-Api-Key,Authorization".
 
@@ -299,9 +296,6 @@ _boolean_, set to true to print internal log messages for debugging SDK integrat
 #### __`LogBody`__
 _boolean_, default true. Set to false to not log the request and response body to Moesif.
 
-#### __`EnableBatching`__
-_boolean_, set to true for queuing sending data to Moesif.
-
 #### __`AuthorizationHeaderName`__
 (optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
 
@@ -385,7 +379,6 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
     {"IdentifyCompany", IdentifyCompany},
     {"GetSessionToken", GetSessionToken},
     {"GetMetadata", GetMetadata},
-    {"EnableBatching", false},
     {"BatchSize", 25}
 };
 ```
