@@ -51,6 +51,8 @@ namespace Moesif.Middleware.NetFramework
 
         public int batchMaxTime; // Time in seconds for next batch
 
+        public int appConfigSyncTime; // Time in seconds to sync application configuration
+
         public ConcurrentQueue<EventModel> MoesifQueue; // Moesif Queue
 
         public string authorizationHeaderName; // A request header field name used to identify the User
@@ -62,6 +64,8 @@ namespace Moesif.Middleware.NetFramework
         public bool logBody;
 
         public DateTime lastWorkerRun = DateTime.MinValue;
+
+        public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
         {
@@ -77,6 +81,7 @@ namespace Moesif.Middleware.NetFramework
                 batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
                 queueSize = LoggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
                 batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
+                appConfigSyncTime = LoggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 appConfig = new AppConfig(); // Create a new instance of AppConfig
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
@@ -92,11 +97,13 @@ namespace Moesif.Middleware.NetFramework
                 new Thread(async () => // Create a new thread to read the queue and send event to moesif
                 {
                     Thread.CurrentThread.IsBackground = true;
-                    var initConfig = await appConfig.GetAppConfig(configETag, samplingPercentage, lastUpdatedTime, client, debug);
-                    (config, configETag, samplingPercentage, lastUpdatedTime) = (initConfig.Item1, initConfig.Item2, initConfig.Item3, initConfig.Item4);
                     if (isBatchingEnabled)
                     {
                         ScheduleWorker();
+                    }
+                    else
+                    {
+                        ScheduleAppConfig(); // Scheduler to fetch application configuration every 5 minutes
                     }
                 }).Start();
             }
@@ -104,6 +111,43 @@ namespace Moesif.Middleware.NetFramework
             {
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
+        }
+
+        private void ScheduleAppConfig()
+        {
+            LoggerHelper.LogDebugMessage(debug, "Starting a new thread to sync the application configuration");
+
+            new Thread(async () => // Create a new thread to fetch the application configuration
+            {
+
+                Tasks task = new Tasks();
+                while (true)
+                {
+                    try
+                    {
+                        lastAppConfigWorkerRun = DateTime.UtcNow;
+                        LoggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                        try
+                        {
+                            // Get Application config
+                            config = await appConfig.getConfig(client, debug);
+                            if (!string.IsNullOrEmpty(config.ToString()))
+                            {
+                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
+                    }
+                    Thread.Sleep(appConfigSyncTime * 1000);
+                }
+            }).Start();
         }
 
         private void ScheduleWorker() 
@@ -186,27 +230,6 @@ namespace Moesif.Middleware.NetFramework
 
             await Next.Invoke(httpContext);
 
-            // Select stream to use 
-            StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
-           
-            // Prepare Moesif Event Response model
-            var response = ToResponse(httpContext.Response, streamToUse, transactionId);
-
-            // UserId
-            string userId = httpContext?.Authentication?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
-            if (string.IsNullOrEmpty(userId))
-            {
-                // Fetch userId from authorization header
-                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
-            }
-            // CompanyId
-            string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
-            // SessionToken
-            string sessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
-            // Metadata
-            Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
-
             // Get Skip
             var skip_out = new object();
             var getSkip = moesifOptions.TryGetValue("Skip", out skip_out);
@@ -225,6 +248,27 @@ namespace Moesif.Middleware.NetFramework
             }
             else
             {
+                // Select stream to use 
+                StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
+            
+                // Prepare Moesif Event Response model
+                var response = ToResponse(httpContext.Response, streamToUse, transactionId);
+
+                // UserId
+                string userId = httpContext?.Authentication?.User?.Identity?.Name;
+                userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    // Fetch userId from authorization header
+                    userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                }
+                // CompanyId
+                string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                // SessionToken
+                string sessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                // Metadata
+                Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+
                 LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                 await Task.Run(async () => await LogEventAsync(request, response, userId, companyId, sessionToken, metadata));
             }
@@ -386,17 +430,8 @@ namespace Moesif.Middleware.NetFramework
                             LoggerHelper.LogDebugMessage(debug, "Queue is full, skip adding events ");
                         }
                     } else {
-                        var createEventResponse = await client.Api.CreateEventAsync(eventModel);
-                        var eventResponseConfigETag = createEventResponse["X-Moesif-Config-ETag"];
-
-                        if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
-                            !(string.IsNullOrEmpty(configETag)) &&
-                            configETag != eventResponseConfigETag &&
-                            DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
-                        {
-                            var updatedConfig = await appConfig.GetAppConfig(configETag, samplingPercentage, lastUpdatedTime, client, debug);
-                            (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Item1, updatedConfig.Item2, updatedConfig.Item3, updatedConfig.Item4);
-                        }
+                        await client.Api.CreateEventAsync(eventModel);
+                        
                         LoggerHelper.LogDebugMessage(debug, "Event sent successfully to Moesif");
                     }
                 }
