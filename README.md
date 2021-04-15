@@ -197,6 +197,8 @@ In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddle
 
 To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware. 
 
+> If your app uses Windows Communication Foundation (WCF), set [DisableStreamOverride](#DisableStreamOverride) to true
+
 Add the middleware to your application:
 
 ```csharp
@@ -295,6 +297,9 @@ _boolean_, set to true to print internal log messages for debugging SDK integrat
 
 #### __`LogBody`__
 _boolean_, default true. Set to false to not log the request and response body to Moesif.
+
+#### __`DisableStreamOverride`__
+_boolean_, Set to true to disable overriding the request body stream. This is required if your app is using Windows Communication Foundation (WCF). Otherwise, you may experience issues when your business logic accesses the request body. 
 
 #### __`AuthorizationHeaderName`__
 (optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
@@ -619,10 +624,26 @@ moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 
 ## Troubleshooting
 
-### Legacy website broken/Can I activate on API only?
-If your .NET app is a traditional monolith consisting of both an API and website, you can choose to activate the middleware
-on just your API only. Some legacy apps may have delicate and custom middleware chains. 
-An easy way to do that is via `MapWhen`:
+### Issue reading request body in WCF
+Certain serializers for Windows Communication Foundation (WCF) may not correctly bind the request body when using logging middleware like Moesif.
+If your app uses Windows Communication Foundation (WCF), you may find that your business logic has errors accessing the request body such as for `POST` and `PUT` requests.
+
+To fix, set the option `DisableStreamOverride` to true like so:
+
+```csharp
+Dictionary<string, object> moesifOptions = new Dictionary<string, object>
+{
+    {"ApplicationId", "Your Moesif Application Id"},
+    {"DisableStreamOverride", true},
+};
+```
+
+### Traditional monolith website broken
+Some monolith apps which contain both a website and an API in the same app may issues when API logging middleware is enabled.
+This is usually due to interactions with other custom middleware. 
+
+Since usually this custom middleware is enabled for the website only, the recommended fix is to enable Moesif only for your API.
+To do, use the `MapWhen` as shown below which only activates the middleware if the Path contains `/api`
 
 ```csharp
     app.MapWhen(context => context.Request.Path.ToString().Contains("/api"), appBuilder =>
