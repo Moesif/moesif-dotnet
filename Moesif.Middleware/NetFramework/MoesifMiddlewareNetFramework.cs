@@ -45,7 +45,7 @@ namespace Moesif.Middleware.NetFramework
 
         public bool isBatchingEnabled; // Enable Batching
 
-        public bool resetRequestBodyPosition; // Reset Request Body position
+        public bool disableStreamOverride; // Reset Request Body position
 
         public int batchSize; // Queue batch size
 
@@ -80,7 +80,7 @@ namespace Moesif.Middleware.NetFramework
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.8", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
-                resetRequestBodyPosition = LoggerHelper.GetConfigBoolValues(moesifOptions, "ResetRequestBodyPosition", false); // Reset Request Body position
+                disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
                 batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
                 queueSize = LoggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
                 batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
@@ -293,7 +293,7 @@ namespace Moesif.Middleware.NetFramework
             int.TryParse(contentLength, out parsedContentLength);
             try
             { 
-                body = await LoggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, resetRequestBodyPosition);
+                body = await LoggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
             }
             catch 
             {
