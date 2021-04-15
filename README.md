@@ -197,7 +197,7 @@ In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddle
 
 To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware. 
 
-> If your app uses Windows Communication Foundation (WCF), set [DisableStreamOverride](#DisableStreamOverride) to true
+> If your app uses Windows Communication Foundation (WCF), set [DisableStreamOverride](#disablestreamoverride) to true
 
 Add the middleware to your application:
 
@@ -628,7 +628,7 @@ moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
 Certain serializers for Windows Communication Foundation (WCF) may not correctly bind the request body when using logging middleware like Moesif.
 If your app uses Windows Communication Foundation (WCF), you may find that your business logic has errors accessing the request body such as for `POST` and `PUT` requests.
 
-To fix, set the option `DisableStreamOverride` to true like so:
+To fix, set the option [DisableStreamOverride](#disablestreamoverride) to true like so:
 
 ```csharp
 Dictionary<string, object> moesifOptions = new Dictionary<string, object>
