@@ -134,7 +134,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return null;
         }
 
-        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize)
+        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
         {
             if (request == null || request.Body == null || !request.Body.CanRead)
             {
@@ -144,7 +144,12 @@ namespace Moesif.Middleware.NetFramework.Helpers
             var memoryStream = new MemoryStream();
             await request.Body.CopyToAsync(memoryStream);
             memoryStream.Seek(0L, SeekOrigin.Begin);
-            request.Body = memoryStream;
+            if (disableStreamOverride) {
+                request.Body.Position = 0;
+            }
+            else {
+                request.Body = memoryStream;
+            }
             return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
