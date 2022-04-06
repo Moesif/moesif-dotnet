@@ -665,6 +665,9 @@ For .NET Core and .NET 5, you will need to set the following option to ensure th
     });
 ```
 
+## Ensuring Errors handled by ExceptionHandler are logged
+To capture the API calls handled by ExceptionHandler, please ensure that the `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` is before the `app.UseExceptionHandler()` in the pipeline. 
+
 ## How to test
 
 1. Manually clone the git repo
