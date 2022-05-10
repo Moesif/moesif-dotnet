@@ -75,9 +75,16 @@ namespace Moesif.NetCore.Test
             return false;
         };
 
-        public static Func<EventModel, EventModel> MaskEventModelOutgoing = (EventModel event_model) => {
-            event_model.UserId = "masked_user_id";
-            return event_model;
+        public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEvent) =>
+        {
+            Dictionary<String, String> eventRequestHeaders = moesifEvent.Request.Headers;
+            bool keyExists = eventRequestHeaders.ContainsKey("Authorization");
+            if (keyExists)
+            {
+                eventRequestHeaders.Remove("Authorization");
+            };
+
+            return moesifEvent;
         };
 
         public MoesifNetCoreTest() {
