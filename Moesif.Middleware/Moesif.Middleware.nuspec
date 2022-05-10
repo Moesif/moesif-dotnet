@@ -13,7 +13,7 @@
     <description>.NET Middleware to log API Calls to Moesif API Analytics and Monitoring</description>
     <summary />
     <releaseNotes />
-    <copyright>Copyright 2021</copyright>
+    <copyright>Copyright 2022</copyright>
     <language>en-US</language>
 	<tags>azure web app moesif API analytics insights debug debugging log logging apm performance monitor monitoring restful rest graphql ethereum web3 json-rpc soap net java node python php go golang ruby microsoft</tags>
 	<dependencies>

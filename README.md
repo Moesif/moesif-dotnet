@@ -97,6 +97,20 @@ to add custom metadata that will be associated with the event. The metadata must
 #### __`MaskEventModel`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif CSharp API Documentation](https://www.moesif.com/docs/api?csharp#).
 
+```csharp
+public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEvent) =>
+{
+    Dictionary<String, String> eventRequestHeaders = moesifEvent.Request.Headers;
+    bool keyExists = eventRequestHeaders.ContainsKey("Authorization");
+    if (keyExists)
+    {
+        eventRequestHeaders.Remove("Authorization");
+    };
+
+    return moesifEvent;
+};
+```
+
 #### __`ApiVersion`__
 (optional), _string_, API version associated with this particular event.
 
@@ -288,6 +302,20 @@ to add custom metadata that will be associated with the event. The metadata must
 
 #### __`MaskEventModel`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif CSharp API Documentation](https://www.moesif.com/docs/api?csharp#).
+
+```csharp
+public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEvent) =>
+{
+    Dictionary<String, String> eventRequestHeaders = moesifEvent.Request.Headers;
+    bool keyExists = eventRequestHeaders.ContainsKey("Authorization");
+    if (keyExists)
+    {
+        eventRequestHeaders.Remove("Authorization");
+    };
+
+    return moesifEvent;
+};
+```
 
 #### __`ApiVersion`__
 (optional), _string_, api version associated with this particular event.
