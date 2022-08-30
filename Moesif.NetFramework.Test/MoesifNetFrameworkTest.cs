@@ -12,6 +12,8 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using Moesif.Middleware.Helpers;
 using NUnit.Framework;
+using Moesif.Api;
+using Moesif.Middleware.Models;
 
 namespace Moesif.NetFramework.Test
 {
@@ -251,5 +253,222 @@ namespace Moesif.NetFramework.Test
 
             moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
         }
+
+        [Test()]
+        public void It_Should_Return_Sampling_rate_From_Regex()
+        {
+            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 80 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[{'conditions':[{'path':'request.route','value':'/.*'}],'sample_rate':80}],'billing_config_jsons':{}}";
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
+            var eventReq = new EventRequestModel()
+            {
+                Time = DateTime.UtcNow,
+                Uri = "https://www.google.com/search",
+                Verb = "GET",
+                ApiVersion = null,
+                IpAddress = null,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = 200,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventModel = new EventModel()
+            {
+                Request = eventReq,
+                Response = eventRsp,
+                UserId = "user_1234",
+                CompanyId = "company_1234",
+                SessionToken = "xxxx",
+                Metadata = new Dictionary<string, string>(),
+                Direction = "Outgoing"
+            };
+
+            var requestMap = RequestMapHelper.createRequestMap(eventModel);
+            int sample_rate = AppConfigHelper.getSamplingPercentage(appConfig, requestMap);
+            Assert.AreEqual(sample_rate, 80);
+        
+        }
+
+        [Test()]
+        public void It_Should_Return_Smallest_Sampling_rate_From_multi_Regex_Match()
+        {
+            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 80 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[{'conditions':[{'path':'request.route','value':'/.*'}],'sample_rate':80},{\"conditions\":[{\"path\":\"response.status\",\"value\":\"200\"}],\"sample_rate\":50}],'billing_config_jsons':{}}";
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
+            var eventReq = new EventRequestModel()
+            {
+                Time = DateTime.UtcNow,
+                Uri = "https://www.google.com/search",
+                Verb = "GET",
+                ApiVersion = null,
+                IpAddress = null,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = 200,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventModel = new EventModel()
+            {
+                Request = eventReq,
+                Response = eventRsp,
+                UserId = "user_1234",
+                CompanyId = "company_1234",
+                SessionToken = "xxxx",
+                Metadata = new Dictionary<string, string>(),
+                Direction = "Outgoing"
+            };
+
+            var requestMap = RequestMapHelper.createRequestMap(eventModel);
+            int sample_rate = AppConfigHelper.getSamplingPercentage(appConfig, requestMap);
+            Assert.AreEqual(sample_rate, 50);
+
+        }
+
+        [Test()]
+        public void It_Should_Return_Sampling_rate_From_User()
+        {
+            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 70 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
+            var eventReq = new EventRequestModel()
+            {
+                Time = DateTime.UtcNow,
+                Uri = "https://www.google.com/search",
+                Verb = "GET",
+                ApiVersion = null,
+                IpAddress = null,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = 200,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventModel = new EventModel()
+            {
+                Request = eventReq,
+                Response = eventRsp,
+                UserId = "user_1234",
+                CompanyId = "company_1234",
+                SessionToken = "xxxx",
+                Metadata = new Dictionary<string, string>(),
+                Direction = "Outgoing"
+            };
+
+            var requestMap = RequestMapHelper.createRequestMap(eventModel);
+            int sample_rate = AppConfigHelper.getSamplingPercentage(appConfig, requestMap);
+            Assert.AreEqual(sample_rate, 70);
+
+        }
+
+        [Test()]
+        public void It_Should_Return_Sampling_rate_From_Company()
+        {
+            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{},'company_sample_rate':{'company_1234': 60},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
+            var eventReq = new EventRequestModel()
+            {
+                Time = DateTime.UtcNow,
+                Uri = "https://www.google.com/search",
+                Verb = "GET",
+                ApiVersion = null,
+                IpAddress = null,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = 200,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventModel = new EventModel()
+            {
+                Request = eventReq,
+                Response = eventRsp,
+                UserId = "user_1234",
+                CompanyId = "company_1234",
+                SessionToken = "xxxx",
+                Metadata = new Dictionary<string, string>(),
+                Direction = "Outgoing"
+            };
+
+            var requestMap = RequestMapHelper.createRequestMap(eventModel);
+            int sample_rate = AppConfigHelper.getSamplingPercentage(appConfig, requestMap);
+            Assert.AreEqual(sample_rate, 60);
+
+        }
+
+        [Test()]
+        public void It_Should_Return_Sampling_rate_From_Global()
+        {
+            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{},'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
+            var eventReq = new EventRequestModel()
+            {
+                Time = DateTime.UtcNow,
+                Uri = "https://www.google.com/search",
+                Verb = "GET",
+                ApiVersion = null,
+                IpAddress = null,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = 200,
+                Headers = new Dictionary<string, string>(),
+                Body = null,
+                TransferEncoding = null
+            };
+
+            var eventModel = new EventModel()
+            {
+                Request = eventReq,
+                Response = eventRsp,
+                UserId = "user_1234",
+                CompanyId = "company_1234",
+                SessionToken = "xxxx",
+                Metadata = new Dictionary<string, string>(),
+                Direction = "Outgoing"
+            };
+
+            var requestMap = RequestMapHelper.createRequestMap(eventModel);
+            int sample_rate = AppConfigHelper.getSamplingPercentage(appConfig, requestMap);
+            Assert.AreEqual(sample_rate, 95);
+
+        }
     }
+
+  
 }
