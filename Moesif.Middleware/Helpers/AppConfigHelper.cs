@@ -37,11 +37,11 @@ namespace Moesif.Middleware.Helpers
                     Console.WriteLine(inst.ResponseCode);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 if (debug)
                 {
-                    Console.WriteLine("Error while parsing the configuration object, setting the sample rate to default.");
+                    Console.WriteLine("Error while parsing the configuration object, setting the sample rate to default. " + e.StackTrace);
                 }
             }
             return appConfig;

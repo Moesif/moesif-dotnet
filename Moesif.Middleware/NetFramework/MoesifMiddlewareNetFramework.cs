@@ -112,28 +112,19 @@ namespace Moesif.Middleware.NetFramework
 
             new Thread(async () => // Create a new thread to fetch the application configuration
             {
-
-                Tasks task = new Tasks();
                 while (true)
                 {
+                    lastAppConfigWorkerRun = DateTime.UtcNow;
+                    LoggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
                     try
                     {
-                        lastAppConfigWorkerRun = DateTime.UtcNow;
-                        LoggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
-                        try
-                        {
-                            // Get Application config
-                            config = await AppConfigHelper.getConfig(client, config, debug);
-                      
-                        }
-                        catch (Exception)
-                        {
-                            LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
-                        }
+                        // Get Application config
+                        config = await AppConfigHelper.getConfig(client, config, debug);
+
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
+                        LoggerHelper.LogDebugMessage(debug, "Error getting appConfig " + e.StackTrace);
                     }
                     Thread.Sleep(appConfigSyncTime * 1000);
                 }
@@ -157,9 +148,9 @@ namespace Moesif.Middleware.NetFramework
                     config = await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
                    
                 }
-                catch (Exception)
+                catch (Exception e)
                       {
-                    LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
+                    LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job " + e.StackTrace);
                 }
               }
               }).Start();

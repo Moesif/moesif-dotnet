@@ -66,11 +66,11 @@ namespace Moesif.Middleware.Helpers
                                 appConfig = await AppConfigHelper.getConfig(client, prevConfig, debug);
                               
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
                                 if (debug)
                                 {
-                                    Console.WriteLine("Error while updating the application configuration");
+                                    Console.WriteLine("Error while updating the application configuration " + e.StackTrace);
                                 }
                             }
                         }
@@ -79,11 +79,11 @@ namespace Moesif.Middleware.Helpers
                             Console.WriteLine("Events sent successfully to Moesif");
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         if (debug)
                         {
-                            Console.WriteLine("Could not connect to Moesif server.");
+                            Console.WriteLine("Could not connect to Moesif server." + e.StackTrace);
                         }
                     }
                 }
