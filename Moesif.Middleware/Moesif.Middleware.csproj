@@ -38,6 +38,7 @@
     <Folder Include="Properties\" />
     <Folder Include="NetFramework\" />
     <Folder Include="NetFramework\Helpers\" />
+    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Helpers\ClientIp.cs" />

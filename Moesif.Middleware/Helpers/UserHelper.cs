@@ -136,7 +136,7 @@ namespace Moesif.Middleware.Helpers
                 bool hasClaim = newToken.Claims.Any(c => c.Type == field);
                 return hasClaim ? newToken.Claims.First(c => c.Type == field).Value : null;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return null;
             }
@@ -188,7 +188,7 @@ namespace Moesif.Middleware.Helpers
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return null;
             }

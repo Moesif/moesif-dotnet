@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using Moesif.Api;
 using Moesif.Api.Exceptions;
 using Moesif.Api.Models;
+using Moesif.Middleware.Models;
 using System.Linq;
+using System.ComponentModel.Design;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -29,21 +31,8 @@ namespace Moesif.Middleware.Helpers
 
         public bool logBodyOutgoing;
 
-        // Initialize config dictionary
-        public AppConfig appConfig;
-
-        // Initialized config response
-        public Api.Http.Response.HttpStringResponse config;
-
-        // App Config samplingPercentage
-        public int samplingPercentage;
-
-        // App Config configETag
-        public string configETag;
-
-        // App Config lastUpdatedTime
-        public DateTime lastUpdatedTime;
-
+        public AppConfig config;
+       
         public static string Base64Encode(string plainText)
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -91,11 +80,7 @@ namespace Moesif.Middleware.Helpers
                 debug = Debug(); 
                 logBodyOutgoing = LogBodyOutgoing();
                 // Create a new instance of AppConfig
-                appConfig = new AppConfig();
-                // Default configuration values
-                samplingPercentage = 100;
-                configETag = null;
-                lastUpdatedTime = DateTime.UtcNow;
+                config = AppConfig.getDefaultAppConfig();
 
                 // Create a new thread to get the application config
                 new Thread(async () =>
@@ -104,13 +89,10 @@ namespace Moesif.Middleware.Helpers
                     try
                     {
                         // Get Application config
-                        config = await appConfig.getConfig(client, debug);
-                        if (!string.IsNullOrEmpty(config.ToString()))
-                        {
-                            (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                        }
+                        config = await AppConfigHelper.getConfig(client, config, debug);
+                  
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         if (debug)
                         {
@@ -120,7 +102,7 @@ namespace Moesif.Middleware.Helpers
                 }).Start();
 
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
@@ -203,7 +185,7 @@ namespace Moesif.Middleware.Helpers
                     reqBody = ApiHelper.JsonDeserialize<object>(requestBody);
                     requestTransferEncoding = "json";
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     if (debug)
                     {
@@ -247,7 +229,7 @@ namespace Moesif.Middleware.Helpers
                     rspBody = ApiHelper.JsonDeserialize<object>(responseBody);
                     responseTransferEncoding = "json";
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     if (debug)
                     {
@@ -408,34 +390,32 @@ namespace Moesif.Middleware.Helpers
             // Send Event
             try
             {
+                RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
+
                 // Get Sampling percentage
-                samplingPercentage = appConfig.getSamplingPercentage(config, eventModel.UserId, eventModel.CompanyId);
+                var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
                 {
-
-                    eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
+                    eventModel.Weight = AppConfigHelper.calculateWeight(samplingPercentage);
 
                     var createEventResponse = await client.Api.CreateEventAsync(eventModel);
                     var eventResponseConfigETag = createEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
 
                     if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
-                        !(string.IsNullOrEmpty(configETag)) &&
-                        configETag != eventResponseConfigETag &&
-                        DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
+                        !(string.IsNullOrEmpty(config.etag)) &&
+                        config.etag != eventResponseConfigETag &&
+                        DateTime.UtcNow > config.lastUpdatedTime.AddMinutes(5))
                     {
                         try
                         {
                             // Get Application config
-                            config = await appConfig.getConfig(client, debug);
-                            if (!string.IsNullOrEmpty(config.ToString()))
-                            {
-                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                            }
+                            config = await AppConfigHelper.getConfig(client, config, debug);
+                      
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             if (debug)
                             {

@@ -10,6 +10,7 @@ using Moesif.Api.Exceptions;
 using System.Threading;
 using System.Collections.Concurrent;
 using Moesif.Middleware.Helpers;
+using Moesif.Middleware.Models;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -28,7 +29,7 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifApiClient client;
 
-        public AppConfig appConfig; // Initialize config dictionary
+        public AppConfigHelper appConfigHelper; // Initialize config dictionary
 
         public UserHelper userHelper; // Initialize user helper
 
@@ -36,13 +37,7 @@ namespace Moesif.Middleware.NetCore
 
         public ClientIp clientIpHelper; // Initialize client ip helper
 
-        public Api.Http.Response.HttpStringResponse config; // Initialized config response
-
-        public int samplingPercentage; // App Config samplingPercentage
-
-        public string configETag; // App Config configETag
-
-        public DateTime lastUpdatedTime; // App Config lastUpdatedTime
+        public AppConfig config;
 
         public bool isBatchingEnabled; // Enable Batching
 
@@ -78,7 +73,7 @@ namespace Moesif.Middleware.NetCore
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
@@ -95,7 +90,7 @@ namespace Moesif.Middleware.NetCore
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.8", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
-                appConfig = new AppConfig(); // Create a new instance of AppConfig
+                config = AppConfig.getDefaultAppConfig();
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -106,9 +101,6 @@ namespace Moesif.Middleware.NetCore
                 appConfigSyncTime = LoggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 authorizationHeaderName = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
                 authorizationUserIdField = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
-                samplingPercentage = 100; // Default sampling percentage
-                configETag = null; // Default configETag
-                lastUpdatedTime = DateTime.UtcNow; // Default lastUpdatedTime
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
                 new Thread(async () => // Create a new thread to read the queue and send event to moesif
@@ -124,7 +116,7 @@ namespace Moesif.Middleware.NetCore
                     }
                 }).Start();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
@@ -147,18 +139,14 @@ namespace Moesif.Middleware.NetCore
                         try
                         {
                             // Get Application config
-                            config = await appConfig.getConfig(client, debug);
-                            if (!string.IsNullOrEmpty(config.ToString()))
-                            {
-                                (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                            }
-                        }
-                        catch (Exception ex)
+                            config = await AppConfigHelper.getConfig(client, config, debug);
+                                                 }
+                        catch (Exception)
                         {
                             LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
                     }
@@ -182,10 +170,9 @@ namespace Moesif.Middleware.NetCore
                     {
                         lastWorkerRun = DateTime.UtcNow;
                         LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
-                        var updatedConfig = await task.AsyncClientCreateEvent(client, MoesifQueue, batchSize, debug, config, configETag, samplingPercentage, lastUpdatedTime, appConfig);
-                        (config, configETag, samplingPercentage, lastUpdatedTime) = (updatedConfig.Item1, updatedConfig.Item2, updatedConfig.Item3, updatedConfig.Item4);
+                        config = await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
                     }
@@ -404,13 +391,14 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Get Sampling percentage
-                samplingPercentage = appConfig.getSamplingPercentage(config, userId, companyId);
+                RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
+                var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
                 {
-                    eventModel.Weight = appConfig.calculateWeight(samplingPercentage);
+                    eventModel.Weight = AppConfigHelper.calculateWeight(samplingPercentage);
 
                     if (isBatchingEnabled)
                     {

@@ -5,6 +5,7 @@ using Moesif.Api;
 using Moesif.Api.Models;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Moesif.Middleware.Models;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -28,7 +29,7 @@ namespace Moesif.Middleware.Helpers
                         events.Add(localEventModel);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     break;
                 }
@@ -37,11 +38,11 @@ namespace Moesif.Middleware.Helpers
             return events;
         }
 
-        public async Task<(Api.Http.Response.HttpStringResponse, String, int, DateTime)> AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
-            int batchSize, bool debug, Api.Http.Response.HttpStringResponse defaultConfig, string configETag, int samplingPercentage, DateTime lastUpdatedTime,
-            AppConfig appConfig)
+        public async Task<AppConfig> AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
+            AppConfig prevConfig, int batchSize, bool debug)
         {
             List<EventModel> batchEvents = new List<EventModel>();
+            var appConfig = prevConfig;
 
             while (MoesifQueue.Count > 0)
             {
@@ -54,28 +55,22 @@ namespace Moesif.Middleware.Helpers
                         // Send Batch Request
                         var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
                         var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
-
                         if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
-                            !(string.IsNullOrEmpty(configETag)) &&
-                            configETag != batchEventResponseConfigETag &&
-                            DateTime.UtcNow > lastUpdatedTime.AddMinutes(5))
+                            !(string.IsNullOrEmpty(prevConfig.etag)) &&
+                            prevConfig.etag != batchEventResponseConfigETag &&
+                            DateTime.UtcNow > prevConfig.lastUpdatedTime.AddMinutes(5))
                         {
                             try
                             {
-                                Api.Http.Response.HttpStringResponse config;
                                 // Get Application config
-                                config = await appConfig.getConfig(client, debug);
-                                if (!string.IsNullOrEmpty(config.ToString()))
-                                {
-                                    (configETag, samplingPercentage, lastUpdatedTime) = appConfig.parseConfiguration(config, debug);
-                                    return (config, configETag, samplingPercentage, lastUpdatedTime);
-                                }
+                                appConfig = await AppConfigHelper.getConfig(client, prevConfig, debug);
+                              
                             }
-                            catch (Exception ex)
+                            catch (Exception e)
                             {
                                 if (debug)
                                 {
-                                    Console.WriteLine("Error while updating the application configuration");
+                                    Console.WriteLine("Error while updating the application configuration " + e.StackTrace);
                                 }
                             }
                         }
@@ -84,13 +79,12 @@ namespace Moesif.Middleware.Helpers
                             Console.WriteLine("Events sent successfully to Moesif");
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception e)
                     {
                         if (debug)
                         {
-                            Console.WriteLine("Could not connect to Moesif server.");
+                            Console.WriteLine("Could not connect to Moesif server." + e.StackTrace);
                         }
-                        return (defaultConfig, configETag, samplingPercentage, lastUpdatedTime);
                     }
                 }
                 else
@@ -99,14 +93,13 @@ namespace Moesif.Middleware.Helpers
                     {
                         Console.WriteLine("No events in the queue");
                     }
-                    return (defaultConfig, configETag, samplingPercentage, lastUpdatedTime);
                 }
             }
             if (debug)
             {
                 Console.WriteLine("No events in the queue");
             }
-            return (defaultConfig, configETag, samplingPercentage, lastUpdatedTime);
+            return appConfig;
         }
     }
 }

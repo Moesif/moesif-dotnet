@@ -141,7 +141,7 @@ namespace Moesif.Middleware.NetCore.Helpers
                 copyHeaders = headers.ToLookup(k => k.Key, k => string.Join(",", k.Value.Distinct()), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(k => k.Key, k => string.Join(",", k.ToList().Distinct()), StringComparer.OrdinalIgnoreCase);
             }
-            catch (Exception inst)
+            catch (Exception)
             {
                 LogDebugMessage(debug, "Error encountered while copying header");
             }
@@ -155,7 +155,7 @@ namespace Moesif.Middleware.NetCore.Helpers
                 bodyAsText = await Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
                 request.Body.Position = 0;
             }
-            catch (Exception inst)
+            catch (Exception)
             {
                 LoggerHelper.LogDebugMessage(debug, "Error encountered while copying request body");
             }
@@ -194,7 +194,7 @@ namespace Moesif.Middleware.NetCore.Helpers
                         requestTransferEncoding = "base64";
                     }
                 }
-                catch (Exception inst)
+                catch (Exception)
                 {
                     LoggerHelper.LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
                     reqBody = Base64Encode(data);

@@ -175,7 +175,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 {
                     return new Tuple<object, string>(JToken.Parse(data), null);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     var bytes = System.Text.Encoding.UTF8.GetBytes(data);
                     var base64 = System.Convert.ToBase64String(bytes);
@@ -198,7 +198,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 copyHeaders = headers.ToLookup(k => k.Key, k => string.Join(",", k.Value.Distinct()), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(k => k.Key, k => string.Join(",", k.ToList().Distinct()), StringComparer.OrdinalIgnoreCase);
             }
-            catch (Exception inst)
+            catch (Exception)
             {
                 LogDebugMessage(debug, "Error encountered while copying header");
             }

@@ -96,7 +96,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 //return request.HttpContext.Connection.RemoteIpAddress.ToString();
                 return request.RemoteIpAddress.ToString();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //return request.HttpContext.Connection.RemoteIpAddress.ToString();
                 return request.RemoteIpAddress.ToString();
