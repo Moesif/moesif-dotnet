@@ -711,6 +711,7 @@ Moesif has validated `Moesif.Middleware` against the following framework.
 |                | Framework Version  |
 | -------------- | -----------------  | 
 | .NET |5.0|
+| .NET |6.0|
 | .NET Core|2.0-3.0|
 | .NET Framework MVC |4.5-4.7|
 | .NET Framework Web API|4.5-4.7|

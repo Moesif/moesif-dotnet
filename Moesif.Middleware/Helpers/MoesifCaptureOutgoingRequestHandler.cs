@@ -89,7 +89,7 @@ namespace Moesif.Middleware.Helpers
                     try
                     {
                         // Get Application config
-                        config = await AppConfigHelper.getConfig(client, config, debug);
+                        await AppConfigHelper.updateConfig(client, config, debug);
                   
                     }
                     catch (Exception)
@@ -412,7 +412,7 @@ namespace Moesif.Middleware.Helpers
                         try
                         {
                             // Get Application config
-                            config = await AppConfigHelper.getConfig(client, config, debug);
+                             await AppConfigHelper.updateConfig(client, config, debug);
                       
                         }
                         catch (Exception)

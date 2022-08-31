@@ -13,16 +13,29 @@ namespace Moesif.Middleware.Helpers
 {
     public class AppConfigHelper
     {
-        public static async Task<AppConfig> getConfig(MoesifApiClient client, AppConfig prevAppConfig, bool debug)
+        public static AppConfig deepCopy(AppConfig config)
         {
-            AppConfig appConfig = prevAppConfig;
+            var json = ApiHelper.JsonSerialize(config);
+            var appConfig = ApiHelper.JsonDeserialize<AppConfig>(json);
+            appConfig.etag = config.etag;
+            appConfig.lastUpdatedTime = config.lastUpdatedTime;
+            return appConfig;
+        }
+       
+        public static async Task updateConfig(MoesifApiClient client, AppConfig config, bool debug)
+        {
 
             try
             {
                 var appConfigResp = await client.Api.GetAppConfigAsync();
-                appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
-                appConfig.etag = appConfigResp.Headers.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
-                appConfig.lastUpdatedTime = DateTime.UtcNow;
+                var etag = appConfigResp.Headers.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
+                if (etag != config.etag)
+                {
+                    var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
+                    appConfig.etag = etag;
+                    appConfig.lastUpdatedTime = DateTime.UtcNow;
+                    config.copy(appConfig);
+                }
 
             }
             catch (APIException inst)
@@ -44,7 +57,6 @@ namespace Moesif.Middleware.Helpers
                     Console.WriteLine("Error while parsing the configuration object, setting the sample rate to default. " + e.StackTrace);
                 }
             }
-            return appConfig;
         }
 
 
@@ -55,11 +67,17 @@ namespace Moesif.Middleware.Helpers
 
         public static int getSamplingPercentage(AppConfig config, RequestMap requestMap)
         {
+            AppConfig local;
 
-            if (config.regex_config != null)
+            lock (config)
+            {
+                local = deepCopy(config);
+            }
+
+            if (local.regex_config != null)
             {
                 var rates = new List<int>();
-                foreach (RegexConfig rc in config.regex_config)
+                foreach (RegexConfig rc in local.regex_config)
                 {
                     var matched = true;
                     foreach (Condition c in rc.conditions)
@@ -85,23 +103,23 @@ namespace Moesif.Middleware.Helpers
                 }
             }
 
-            if (requestMap.companyId != null && config.company_sample_rate != null)
+            if (requestMap.companyId != null && local.company_sample_rate != null)
             {
-                if (config.company_sample_rate.TryGetValue(requestMap.companyId, out int v))
+                if (local.company_sample_rate.TryGetValue(requestMap.companyId, out int v))
                 {
                     return v;
                 }
             }
-            if (requestMap.userId != null && config.user_sample_rate != null)
+            if (requestMap.userId != null && local.user_sample_rate != null)
             {
-                if (config.user_sample_rate.TryGetValue(requestMap.userId, out int v))
+                if (local.user_sample_rate.TryGetValue(requestMap.userId, out int v))
                 {
                     return v;
                 }
             }
 
-            return config.sample_rate;
-
+            return local.sample_rate;
         }
+
     }
 }

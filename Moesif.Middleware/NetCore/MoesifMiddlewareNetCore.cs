@@ -29,15 +29,13 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifApiClient client;
 
-        public AppConfigHelper appConfigHelper; // Initialize config dictionary
-
         public UserHelper userHelper; // Initialize user helper
 
         public CompanyHelper companyHelper; // Initialize company helper
 
         public ClientIp clientIpHelper; // Initialize client ip helper
 
-        public AppConfig config;
+        public AppConfig config;  // The only AppConfig instance shared among threads
 
         public bool isBatchingEnabled; // Enable Batching
 
@@ -103,18 +101,10 @@ namespace Moesif.Middleware.NetCore
                 authorizationUserIdField = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
-                new Thread(async () => // Create a new thread to read the queue and send event to moesif
-                {
-                    Thread.CurrentThread.IsBackground = true;
-                    if (isBatchingEnabled)
-                    {
-                        ScheduleWorker();
-                    } 
-                    else
-                    {
-                        ScheduleAppConfig(); // Scheduler to fetch application configuration every 5 minutes
-                    }
-                }).Start();
+                if (isBatchingEnabled) ScheduleWorker();
+
+                ScheduleAppConfig();
+
             }
             catch (Exception)
             {
@@ -126,10 +116,9 @@ namespace Moesif.Middleware.NetCore
         {
             LoggerHelper.LogDebugMessage(debug, "Starting a new thread to sync the application configuration");
 
-            new Thread(async () => // Create a new thread to fetch the application configuration
+            Thread appConfigThread = new Thread(async () => // Create a new thread to fetch the application configuration
             {
 
-                Tasks task = new Tasks();
                 while (true)
                 {
                     try
@@ -138,9 +127,9 @@ namespace Moesif.Middleware.NetCore
                         LoggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
                         try
                         {
-                            // Get Application config
-                            config = await AppConfigHelper.getConfig(client, config, debug);
-                                                 }
+                            // update Application config
+                            await AppConfigHelper.updateConfig(client, config, debug);
+                        }
                         catch (Exception)
                         {
                             LoggerHelper.LogDebugMessage(debug, "Error while parsing application configuration on initialization");
@@ -152,16 +141,17 @@ namespace Moesif.Middleware.NetCore
                     }
                     Thread.Sleep(appConfigSyncTime * 1000);
                 }
-            }).Start();
+            });
+            appConfigThread.IsBackground = true;
+            appConfigThread .Start();
         }
 
         private void ScheduleWorker()
         {
             LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
 
-            new Thread(async () => // Create a new thread to read the queue and send event to moesif
+            Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
             {
-
                 Tasks task = new Tasks();
                 while (true)
                 {
@@ -170,14 +160,16 @@ namespace Moesif.Middleware.NetCore
                     {
                         lastWorkerRun = DateTime.UtcNow;
                         LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
-                        config = await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
+                        await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
                     }
                     catch (Exception)
                     {
                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job");
                     }
                 }
-            }).Start();
+            });
+            workerThread.IsBackground = true;
+            workerThread.Start();
         }
 
         // Function to update user

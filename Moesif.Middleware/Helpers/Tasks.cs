@@ -38,11 +38,10 @@ namespace Moesif.Middleware.Helpers
             return events;
         }
 
-        public async Task<AppConfig> AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
-            AppConfig prevConfig, int batchSize, bool debug)
+        public async Task AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
+            AppConfig config, int batchSize, bool debug)
         {
             List<EventModel> batchEvents = new List<EventModel>();
-            var appConfig = prevConfig;
 
             while (MoesifQueue.Count > 0)
             {
@@ -55,15 +54,17 @@ namespace Moesif.Middleware.Helpers
                         // Send Batch Request
                         var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
                         var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
+
+                        
                         if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
-                            !(string.IsNullOrEmpty(prevConfig.etag)) &&
-                            prevConfig.etag != batchEventResponseConfigETag &&
-                            DateTime.UtcNow > prevConfig.lastUpdatedTime.AddMinutes(5))
+                            config.etag != batchEventResponseConfigETag &&
+                            DateTime.UtcNow > config.lastUpdatedTime.AddMinutes(5))
+
                         {
                             try
                             {
                                 // Get Application config
-                                appConfig = await AppConfigHelper.getConfig(client, prevConfig, debug);
+                                await AppConfigHelper.updateConfig(client, config, debug);
                               
                             }
                             catch (Exception e)
@@ -99,7 +100,6 @@ namespace Moesif.Middleware.Helpers
             {
                 Console.WriteLine("No events in the queue");
             }
-            return appConfig;
         }
     }
 }
