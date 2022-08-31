@@ -34,7 +34,7 @@ namespace Moesif.Middleware.NetFramework
         
         public ClientIp clientIpHelper; // Initialize client ip helper
 
-        public AppConfig config; // Initialize config 
+        public AppConfig config; // The only AppConfig instance shared among threads 
 
         public bool isBatchingEnabled; // Enable Batching
 
@@ -87,18 +87,9 @@ namespace Moesif.Middleware.NetFramework
 
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
-                new Thread(async () => // Create a new thread to read the queue and send event to moesif
-                {
-                    Thread.CurrentThread.IsBackground = true;
-                    if (isBatchingEnabled)
-                    {
-                        ScheduleWorker();
-                    }
-                    else
-                    {
-                        ScheduleAppConfig(); // Scheduler to fetch application configuration every 5 minutes
-                    }
-                }).Start();
+                if (isBatchingEnabled) ScheduleWorker();
+
+                ScheduleAppConfig();
             }
             catch (Exception)
             {
@@ -110,7 +101,7 @@ namespace Moesif.Middleware.NetFramework
         {
             LoggerHelper.LogDebugMessage(debug, "Starting a new thread to sync the application configuration");
 
-            new Thread(async () => // Create a new thread to fetch the application configuration
+            Thread appConfigThread = new Thread(async () => // Create a new thread to fetch the application configuration
             {
                 while (true)
                 {
@@ -119,7 +110,7 @@ namespace Moesif.Middleware.NetFramework
                     try
                     {
                         // Get Application config
-                        config = await AppConfigHelper.getConfig(client, config, debug);
+                        await AppConfigHelper.updateConfig(client, config, debug);
 
                     }
                     catch (Exception e)
@@ -128,32 +119,36 @@ namespace Moesif.Middleware.NetFramework
                     }
                     Thread.Sleep(appConfigSyncTime * 1000);
                 }
-            }).Start();
+            });
+            appConfigThread.IsBackground = true;
+            appConfigThread.Start();
         }
 
         private void ScheduleWorker() 
         {
              LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
-             new Thread(async () => // Create a new thread to read the queue and send event to moesif
-              {
+            Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
+             {
 
-              Tasks task = new Tasks();
-              while (true) 
-              {
-                Thread.Sleep(batchMaxTime * 1000);
-                try 
-                {
-                    lastWorkerRun = DateTime.UtcNow;
-                    LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
-                    config = await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
-                   
-                }
-                catch (Exception e)
-                      {
-                    LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job " + e.StackTrace);
-                }
-              }
-              }).Start();
+                 Tasks task = new Tasks();
+                 while (true)
+                 {
+                     Thread.Sleep(batchMaxTime * 1000);
+                     try
+                     {
+                         lastWorkerRun = DateTime.UtcNow;
+                         LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                         await task.AsyncClientCreateEvent(client, MoesifQueue, config, batchSize, debug);
+
+                     }
+                     catch (Exception e)
+                     {
+                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job " + e.StackTrace);
+                     }
+                 }
+             });
+            workerThread.IsBackground = true;
+            workerThread.Start();
         }
 
         // Function to update user
@@ -388,6 +383,10 @@ namespace Moesif.Middleware.NetFramework
 
                 // If available, get sampling percentage based on config else default to 100
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
+                if (debug)
+                {
+                    Console.WriteLine("sampling rate is ", samplingPercentage);
+                 }
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
