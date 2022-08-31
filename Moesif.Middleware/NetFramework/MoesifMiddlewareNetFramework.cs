@@ -126,7 +126,7 @@ namespace Moesif.Middleware.NetFramework
 
         private void ScheduleWorker() 
         {
-             LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
+            LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
             Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
              {
 
@@ -149,6 +149,7 @@ namespace Moesif.Middleware.NetFramework
              });
             workerThread.IsBackground = true;
             workerThread.Start();
+
         }
 
         // Function to update user
@@ -380,14 +381,13 @@ namespace Moesif.Middleware.NetFramework
                 RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
 
 
-
                 // If available, get sampling percentage based on config else default to 100
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
+
                 if (debug)
                 {
                     Console.WriteLine("sampling rate is ", samplingPercentage);
                  }
-
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)

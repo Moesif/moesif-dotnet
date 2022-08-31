@@ -57,9 +57,9 @@ namespace Moesif.Middleware.Helpers
 
                         
                         if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
-                            //!(string.IsNullOrEmpty(config.etag)) &&
                             config.etag != batchEventResponseConfigETag &&
                             DateTime.UtcNow > config.lastUpdatedTime.AddMinutes(5))
+
                         {
                             try
                             {

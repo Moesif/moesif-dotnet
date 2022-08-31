@@ -57,7 +57,6 @@ namespace Moesif.Middleware.Helpers
                     Console.WriteLine("Error while parsing the configuration object, setting the sample rate to default. " + e.StackTrace);
                 }
             }
-            
         }
 
 

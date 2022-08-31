@@ -11,7 +11,6 @@ namespace Moesif.Middleware.Models
 {
     public class AppConfig
     {
-
         public static AppConfig getDefaultAppConfig()
         {
             return new AppConfig()
