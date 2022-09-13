@@ -6,12 +6,14 @@ using Moesif.Api.Models;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Moesif.Middleware.Models;
+using System.Threading;
 
 namespace Moesif.Middleware.Helpers
 {
     public class Tasks
     {
-        public List<EventModel> QueueGetAll(ConcurrentQueue<EventModel> moesifQueue, int batchSize)
+        //TODO  use Channel
+        static List<EventModel> QueueGetAll(ConcurrentQueue<EventModel> moesifQueue, int batchSize)
         {
             List<EventModel> events = new List<EventModel>();
             foreach (var eventsRetrieved in Enumerable.Range(0, batchSize))
@@ -38,8 +40,8 @@ namespace Moesif.Middleware.Helpers
             return events;
         }
 
-        public async Task AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
-            AppConfig config, int batchSize, bool debug)
+        public static async Task AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
+            AppConfig config, Governance governance, AutoResetEvent configEvent, AutoResetEvent governanceEvent,int batchSize, bool debug)
         {
             List<EventModel> batchEvents = new List<EventModel>();
 
@@ -53,53 +55,36 @@ namespace Moesif.Middleware.Helpers
                     {
                         // Send Batch Request
                         var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
-                        var batchEventResponseConfigETag = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
+                        createBatchEventResponse = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value);
 
-                        
-                        if (!(string.IsNullOrEmpty(batchEventResponseConfigETag)) &&
-                            config.etag != batchEventResponseConfigETag &&
-                            DateTime.UtcNow > config.lastUpdatedTime.AddMinutes(5))
+                        // Signal events
+                        var configETag = createBatchEventResponse["x-moesif-config-etag"];
+                        var ruleETag = createBatchEventResponse["x-moesif-rules-tag"];
+                        if (!(string.IsNullOrEmpty(configETag)) &&
+                            config.etag != configETag)
+                        {
+                            configEvent.Set();
+                        }
 
+                        if (!(string.IsNullOrEmpty(ruleETag)) &&
+                           governance.etag != ruleETag)
                         {
-                            try
-                            {
-                                // Get Application config
-                                await AppConfigHelper.updateConfig(client, config, debug);
-                              
-                            }
-                            catch (Exception e)
-                            {
-                                if (debug)
-                                {
-                                    Console.WriteLine("Error while updating the application configuration " + e.StackTrace);
-                                }
-                            }
+                            governanceEvent.Set();
                         }
-                        if (debug)
-                        {
-                            Console.WriteLine("Events sent successfully to Moesif");
-                        }
+
+                        LoggingHelper.LogDebugMessage(debug, "Events sent successfully to Moesif");
                     }
                     catch (Exception e)
                     {
-                        if (debug)
-                        {
-                            Console.WriteLine("Could not connect to Moesif server." + e.StackTrace);
-                        }
+                        LoggingHelper.LogDebugMessage(debug, "Could not connect to Moesif server." + e.StackTrace);
                     }
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        Console.WriteLine("No events in the queue");
-                    }
+                    LoggingHelper.LogDebugMessage(debug, "No events in the queue");
                 }
             }
-            if (debug)
-            {
-                Console.WriteLine("No events in the queue");
-            }
+            LoggingHelper.LogDebugMessage(debug, "No events in the queue");
         }
     }
 }

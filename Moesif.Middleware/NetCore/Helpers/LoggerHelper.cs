@@ -21,11 +21,11 @@ namespace Moesif.Middleware.NetCore.Helpers
 {
     public class LoggerHelper
     {
-        public static void LogDebugMessage(bool debug, String msg)
+        public async static void LogDebugMessage(bool debug, String msg)
         {
             if (debug)
             {
-                Console.WriteLine(msg);
+                await Console.Out.WriteLineAsync(msg);
             }
         }
 
