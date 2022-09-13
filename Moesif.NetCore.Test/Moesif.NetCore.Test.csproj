@@ -19,7 +19,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Remove="Moesif.Api" />
-  </ItemGroup>
 </Project>
