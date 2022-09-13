@@ -32,6 +32,8 @@ namespace Moesif.Middleware.Helpers
         public bool logBodyOutgoing;
 
         public AppConfig config;
+
+        public Governance governance;
        
         public static string Base64Encode(string plainText)
         {
@@ -81,6 +83,7 @@ namespace Moesif.Middleware.Helpers
                 logBodyOutgoing = LogBodyOutgoing();
                 // Create a new instance of AppConfig
                 config = AppConfig.getDefaultAppConfig();
+                governance = Governance.getDefaultGovernance();
 
                 // Create a new thread to get the application config
                 new Thread(async () =>
@@ -89,7 +92,8 @@ namespace Moesif.Middleware.Helpers
                     try
                     {
                         // Get Application config
-                        await AppConfigHelper.updateConfig(client, config, debug);
+                        config = await AppConfigHelper.updateConfig(client, config, debug);
+                        governance = await GovernanceHelper.updateGovernance(client, governance, debug);
                   
                     }
                     catch (Exception)
@@ -405,7 +409,6 @@ namespace Moesif.Middleware.Helpers
                     var eventResponseConfigETag = createEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
 
                     if (!(string.IsNullOrEmpty(eventResponseConfigETag)) &&
-                        !(string.IsNullOrEmpty(config.etag)) &&
                         config.etag != eventResponseConfigETag &&
                         DateTime.UtcNow > config.lastUpdatedTime.AddMinutes(5))
                     {

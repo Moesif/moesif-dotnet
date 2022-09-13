@@ -153,11 +153,11 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
-        public static void LogDebugMessage(bool debug, String msg) 
+        public async static void LogDebugMessage(bool debug, String msg) 
         {
             if (debug)
             {
-                Console.WriteLine(msg);
+                await Console.Out.WriteLineAsync(msg);
             }
         }
 
