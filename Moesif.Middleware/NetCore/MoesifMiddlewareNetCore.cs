@@ -91,7 +91,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.17", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.18", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -243,13 +243,7 @@ namespace Moesif.Middleware.NetCore
                 httpContext.Response.Headers.Add("X-Moesif-Transaction-Id", transactionId);
             }
 
-            string userId = httpContext?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
-            if (string.IsNullOrEmpty(userId))
-            {
-                // Fetch userId from authorization header
-                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
-            }
+            string userId = getUserId(httpContext, request);
 
             // CompanyId
             string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
@@ -321,6 +315,15 @@ namespace Moesif.Middleware.NetCore
                 {
 
                     eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
+                    if(eventModel.CompanyId == null)
+                    {
+                       
+                        eventModel.CompanyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                    }
+                    if(eventModel.UserId == null)
+                    {
+                        eventModel.UserId = getUserId(httpContext, eventModel.Request);
+                    }
 
                     LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                     //Send event to Moesif async
@@ -410,6 +413,18 @@ namespace Moesif.Middleware.NetCore
                 TransferEncoding = responseWrapper.Item2
             };
             return eventRsp;
+        }
+
+        private String getUserId(HttpContext httpContext, EventRequestModel request)
+        {
+            string userId = httpContext?.User?.Identity?.Name;
+            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Fetch userId from authorization header
+                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+            }
+            return userId;
         }
 
         private async Task LogEventAsync(EventModel eventModel)
