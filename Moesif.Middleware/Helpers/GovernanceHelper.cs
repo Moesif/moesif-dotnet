@@ -41,6 +41,11 @@ namespace Moesif.Middleware.Helpers
             return System.Convert.ToBase64String(plainTextBytes);
         }
 
+        public static bool isGovernaceRuleDefined(Governance governace)
+        {
+            return governace.rules != null && governace.rules.Count > 0 ;
+        }
+
         public static bool enforceGovernaceRule(EventModel eventModel, Governance governace, AppConfig config)
         {
             if (governace.rules == null)

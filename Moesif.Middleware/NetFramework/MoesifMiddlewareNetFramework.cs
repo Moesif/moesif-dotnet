@@ -76,7 +76,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.19", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.20", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -247,24 +247,18 @@ namespace Moesif.Middleware.NetFramework
                 httpContext.Response.Headers.Append("X-Moesif-Transaction-Id", transactionId);
             }
 
-            string userId = getUserId(httpContext, request);
-            // CompanyId
-            string companyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
-            // SessionToken
-            string sessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
-            // Metadata
-            Dictionary<string, object> metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
-
             var eventModel = new EventModel()
             {
                 Request = request,
                 Response = null,
-                UserId = userId,
-                CompanyId = companyId,
-                SessionToken = sessionToken,
-                Metadata = metadata,
                 Direction = "Incoming"
             };
+
+            if (GovernanceHelper.isGovernaceRuleDefined(governance))
+            {
+                eventModel.UserId = getUserId(httpContext, request);
+                eventModel.CompanyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+            }
 
             if (GovernanceHelper.enforceGovernaceRule(eventModel, governance, config))
             {
@@ -316,6 +310,8 @@ namespace Moesif.Middleware.NetFramework
                     {
                         eventModel.UserId = getUserId(httpContext, eventModel.Request);
                     }
+                    eventModel.Metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                    eventModel.SessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
                     LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                     await Task.Run(async () => await LogEventAsync(eventModel));
