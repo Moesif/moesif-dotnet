@@ -28,7 +28,7 @@ Jump to installation for your specific framework:
 
 In `Startup.cs` file in your project directory, please add `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` to the pipeline.
 
-To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware. 
+To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
 
 Add the middleware to your application:
 
@@ -46,7 +46,7 @@ public class Startup {
         # For other options see below.
     };
 
-    
+
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddMvc();
@@ -62,12 +62,12 @@ public class Startup {
 ```
 
 Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moesif.com/).
-After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
+After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps.
 
-You can always find your Moesif Application Id at any time by logging 
+You can always find your Moesif Application Id at any time by logging
 into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu,
  and then clicking _Installation_.
- 
+
 ### .NET Core example
 
 Checkout the [examples](https://github.com/Moesif/moesif-netcore-example)
@@ -209,7 +209,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 
 In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddleware>(moesifOptions);` to the pipeline.
 
-To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware. 
+To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
 
 > If your app uses Windows Communication Foundation (WCF), set [DisableStreamOverride](#disablestreamoverride) to true
 
@@ -219,7 +219,7 @@ Add the middleware to your application:
 using Moesif.Middleware;
 
 public class Startup {
-    
+
     // moesifOptions is an object of type Dictionary<string, object> which holds configuration options for your application.
     Dictionary<string, object> moesifOptions = new Dictionary<string, object>
     {
@@ -237,9 +237,9 @@ public class Startup {
 ```
 
 Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moesif.com/).
-After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
+After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps.
 
-You can always find your Moesif Application Id at any time by logging 
+You can always find your Moesif Application Id at any time by logging
 into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu,
  and then clicking _Installation_.
 
@@ -247,13 +247,13 @@ into the [_Moesif Portal_](https://www.moesif.com/), click on the top-right menu
 
 #### IIS integrated pipeline
 If you're running your .NET app on IIS (or Visual Studio IIS Express) using integrated mode (most common), you will have to install the OWIN SystemWeb package if not done so already:
-Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info. 
+Review [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline) for more info.
 
 ```bash
 Install-Package Microsoft.Owin.Host.SystemWeb
 ```
 
-Moesif does not support IIS running in Classic mode (Backwards compatibility for IIS 6.0). Unless your app predates IIS 6.0 and requires classic mode, you should switch to integrated mode.  
+Moesif does not support IIS running in Classic mode (Backwards compatibility for IIS 6.0). Unless your app predates IIS 6.0 and requires classic mode, you should switch to integrated mode.
 {: .notice--primary}
 
 #### Self-Host executable
@@ -327,7 +327,7 @@ _boolean_, set to true to print internal log messages for debugging SDK integrat
 _boolean_, default true. Set to false to not log the request and response body to Moesif.
 
 #### __`DisableStreamOverride`__
-_boolean_, Set to true to disable overriding the request body stream. This is required if your app is using Windows Communication Foundation (WCF). Otherwise, you may experience issues when your business logic accesses the request body. 
+_boolean_, Set to true to disable overriding the request body stream. This is required if your app is using Windows Communication Foundation (WCF). Otherwise, you may experience issues when your business logic accesses the request body.
 
 #### __`AuthorizationHeaderName`__
 (optional), _string_, Request header containing a Bearer or Basic token to extract user id. Also, supports a comma separated string. We will check headers in order like "X-Api-Key,Authorization".
@@ -471,7 +471,7 @@ moesifMiddleware.UpdateUser(user);
 
 ## Update Users in Batch
 
-Similar to UpdateUser, but used to update a list of users in one batch. 
+Similar to UpdateUser, but used to update a list of users in one batch.
 Only the `user_id` field is required.
 This method is a convenient helper that calls the Moesif API lib.
 For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-users-in-batch).
@@ -571,7 +571,7 @@ Dictionary<string, object> metadata = new Dictionary<string, object>
 Dictionary<string, object> company = new Dictionary<string, object>
 {
     {"company_id", "67890"}, // The only required field is your company id
-    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
+    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info
     {"campaign", campaign},
     {"metadata", metadata},
 };
@@ -588,7 +588,7 @@ moesifMiddleware.UpdateCompany(company);
 
 ## Update Companies in Batch
 
-Similar to updateCompany, but used to update a list of companies in one batch. 
+Similar to updateCompany, but used to update a list of companies in one batch.
 Only the `company_id` field is required.
 This method is a convenient helper that calls the Moesif API lib.
 For details, visit the [C# API Reference](https://www.moesif.com/docs/api?csharp#update-companies-in-batch).
@@ -613,7 +613,7 @@ Dictionary<string, object> metadataA = new Dictionary<string, object>
 Dictionary<string, object> companyA = new Dictionary<string, object>
 {
     {"company_id", "67890"}, // The only required field is your company id
-    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
+    {"company_domain", "acmeinc.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info
     {"metadata", metadataA},
 };
 
@@ -634,7 +634,7 @@ Dictionary<string, object> metadataB = new Dictionary<string, object>
 Dictionary<string, object> companyB = new Dictionary<string, object>
 {
     {"company_id", "09876"}, // The only required field is your company id
-    {"company_domain", "contoso.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info 
+    {"company_domain", "contoso.com"}, // If domain is set, Moesif will enrich your profiles with publicly available info
     {"metadata", metadataB},
 };
 
@@ -668,24 +668,27 @@ Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 
 ### Traditional monolith website broken
 Some monolith apps which contain both a website and an API in the same app may issues when API logging middleware is enabled.
-This is usually due to interactions with other custom middleware. 
+This is usually due to interactions with other custom middleware.
 
 Since usually this custom middleware is enabled for the website only, the recommended fix is to enable Moesif only for your API.
 To do, use the `MapWhen` as shown below which only activates the middleware if the Path contains `/api`
 
 ```csharp
-    app.MapWhen(context => context.Request.Path.ToString().Contains("/api"), appBuilder =>
-    {
+app.MapWhen(context => context.Request.Path.ToString().Contains("/api"), appBuilder =>
+{
 
-        appBuilder.Use<MoesifMiddleware>(new System.Collections.Generic.Dictionary<string, object> {
-            {"ApplicationId", "Your Moesif Application Id"}
-        });
+    appBuilder.Use<MoesifMiddleware>(new System.Collections.Generic.Dictionary<string, object> {
+        {"ApplicationId", "Your Moesif Application Id"}
     });
+});
 ```
 
-### The response body not logged
-For .NET Core and .NET 5, you will need to set the following option to ensure the response body is logged:
-[More info](https://khalidabuhakmeh.com/dotnet-core-3-dot-0-allowsynchronousio-workaround) on this workaround.
+### The response body is not logged or calls are not recieved in Moesif
+Each ASP.NET Core server has an option called `AllowSynchronousIO` that toggles synchronous IO APIs such as `HttpRequest.Body.Read`, `HttpResponse.Body.Write`, and `Stream.Flush`. These APIs have previously caused thread starvation and app hangs, so starting from ASP.NET Core 3.0 Preview 3, they are disabled by default.
+
+You will need to set the following option to ensure the response body is logged and to ensure all events are forwarded to Moesif.
+
+For .NET Core and .NET 5:
 
 ```csharp
     .ConfigureKestrel((context, options) => {
@@ -693,8 +696,19 @@ For .NET Core and .NET 5, you will need to set the following option to ensure th
     });
 ```
 
+For .NET Core and .NET 6+, when using a `WebApplicationBuilder` in `Program.cs`:
+
+```csharp
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.AllowSynchronousIO = true;
+});
+```
+
+[Documentation](https://learn.microsoft.com/en-us/dotnet/core/compatibility/aspnetcore#http-synchronous-io-disabled-in-all-servers) relating to the origins of the `AllowSynchronousIO` option. [More info](https://khalidabuhakmeh.com/dotnet-core-3-dot-0-allowsynchronousio-workaround) relating to this workaround.
+
 ## Ensuring Errors handled by ExceptionHandler are logged
-To capture the API calls handled by ExceptionHandler, please ensure that the `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` is before the `app.UseExceptionHandler()` in the pipeline. 
+To capture the API calls handled by ExceptionHandler, please ensure that the `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` is before the `app.UseExceptionHandler()` in the pipeline.
 
 ## How to test
 
@@ -709,7 +723,7 @@ To capture the API calls handled by ExceptionHandler, please ensure that the `ap
 Moesif has validated `Moesif.Middleware` against the following framework.
 
 |                | Framework Version  |
-| -------------- | -----------------  | 
+| -------------- | -----------------  |
 | .NET |5.0|
 | .NET |6.0|
 | .NET Core|2.0-3.0|

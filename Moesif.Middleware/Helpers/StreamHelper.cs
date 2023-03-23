@@ -79,7 +79,12 @@ namespace Moesif.Middleware.Helpers
 
         public override void Flush()
         {
-            this.InnerStream.Flush();
+            try {
+                this.InnerStream.Flush();
+            } catch (Exception e) {
+                Console.WriteLine(this.GetType().ToString() + "Error flushing stream: " + e.ToString()
+                + "\n See troubleshooting: https://github.com/Moesif/moesif-dotnet#the-response-body-is-not-logged-or-calls-are-not-recieved-in-moesif");
+            }
         }
 
         public override long Length
@@ -112,8 +117,13 @@ namespace Moesif.Middleware.Helpers
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            this.CopyStream.Write(buffer, offset, count);
-            this.InnerStream.Write(buffer, offset, count);
+            try {
+                this.CopyStream.Write(buffer, offset, count);
+                this.InnerStream.Write(buffer, offset, count);
+            } catch (Exception e) {
+                Console.WriteLine(this.GetType().ToString() + "Error writing stream: " + e.ToString()
+                + "\n See troubleshooting: https://github.com/Moesif/moesif-dotnet#the-response-body-is-not-logged-or-calls-are-not-recieved-in-moesif");
+            }
         }
     }
 }

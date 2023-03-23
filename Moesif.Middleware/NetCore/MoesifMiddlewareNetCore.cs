@@ -91,7 +91,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.20", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.21", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -311,7 +311,7 @@ namespace Moesif.Middleware.NetCore
                     eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
                     if(eventModel.CompanyId == null)
                     {
-                       
+
                         eventModel.CompanyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
                     }
                     if(eventModel.UserId == null)

@@ -31,7 +31,7 @@ namespace Moesif.Middleware.NetFramework
         public UserHelper userHelper; // Initialize user helper
 
         public CompanyHelper companyHelper; // Initialize company helper
-        
+
         public ClientIp clientIpHelper; // Initialize client ip helper
 
         public volatile AppConfig config; // The only AppConfig instance shared among threads
@@ -44,7 +44,7 @@ namespace Moesif.Middleware.NetFramework
 
         public int batchSize; // Queue batch size
 
-        public int queueSize; // Event Queue size 
+        public int queueSize; // Event Queue size
 
         public int batchMaxTime; // Time in seconds for next batch
 
@@ -76,7 +76,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.20", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.21", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -167,7 +167,7 @@ namespace Moesif.Middleware.NetFramework
             governanceThread.Start();
         }
 
-        private void ScheduleWorker() 
+        private void ScheduleWorker()
         {
             LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
             Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
@@ -218,7 +218,7 @@ namespace Moesif.Middleware.NetFramework
             companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
-        public async override Task Invoke(IOwinContext httpContext) 
+        public async override Task Invoke(IOwinContext httpContext)
         {
             // Buffering mvc reponse
             StreamHelper outputCaptureMVC = null;
@@ -297,7 +297,7 @@ namespace Moesif.Middleware.NetFramework
                 }
                 else
                 {
-                    // Select stream to use 
+                    // Select stream to use
                     StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
 
                     // Prepare Moesif Event Response model
@@ -346,10 +346,10 @@ namespace Moesif.Middleware.NetFramework
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
             try
-            { 
+            {
                 body = await LoggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
             }
-            catch 
+            catch
             {
                 LoggerHelper.LogDebugMessage(debug, "Cannot read request body.");
             }
@@ -399,7 +399,7 @@ namespace Moesif.Middleware.NetFramework
             string contentEncoding = "";
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
-            var body = LoggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding);            
+            var body = LoggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding);
             var bodyWrapper = LoggerHelper.Serialize(body, response.ContentType);
 
             // Add Transaction Id to Response Header
@@ -504,7 +504,7 @@ namespace Moesif.Middleware.NetFramework
             }
         }
 
-        
+
     }
 }
 #endif
