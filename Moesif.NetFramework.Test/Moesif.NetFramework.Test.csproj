@@ -117,7 +117,7 @@
     </Reference>
     <Reference Include="System.Web" />
     <Reference Include="Moesif.Api">
-      <HintPath>..\packages\Moesif.Api.2.0.4\lib\net45\Moesif.Api.dll</HintPath>
+      <HintPath>..\packages\Moesif.Api.2.0.5\lib\net45\Moesif.Api.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
