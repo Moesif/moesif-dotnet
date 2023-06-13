@@ -18,8 +18,8 @@
 	<tags>azure web app moesif API analytics insights debug debugging log logging apm performance monitor monitoring restful rest graphql ethereum web3 json-rpc soap net java node python php go golang ruby microsoft</tags>
 	<dependencies>
 		<group targetFramework="netstandard2.0">
-			<dependency id="Microsoft.AspNetCore.Http" version="2.1.0" />
-			<dependency id="Microsoft.AspNetCore.Http.Extensions" version="2.1.0" />
+			<dependency id="Microsoft.AspNetCore.Http" version="2.1.22" />
+			<dependency id="Microsoft.AspNetCore.Http.Extensions" version="2.1.22" />
 			<dependency id="Moesif.Api" version="2.0.7" />
 			<dependency id="System.ValueTuple" version="4.5.0" />
 			<dependency id="Newtonsoft.Json" version="13.0.2" />
