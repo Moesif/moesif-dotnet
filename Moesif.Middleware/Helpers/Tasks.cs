@@ -76,7 +76,8 @@ namespace Moesif.Middleware.Helpers
                     }
                     catch (Exception e)
                     {
-                        LoggingHelper.LogDebugMessage(debug, "Could not connect to Moesif server." + e.StackTrace);
+                        LoggingHelper.LogDebugMessage(debug, "Could not connect to Moesif server:" + e.Message);
+                        LoggingHelper.LogDebugMessage(debug, e.StackTrace);
                     }
                 }
                 else
