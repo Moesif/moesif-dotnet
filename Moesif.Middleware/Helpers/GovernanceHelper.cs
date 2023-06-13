@@ -30,7 +30,8 @@ namespace Moesif.Middleware.Helpers
             }
             catch (Exception e)
             {
-                LoggingHelper.LogDebugMessage(debug, "Error getting GovernanceRule. " + e.StackTrace);
+                LoggingHelper.LogDebugMessage(debug, "Error getting GovernanceRule. :" + e.Message);
+                LoggingHelper.LogDebugMessage(debug, e.StackTrace);
                 return prevGovernance;
             }
         }

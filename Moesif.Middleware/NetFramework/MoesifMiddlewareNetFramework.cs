@@ -185,7 +185,8 @@ namespace Moesif.Middleware.NetFramework
                      }
                      catch (Exception e)
                      {
-                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job " + e.StackTrace);
+                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job: " + e.Message);
+                         LoggingHelper.LogDebugMessage(debug, e.StackTrace);
                      }
                  }
              });
