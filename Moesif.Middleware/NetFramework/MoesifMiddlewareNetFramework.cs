@@ -76,7 +76,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.20", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -322,14 +322,13 @@ namespace Moesif.Middleware.NetFramework
 
         private String getUserId(IOwinContext httpContext, EventRequestModel request)
         {
-            string userId = httpContext?.Authentication?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            var userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
             if (string.IsNullOrEmpty(userId))
             {
                 // Fetch userId from authorization header
                 userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
             }
-            return userId;
+            return !string.IsNullOrEmpty(userId) ? userId : httpContext?.Authentication?.User?.Identity?.Name;
         }
 
         private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)

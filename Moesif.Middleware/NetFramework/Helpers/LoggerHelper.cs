@@ -78,7 +78,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return objectValue;
         }
 
-        public static string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug, string value = null)
+        public static string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
         {
             var string_out = new object();
             var getStringValue = moesifOptions.TryGetValue(configName, out string_out);
@@ -88,6 +88,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             {
                 GetValue = (Func<IOwinRequest, IOwinResponse, string>)(string_out);
             }
+            string value = null;
 
             if (GetValue != null)
             {

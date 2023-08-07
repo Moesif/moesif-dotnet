@@ -91,7 +91,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.20", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.25", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -413,14 +413,13 @@ namespace Moesif.Middleware.NetCore
 
         private String getUserId(HttpContext httpContext, EventRequestModel request)
         {
-            string userId = httpContext?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
+            var userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
             if (string.IsNullOrEmpty(userId))
             {
                 // Fetch userId from authorization header
                 userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
             }
-            return userId;
+            return !string.IsNullOrEmpty(userId) ? userId : httpContext?.User?.Identity?.Name;
         }
 
         private async Task LogEventAsync(EventModel eventModel)
