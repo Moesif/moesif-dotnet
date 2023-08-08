@@ -340,11 +340,11 @@ namespace Moesif.Middleware.NetFramework
             }
             else
             {
-                var userId = httpContext?.Authentication?.User?.Identity?.Name;
+                var userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                    userId = httpContext?.Authentication?.User?.Identity?.Name;
                 }
                 return userId;
             }

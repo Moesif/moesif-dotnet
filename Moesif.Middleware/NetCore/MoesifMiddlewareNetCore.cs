@@ -423,11 +423,11 @@ namespace Moesif.Middleware.NetCore
             }
             else
             {
-                var userId = httpContext?.User?.Identity?.Name;
+                var userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                    userId = httpContext?.User?.Identity?.Name;
                 }
                 return userId;
             }
