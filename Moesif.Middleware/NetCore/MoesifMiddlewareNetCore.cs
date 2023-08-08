@@ -76,6 +76,8 @@ namespace Moesif.Middleware.NetCore
                 // Initialize client
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+                companyHelper = new CompanyHelper();
+                userHelper = new UserHelper();
             }
             catch (Exception)
             {

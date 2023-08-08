@@ -68,6 +68,16 @@ namespace Moesif.Middleware.NetFramework
 
         public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
+        public MoesifMiddlewareNetFramework(Dictionary<String,object> options) : base(null)
+        {
+            moesifOptions = options;
+            debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
+            userHelper = new UserHelper(); // Create a new instance of userHelper
+            companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
+            clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+        }
+
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
         {
             moesifOptions = _middleware;
