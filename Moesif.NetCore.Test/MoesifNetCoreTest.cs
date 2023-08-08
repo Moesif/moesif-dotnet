@@ -22,6 +22,7 @@ namespace Moesif.NetCore.Test
         public Dictionary<string, object> moesifOptions = new Dictionary<string, object>();
 
         public MoesifMiddleware moesifMiddleware;
+        public MoesifMiddleware moesifMiddleware_standalone;
 
         public static Func<HttpRequestMessage, HttpResponseMessage, Dictionary<string, object>> GetMetadataOutgoing = (HttpRequestMessage req, HttpResponseMessage res) => {
             Dictionary<string, object> metadata = new Dictionary<string, object>
@@ -107,6 +108,8 @@ namespace Moesif.NetCore.Test
             moesifOptions.Add("SkipOutgoing", SkipOutgoing);
 
             moesifMiddleware = new MoesifMiddleware((innerHttpContext) => Task.FromResult(0), moesifOptions);
+            moesifMiddleware_standalone = new MoesifMiddleware(moesifOptions);
+
         }
 
         [Fact]
@@ -179,7 +182,7 @@ namespace Moesif.NetCore.Test
                 {"campaign", campaign},
             };
 
-            moesifMiddleware.UpdateUser(user);
+            moesifMiddleware_standalone.UpdateUser(user);
         }
 
 
@@ -217,7 +220,7 @@ namespace Moesif.NetCore.Test
             usersBatch.Add(userA);
             usersBatch.Add(userB);
 
-            moesifMiddleware.UpdateUsersBatch(usersBatch);
+            moesifMiddleware_standalone.UpdateUsersBatch(usersBatch);
         }
 
         [Fact]
@@ -227,7 +230,7 @@ namespace Moesif.NetCore.Test
             {
                 {"email", "johndoe@acmeinc.com"},
                 {"string_field", "value_1"},
-                {"number_field", 0},
+                {"number_field", 1},
                 {"object_field", new Dictionary<string, string> {
                     {"field_a", "value_a"},
                     {"field_b", "value_b"}
@@ -249,7 +252,7 @@ namespace Moesif.NetCore.Test
                 {"campaign", campaign},
             };
 
-            moesifMiddleware.UpdateCompany(company);
+            moesifMiddleware_standalone.UpdateCompany(company);
         }
 
         [Fact]
@@ -285,7 +288,7 @@ namespace Moesif.NetCore.Test
             companiesBatch.Add(companyA);
             companiesBatch.Add(companyB);
 
-            moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
+            moesifMiddleware_standalone.UpdateCompaniesBatch(companiesBatch);
         }
 
         [Fact]

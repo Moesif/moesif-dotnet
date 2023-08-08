@@ -24,6 +24,8 @@ namespace Moesif.NetFramework.Test
 
         public MoesifMiddleware moesifMiddleware;
 
+        public MoesifMiddleware moesifMiddleware_standalone;
+
         public OwinMiddleware next;
 
         public static Func<HttpRequestMessage, HttpResponseMessage, Dictionary<string, object>> GetMetadataOutgoing = (HttpRequestMessage req, HttpResponseMessage res) => {
@@ -104,6 +106,7 @@ namespace Moesif.NetFramework.Test
             moesifOptions.Add("MaskEventModelOutgoing", MaskEventModelOutgoing);
 
             moesifMiddleware = new MoesifMiddleware(next, moesifOptions);
+            moesifMiddleware_standalone = new MoesifMiddleware(moesifOptions);
 
         }
 
@@ -146,7 +149,7 @@ namespace Moesif.NetFramework.Test
                 {"campaign", campaign},
             };
 
-            moesifMiddleware.UpdateUser(user);
+            moesifMiddleware_standalone.UpdateUser(user);
         }
 
         [Test()]
@@ -183,7 +186,7 @@ namespace Moesif.NetFramework.Test
             usersBatch.Add(userA);
             usersBatch.Add(userB);
 
-            moesifMiddleware.UpdateUsersBatch(usersBatch);
+            moesifMiddleware_standalone.UpdateUsersBatch(usersBatch);
         }
 
         [Test()]
@@ -215,7 +218,7 @@ namespace Moesif.NetFramework.Test
                 {"campaign", campaign},
             };
 
-            moesifMiddleware.UpdateCompany(company);
+            moesifMiddleware_standalone.UpdateCompany(company);
         }
 
         [Test()]
@@ -251,7 +254,7 @@ namespace Moesif.NetFramework.Test
             companiesBatch.Add(companyA);
             companiesBatch.Add(companyB);
 
-            moesifMiddleware.UpdateCompaniesBatch(companiesBatch);
+            moesifMiddleware_standalone.UpdateCompaniesBatch(companiesBatch);
         }
 
         [Test()]

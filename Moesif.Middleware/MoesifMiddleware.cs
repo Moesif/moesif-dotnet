@@ -75,6 +75,11 @@ namespace Moesif.Middleware
             netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(next, _middleware);
         }
 
+        public MoesifMiddleware(Dictionary<string, object> _middleware) : base(null)
+        {
+            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(null, _middleware);
+        }
+
         public async override Task Invoke(IOwinContext httpContext)
         {
             try 

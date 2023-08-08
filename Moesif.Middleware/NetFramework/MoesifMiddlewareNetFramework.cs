@@ -68,6 +68,16 @@ namespace Moesif.Middleware.NetFramework
 
         public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
+        public MoesifMiddlewareNetFramework(Dictionary<String,object> options) : base(null)
+        {
+            moesifOptions = options;
+            debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
+            userHelper = new UserHelper(); // Create a new instance of userHelper
+            companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
+            clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+        }
+
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
         {
             moesifOptions = _middleware;
@@ -76,7 +86,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.20", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
                 logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -322,14 +332,22 @@ namespace Moesif.Middleware.NetFramework
 
         private String getUserId(IOwinContext httpContext, EventRequestModel request)
         {
-            string userId = httpContext?.Authentication?.User?.Identity?.Name;
-            userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug, userId);
-            if (string.IsNullOrEmpty(userId))
+            Object iu;
+            var getFunctionValue = moesifOptions.TryGetValue("IdentifyUser", out iu);
+            if (getFunctionValue)
             {
-                // Fetch userId from authorization header
-                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                return LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
             }
-            return userId;
+            else
+            {
+                var userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    userId = httpContext?.Authentication?.User?.Identity?.Name;
+                }
+                return userId;
+            }
         }
 
         private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
