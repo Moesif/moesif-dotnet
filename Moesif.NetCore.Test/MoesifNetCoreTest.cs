@@ -93,7 +93,7 @@ namespace Moesif.NetCore.Test
 
         public MoesifNetCoreTest() {
 
-            moesifOptions.Add("ApplicationId", "eyJhcHAiOiI1MTk6MzQ1IiwidmVyIjoiMi4wIiwib3JnIjoiNDIwOjMyMCIsImlhdCI6MTY5MDg0ODAwMH0.Deusjx69LTWGaa1dJyJFP9mfFKNwF_plUvWEJfssEMw");
+            moesifOptions.Add("ApplicationId", "Your Moesif Application Id");
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
             moesifOptions.Add("LogBodyOutgoing", true);

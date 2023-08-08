@@ -332,13 +332,22 @@ namespace Moesif.Middleware.NetFramework
 
         private String getUserId(IOwinContext httpContext, EventRequestModel request)
         {
-            var userId = LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
-            if (string.IsNullOrEmpty(userId))
+            Object iu;
+            var getFunctionValue = moesifOptions.TryGetValue("IdentifyUser", out iu);
+            if (getFunctionValue)
             {
-                // Fetch userId from authorization header
-                userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                return LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
             }
-            return !string.IsNullOrEmpty(userId) ? userId : httpContext?.Authentication?.User?.Identity?.Name;
+            else
+            {
+                var userId = httpContext?.Authentication?.User?.Identity?.Name;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    userId = userHelper.fetchUserFromAuthorizationHeader(request.Headers, authorizationHeaderName, authorizationUserIdField);
+                }
+                return userId;
+            }
         }
 
         private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
