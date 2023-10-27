@@ -14,17 +14,54 @@ using Moesif.Middleware.Helpers;
 using NUnit.Framework;
 using Moesif.Api;
 using Moesif.Middleware.Models;
+using Moesif.Middleware.NetFramework;
 
 namespace Moesif.NetFramework.Test
 {
+    class MyILoggerFactory : ILoggerFactory
+    {
+        public void AddProvider(ILoggerProvider provider)
+        {
+            ;
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new MyILogger();
+        }
+
+        public void Dispose()
+        {
+            ;
+        }
+    };
+
+    class MyILogger : ILogger
+    {
+        public IDisposable BeginScope<TState>(TState state)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        {
+            ;
+        }
+    };
+
     [TestFixture()]
     public class MoesifNetFrameworkTest
     {
         public Dictionary<string, object> moesifOptions = new Dictionary<string, object>();
 
-        public MoesifMiddleware moesifMiddleware;
+        public MoesifMiddlewareNetFramework moesifMiddleware;
 
-        public MoesifMiddleware moesifMiddleware_standalone;
+        public MoesifMiddlewareNetFramework moesifMiddleware_standalone;
 
         public OwinMiddleware next;
 
@@ -104,16 +141,17 @@ namespace Moesif.NetFramework.Test
             moesifOptions.Add("IdentifyCompanyOutgoing", IdentifyCompanyOutgoing);
             moesifOptions.Add("SkipOutgoing", SkipOutgoing);
             moesifOptions.Add("MaskEventModelOutgoing", MaskEventModelOutgoing);
-
-            moesifMiddleware = new MoesifMiddleware(next, moesifOptions);
-            moesifMiddleware_standalone = new MoesifMiddleware(moesifOptions);
+            ILoggerFactory fac = new MyILoggerFactory();
+            moesifMiddleware = new MoesifMiddlewareNetFramework(next, moesifOptions, fac);
+            moesifMiddleware_standalone = new MoesifMiddlewareNetFramework(moesifOptions);
 
         }
 
         [Test()]
         public async Task It_Should_Log_Outgoing_Event()
         {
-            MoesifCaptureOutgoingRequestHandler handler = new MoesifCaptureOutgoingRequestHandler(new HttpClientHandler(), moesifOptions);
+            ILoggerFactory fac = new MyILoggerFactory();
+            MoesifCaptureOutgoingRequestHandler handler = new MoesifCaptureOutgoingRequestHandler(new HttpClientHandler(), moesifOptions, fac);
             HttpClient client = new HttpClient(handler);
             client.DefaultRequestHeaders.Add("User-Agent", "C# App");
             var responseString = await client.GetStringAsync("https://api.github.com");

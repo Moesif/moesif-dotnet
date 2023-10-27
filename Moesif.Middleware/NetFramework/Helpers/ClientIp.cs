@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-#if NET45
+#if NET461
 using Microsoft.Owin;
 #endif
 
-#if NET45
+#if NET461
 namespace Moesif.Middleware.NetFramework.Helpers
 {
     public class ClientIp

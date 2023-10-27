@@ -12,16 +12,23 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Serialization;
 using Moesif.Middleware.Helpers;
+using Microsoft.Extensions.Logging;
 
-#if NET45
+#if NET461
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework.Helpers;
 
 namespace Moesif.Middleware.NetFramework.Helpers
 {
-    public static class LoggerHelper
+    public class LoggerHelper
     {
-        public static Dictionary<string, string> AddTransactionId(string headerName, string transactionId, Dictionary<string, string> headers)
+        private ILogger _logger;
+
+        public LoggerHelper(ILogger logger)
+        {
+            _logger = logger;
+        }
+        public Dictionary<string, string> AddTransactionId(string headerName, string transactionId, Dictionary<string, string> headers)
         {
             if (!string.IsNullOrEmpty(transactionId))
             {
@@ -30,28 +37,28 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return headers;
         }
 
-        public static string GetConfigStringValues(Dictionary<string, object> moesifOptions, String configName, string defaultValue)
+        public  string GetConfigStringValues(Dictionary<string, object> moesifOptions, String configName, string defaultValue)
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToString(config_out) : defaultValue;
         }
 
-        public static bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue) 
+        public  bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue) 
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToBoolean(config_out) : defaultValue;
         }
 
-        public static int GetConfigIntValues(Dictionary<string, object> moesifOptions, String configName, int defaultValue)
+        public int GetConfigIntValues(Dictionary<string, object> moesifOptions, String configName, int defaultValue)
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToInt32(config_out) : defaultValue; 
         }
 
-        public static Dictionary<string, object> GetConfigObjectValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
+        public Dictionary<string, object> GetConfigObjectValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
         {
             var object_out = new object();
             var getObject = moesifOptions.TryGetValue(configName, out object_out);
@@ -78,7 +85,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return objectValue;
         }
 
-        public static string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
+        public  string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, IOwinRequest request, IOwinResponse response, bool debug)
         {
             var string_out = new object();
             var getStringValue = moesifOptions.TryGetValue(configName, out string_out);
@@ -104,7 +111,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return value;
         }
 
-        public static string GetOrCreateTransactionId(IDictionary<string, string> headers, string headerName)
+        public  string GetOrCreateTransactionId(IDictionary<string, string> headers, string headerName)
         {
             string transactionId;
             if (headers.ContainsKey(headerName))
@@ -126,7 +133,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return transactionId;
         }
 
-        public static string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding)
+        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding)
         {
             if (filter != null)
             {
@@ -135,7 +142,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return null;
         }
 
-        public async static Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
+        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
         {
             if (request == null || request.Body == null || !request.Body.CanRead)
             {
@@ -154,7 +161,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
-        public async static void LogDebugMessage(bool debug, String msg) 
+        public async  void LogDebugMessage(bool debug, String msg) 
         {
             if (debug)
             {
@@ -162,7 +169,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             }
         }
 
-        public static Tuple<object, string> Serialize(string data, string contentType)
+        public Tuple<object, string> Serialize(string data, string contentType)
         {
             if (string.IsNullOrEmpty(data))
             {
@@ -191,7 +198,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             }
         }
 
-        public static Dictionary<string, string> ToHeaders(IDictionary<string, string[]> headers, bool debug)
+        public  Dictionary<string, string> ToHeaders(IDictionary<string, string[]> headers, bool debug)
         {
             var copyHeaders = new Dictionary<string, string>();
             try

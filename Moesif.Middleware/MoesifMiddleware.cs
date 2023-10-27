@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
 using Moesif.Middleware.NetCore;
 #endif
 
-#if NET45
+#if NET461
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework;
 #endif
@@ -19,9 +20,9 @@ namespace Moesif.Middleware
     {
         MoesifMiddlewareNetCore netCoreMoesifMiddleware;
 
-        public MoesifMiddleware(RequestDelegate next, Dictionary<string, object> _middleware)
+        public MoesifMiddleware(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
-            netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(next, _middleware);
+            netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(next, _middleware, logger);
         }
 
         public MoesifMiddleware(Dictionary<string, object> _middleware) => netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(_middleware);

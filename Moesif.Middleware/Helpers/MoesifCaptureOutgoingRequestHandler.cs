@@ -10,6 +10,8 @@ using Moesif.Api.Models;
 using Moesif.Middleware.Models;
 using System.Linq;
 using System.ComponentModel.Design;
+using Microsoft.Extensions.Logging;
+
 
 namespace Moesif.Middleware.Helpers
 {
@@ -34,6 +36,8 @@ namespace Moesif.Middleware.Helpers
         public AppConfig config;
 
         public Governance governance;
+
+        private ILogger _logger;
        
         public static string Base64Encode(string plainText)
         {
@@ -73,9 +77,11 @@ namespace Moesif.Middleware.Helpers
             return localLogBody;
         }
 
-        public MoesifCaptureOutgoingRequestHandler(HttpMessageHandler innerHandler, Dictionary<string, object> moesifOptions) : base(innerHandler)
+        public MoesifCaptureOutgoingRequestHandler(HttpMessageHandler innerHandler, Dictionary<string, object> moesifOptions, ILoggerFactory logger) : base(innerHandler)
         {
             moesifConfigOptions = moesifOptions;
+            _logger = logger.CreateLogger("Moesif.Middleware.Helpers.MoesifCaptureOutgoingRequestHandler");
+
 
             try {
                 client = new MoesifApiClient(moesifConfigOptions["ApplicationId"].ToString());
@@ -92,8 +98,8 @@ namespace Moesif.Middleware.Helpers
                     try
                     {
                         // Get Application config
-                        config = await AppConfigHelper.updateConfig(client, config, debug);
-                        governance = await GovernanceHelper.updateGovernance(client, governance, debug);
+                        config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
+                        governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
                   
                     }
                     catch (Exception)
@@ -415,7 +421,7 @@ namespace Moesif.Middleware.Helpers
                         try
                         {
                             // Get Application config
-                             await AppConfigHelper.updateConfig(client, config, debug);
+                             await AppConfigHelper.updateConfig(client, config, debug, _logger);
                       
                         }
                         catch (Exception)

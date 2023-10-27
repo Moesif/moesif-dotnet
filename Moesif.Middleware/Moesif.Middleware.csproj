@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -12,6 +12,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.8.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
@@ -22,7 +23,7 @@
     <DefineConstants>NETCORE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net" />
@@ -31,8 +32,8 @@
     <Reference Include="System.Web" />
     <PackageReference Include="Microsoft.Owin" Version="4.2.2" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45'">
-    <DefineConstants>NET45</DefineConstants>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">
+    <DefineConstants>NET461</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,5 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Helpers\ClientIp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Microsoft.Owin" />
   </ItemGroup>
 </Project>
