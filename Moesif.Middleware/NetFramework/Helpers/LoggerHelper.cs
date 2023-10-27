@@ -161,12 +161,9 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
-        public async  void LogDebugMessage(bool debug, String msg) 
+        public void LogDebugMessage(bool debug, String msg) 
         {
-            if (debug)
-            {
-                await Console.Out.WriteLineAsync(msg);
-            }
+            _logger.LogDebug(msg);
         }
 
         public Tuple<object, string> Serialize(string data, string contentType)
