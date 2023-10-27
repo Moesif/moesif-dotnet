@@ -127,15 +127,16 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                 ScheduleGovernanceRule();
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.LogError(e, "MoesifMiddlewareNetCore initialiation error");
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
         }
 
         private void ScheduleAppConfig()
         {
-            loggerHelper.LogDebugMessage(debug, "Starting a new thread to sync the application configuration");
+            _logger.LogDebug("Starting a new thread to sync the application configuration");
 
             Thread appConfigThread = new Thread(async () => // Create a new thread to fetch the application configuration
             {
@@ -145,14 +146,14 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                     try
                     {
                         lastAppConfigWorkerRun = DateTime.UtcNow;
-                        loggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                        _logger.LogDebug("Last App Config Worker Run - {time}  for thread Id - {thread}" , lastAppConfigWorkerRun, Thread.CurrentThread.ManagedThreadId);
 
                         // update Application config
                         config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        loggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
+                        _logger.LogError(e, "Error while scheduling appConfig job");
                     }
                     // wait for max 1 hour
                     configEvent.WaitOne(60*60*1000);
@@ -179,9 +180,9 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                         // update Governance Rule
                         governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                         _logger.LogDebug("Error while updating Governance rule");
+                         _logger.LogError(e, "Error while updating Governance rule");
                     }
                     // wait for event for max 1 hour
                     governanceEvent.WaitOne(60 * 60 * 1000);
@@ -207,9 +208,9 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                         _logger.LogDebug( "Last Worker Run {time}  for thread Id {threadId} ", lastWorkerRun, Thread.CurrentThread.ManagedThreadId);
                         await Tasks.AsyncClientCreateEvent(client, MoesifQueue, config, governance, configEvent, governanceEvent,batchSize, debug, _logger);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        _logger.LogDebug("Error while scheduling events batch job");
+                        _logger.LogError( e, "Error while scheduling events batch job");
                     }
                 }
             });
@@ -466,7 +467,7 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                 }
                 catch
                 {
-                    _logger.LogDebug("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
+                    _logger.LogWarning("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
                 }
             }
 
@@ -494,7 +495,7 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                         }
                         else
                         {
-                            _logger.LogDebug("Queue is full, skip adding events ");
+                            _logger.LogWarning("Queue is full, skip adding events ");
                         }
                     }
                     else
@@ -513,12 +514,9 @@ public DateTime lastWorkerRun = DateTime.MinValue;
             {
                 if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
                 {
-                    _logger.LogInformation("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
+                    _logger.LogWarning("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
                 }
-                if (debug)
-                {
-                    _logger.LogDebug("Error sending event to Moesif, with status code: {statusCode}", inst.ResponseCode);
-                }
+                _logger.LogWarning("Error sending event to Moesif, with status code: {statusCode}", inst.ResponseCode);
             }
         }
 

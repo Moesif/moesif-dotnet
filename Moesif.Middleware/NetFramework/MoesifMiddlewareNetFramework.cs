@@ -504,7 +504,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         await client.Api.CreateEventAsync(eventModel);
 
-                        _logger.LogDebug("Event sent successfully to Moesif at {tine}", DateTime.UtcNow);
+                        _logger.LogDebug("Event sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }
                 }
                 else
