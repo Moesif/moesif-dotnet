@@ -13,13 +13,15 @@ using System.Collections.Concurrent;
 using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using System.ComponentModel.Design;
-#if NET45
+using Microsoft.Extensions.Logging;
+#if NET461
 using Microsoft.Owin;
 using System.Web;
 using Moesif.Middleware.NetFramework.Helpers;
+
 #endif
 
-#if NET45
+#if NET461
 namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
@@ -68,39 +70,47 @@ namespace Moesif.Middleware.NetFramework
 
         public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
+        private ILogger _logger;
+
+        private LoggerHelper loggerHelper;
+
         public MoesifMiddlewareNetFramework(Dictionary<String,object> options) : base(null)
         {
             moesifOptions = options;
-            debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+            _logger = null;
+            loggerHelper = new LoggerHelper(_logger);
+            debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
             client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
         }
 
-        public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
+        public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware, ILoggerFactory logger) : base(next)
         {
             moesifOptions = _middleware;
+            _logger = logger.CreateLogger("Moesif.Middleware.NetFramework");
+            loggerHelper = new LoggerHelper(_logger);
 
             try
             {
                 // Initialize client
-                debug = LoggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+                debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
-                logBody = LoggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
-                isBatchingEnabled = LoggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
-                disableStreamOverride = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
-                batchSize = LoggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
-                queueSize = LoggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
-                batchMaxTime = LoggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
-                appConfigSyncTime = LoggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
+                logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
+                disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
+                batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
+                queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
+                batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
+                appConfigSyncTime = loggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 config = AppConfig.getDefaultAppConfig();
                 governance = Governance.getDefaultGovernance();
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 clientIpHelper = new ClientIp(); // Create a new instance of client Ip
-                authorizationHeaderName = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
-                authorizationUserIdField = LoggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
+                authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
+                authorizationUserIdField = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
 
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
@@ -120,7 +130,7 @@ namespace Moesif.Middleware.NetFramework
 
         private void ScheduleAppConfig()
         {
-            LoggerHelper.LogDebugMessage(debug, "Starting a new thread to sync the application configuration");
+            _logger.LogDebug("Starting a new thread to sync the application configuration");
 
             Thread appConfigThread = new Thread(async () => // Create a new thread to fetch the application configuration
             {
@@ -130,14 +140,14 @@ namespace Moesif.Middleware.NetFramework
                     try
                     {
                         lastAppConfigWorkerRun = DateTime.UtcNow;
-                        LoggerHelper.LogDebugMessage(debug, "Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                        _logger.LogDebug("Last App Config Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
 
                         // update Application config
-                        config = await AppConfigHelper.updateConfig(client, config, debug);
+                        config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        LoggerHelper.LogDebugMessage(debug, "Error while scheduling appConfig job");
+                        _logger.LogError(e, "Error while scheduling appConfig job at {time}", DateTime.UtcNow);
                     }
                     // wait for max 1 hour
                     configEvent.WaitOne(60 * 60 * 1000);
@@ -149,7 +159,7 @@ namespace Moesif.Middleware.NetFramework
 
         private void ScheduleGovernanceRule()
         {
-            LoggingHelper.LogDebugMessage(debug, "Starting a new thread to sync governance rules");
+            _logger.LogDebug("Starting a new thread to sync governance rules");
 
             Thread governanceThread = new Thread(async () => // Create a new thread to fetch the governance rules
             {
@@ -159,15 +169,14 @@ namespace Moesif.Middleware.NetFramework
                     try
                     {
                         var lastGovernanceWorkerRun = DateTime.UtcNow;
-                        if (debug)
-                            LoggingHelper.LogMessage("Last Governance Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                        _logger.LogDebug("Last Governance Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
 
                         // update Governance Rule
-                        governance = await GovernanceHelper.updateGovernance(client, governance, debug);
+                        governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        LoggingHelper.LogDebugMessage(debug, "Error while updating Governance rule");
+                        _logger.LogError(e, "Error while updating Governance rule at {tine}", DateTime.UtcNow);
                     }
                     // wait for max 1 hour
                     governanceEvent.WaitOne(60 * 60 * 1000);
@@ -179,7 +188,7 @@ namespace Moesif.Middleware.NetFramework
 
         private void ScheduleWorker() 
         {
-            LoggerHelper.LogDebugMessage(debug, "Starting a new thread to read the queue and send event to moesif");
+            _logger.LogDebug("Starting a new thread to read the queue and send event to moesif");
             Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
              {
 
@@ -189,14 +198,14 @@ namespace Moesif.Middleware.NetFramework
                      try
                      {
                          lastWorkerRun = DateTime.UtcNow;
-                         LoggerHelper.LogDebugMessage(debug, "Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
-                         await Tasks.AsyncClientCreateEvent(client, MoesifQueue, config, governance, configEvent, governanceEvent,batchSize, debug);
+                         _logger.LogDebug("Last Worker Run - " + lastWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
+                         await Tasks.AsyncClientCreateEvent(client, MoesifQueue, config, governance, configEvent, governanceEvent,batchSize, debug, _logger);
 
                      }
                      catch (Exception e)
                      {
-                         LoggerHelper.LogDebugMessage(debug, "Error while scheduling events batch job: " + e.Message);
-                         LoggingHelper.LogDebugMessage(debug, e.StackTrace);
+                         _logger.LogDebug("Error while scheduling events batch job:{Error} ",e.Message);
+                         _logger.LogError(e, "Error while scheduling events batch job");
                      }
                  }
              });
@@ -268,7 +277,7 @@ namespace Moesif.Middleware.NetFramework
             if (GovernanceHelper.isGovernaceRuleDefined(governance))
             {
                 eventModel.UserId = getUserId(httpContext, request);
-                eventModel.CompanyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
             }
 
             if (GovernanceHelper.enforceGovernaceRule(eventModel, governance, config))
@@ -280,10 +289,7 @@ namespace Moesif.Middleware.NetFramework
                 }
                 await httpContext.Response.WriteAsync(eventModel.Response.Body.ToString());
                 eventModel.Response.Headers["X-Moesif-Transaction-Id"] = transactionId;
-                if (debug)
-                {
-                    LoggingHelper.LogMessage("Request is blocked by Governance rule " + eventModel.BlockedBy);
-                }
+                _logger.LogDebug("Request is blocked by Governance rule {ruleId} " , eventModel.BlockedBy);
                 await Task.Run(async () => await LogEventAsync(eventModel));
             }
             else
@@ -304,7 +310,7 @@ namespace Moesif.Middleware.NetFramework
 
                 if (ShouldSkip != null && ShouldSkip(httpContext.Request, httpContext.Response))
                 {
-                    LoggerHelper.LogDebugMessage(debug, "Skip sending event to Moesif");
+                    _logger.LogDebug("Skip sending event to Moesif");
                 }
                 else
                 {
@@ -315,16 +321,16 @@ namespace Moesif.Middleware.NetFramework
                     eventModel.Response = ToResponse(httpContext.Response, streamToUse, transactionId);
                     if (eventModel.CompanyId == null)
                     {
-                        eventModel.CompanyId = LoggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                        eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
                     }
                     if (eventModel.UserId == null)
                     {
                         eventModel.UserId = getUserId(httpContext, eventModel.Request);
                     }
-                    eventModel.Metadata = LoggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
-                    eventModel.SessionToken = LoggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                    eventModel.Metadata = loggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                    eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
-                    LoggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
+                    loggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
                     await Task.Run(async () => await LogEventAsync(eventModel));
                 }
             }
@@ -336,7 +342,7 @@ namespace Moesif.Middleware.NetFramework
             var getFunctionValue = moesifOptions.TryGetValue("IdentifyUser", out iu);
             if (getFunctionValue)
             {
-                return LoggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                return loggerHelper.GetConfigValues("IdentifyUser", moesifOptions, httpContext.Request, httpContext.Response, debug);
             }
             else
             {
@@ -353,7 +359,7 @@ namespace Moesif.Middleware.NetFramework
         private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
         {
             // Request headers
-            var reqHeaders = LoggerHelper.ToHeaders(request.Headers, debug);
+            var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
 
             // RequestBody
             string contentEncoding = "";
@@ -366,21 +372,21 @@ namespace Moesif.Middleware.NetFramework
             int.TryParse(contentLength, out parsedContentLength);
             try
             { 
-                body = await LoggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
+                body = await loggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
             }
             catch 
             {
-                LoggerHelper.LogDebugMessage(debug, "Cannot read request body.");
+                _logger.LogDebug("Cannot read request body.");
             }
 
-            var bodyWrapper = LoggerHelper.Serialize(body, request.ContentType);
+            var bodyWrapper = loggerHelper.Serialize(body, request.ContentType);
 
             // Add Transaction Id to the Request Header
-            bool disableTransactionId = LoggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
+            bool disableTransactionId = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
             if (!disableTransactionId)
             {
-                transactionId = LoggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
-                reqHeaders = LoggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
+                transactionId = loggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
+                reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
 
             string ip = clientIpHelper.GetClientIp(reqHeaders, request);
@@ -412,17 +418,17 @@ namespace Moesif.Middleware.NetFramework
         private EventResponseModel ToResponse(IOwinResponse response, StreamHelper outputStream, string transactionId)
         {
 
-            var rspHeaders = LoggerHelper.ToHeaders(response.Headers, debug);
+            var rspHeaders = loggerHelper.ToHeaders(response.Headers, debug);
 
             // ResponseBody
             string contentEncoding = "";
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
-            var body = LoggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding);            
-            var bodyWrapper = LoggerHelper.Serialize(body, response.ContentType);
+            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding);            
+            var bodyWrapper = loggerHelper.Serialize(body, response.ContentType);
 
             // Add Transaction Id to Response Header
-            rspHeaders = LoggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);
+            rspHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);
 
             var eventRsp = new EventResponseModel()
             {
@@ -458,9 +464,9 @@ namespace Moesif.Middleware.NetFramework
                 {
                     eventModel = MaskEvent(eventModel);
                 }
-                catch
+                catch(Exception e)
                 {
-                    LoggerHelper.LogDebugMessage(debug, "Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
+                    _logger.LogError(e ,"Can not execute MASK_EVENT_MODEL function. Please check moesif settings.");
                 }
             }
 
@@ -473,10 +479,7 @@ namespace Moesif.Middleware.NetFramework
                 // If available, get sampling percentage based on config else default to 100
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
 
-                if (debug)
-                {
-                    LoggingHelper.LogMessage("sampling rate is " + samplingPercentage);
-                }
+                _logger.LogDebug("sampling rate is {samplingRate} ", samplingPercentage);
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
                 if (samplingPercentage >= randomPercentage)
@@ -486,7 +489,7 @@ namespace Moesif.Middleware.NetFramework
 
                     if (isBatchingEnabled)
                     {
-                        LoggerHelper.LogDebugMessage(debug, "Add Event to the batch");
+                        _logger.LogDebug("Add Event to the batch");
                         // Add event to queue
                         if (MoesifQueue.Count < queueSize)
                         {
@@ -494,32 +497,28 @@ namespace Moesif.Middleware.NetFramework
                         }
                         else
                         {
-                            LoggerHelper.LogDebugMessage(debug, "Queue is full, skip adding events ");
+                            _logger.LogWarning("Queue is full, skip adding events ");
                         }
                     }
                     else
                     {
                         await client.Api.CreateEventAsync(eventModel);
 
-                        LoggerHelper.LogDebugMessage(debug, "Event sent successfully to Moesif");
+                        _logger.LogDebug("Event sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }
                 }
                 else
                 {
-                    LoggerHelper.LogDebugMessage(debug, "Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
+                    _logger.LogDebug("Skipped Event due to sampling percentage: " + samplingPercentage.ToString() + " and random percentage: " + randomPercentage.ToString());
                 }
             }
             catch (APIException inst)
             {
                 if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
                 {
-                    Console.WriteLine("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
+                    _logger.LogWarning("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
                 }
-                if (debug)
-                {
-                    Console.WriteLine("Error sending event to Moesif, with status code:");
-                    Console.WriteLine(inst.ResponseCode);
-                }
+                _logger.LogWarning("Error sending event to Moesif, with status code:{errorCode}", inst.ResponseCode);
             }
         }
 

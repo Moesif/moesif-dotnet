@@ -7,12 +7,13 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Moesif.Middleware.Helpers
 {
     public class GovernanceHelper
     {
-        public static async Task<Governance> updateGovernance(MoesifApiClient client, Governance prevGovernance, bool debug)
+        public static async Task<Governance> updateGovernance(MoesifApiClient client, Governance prevGovernance, bool debug, ILogger logger)
         {
             try
             {
@@ -22,16 +23,14 @@ namespace Moesif.Middleware.Helpers
                 {
                     var governance = Governance.fromJson(resp.Body);
                     governance.etag = etag;
-                    if(debug)
-                        LoggingHelper.LogMessage("governance rule updated with " + resp.Body);
+                    logger.LogDebug("governance rule updated with {body} ", resp.Body);
                     return governance;
                 }
                 return prevGovernance;
             }
             catch (Exception e)
             {
-                LoggingHelper.LogDebugMessage(debug, "Error getting GovernanceRule. :" + e.Message);
-                LoggingHelper.LogDebugMessage(debug, e.StackTrace);
+                logger.LogError(e, "Error getting GovernanceRule");
                 return prevGovernance;
             }
         }

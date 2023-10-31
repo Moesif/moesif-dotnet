@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Moesif.Middleware.Models;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -41,7 +42,7 @@ namespace Moesif.Middleware.Helpers
         }
 
         public static async Task AsyncClientCreateEvent(MoesifApiClient client, ConcurrentQueue<EventModel> MoesifQueue,
-            AppConfig config, Governance governance, AutoResetEvent configEvent, AutoResetEvent governanceEvent,int batchSize, bool debug)
+            AppConfig config, Governance governance, AutoResetEvent configEvent, AutoResetEvent governanceEvent,int batchSize, bool debug, ILogger logger)
         {
             List<EventModel> batchEvents = new List<EventModel>();
 
@@ -72,20 +73,21 @@ namespace Moesif.Middleware.Helpers
                             governanceEvent.Set();
                         }
 
-                        LoggingHelper.LogDebugMessage(debug, "Events sent successfully to Moesif");
+                        logger.LogDebug("Events sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }
                     catch (Exception e)
                     {
-                        LoggingHelper.LogDebugMessage(debug, "Could not connect to Moesif server:" + e.Message);
-                        LoggingHelper.LogDebugMessage(debug, e.StackTrace);
+                        if(logger != null)
+                            logger.LogError(e, "Could not connect to Moesif server at {time}" ,DateTime.UtcNow);
                     }
                 }
                 else
                 {
-                    LoggingHelper.LogDebugMessage(debug, "No events in the queue");
+                    if(logger != null) 
+                        logger.LogDebug("No events in the queue");
                 }
             }
-            LoggingHelper.LogDebugMessage(debug, "No events in the queue");
+            if(logger != null) logger.LogDebug("No events in the queue");
         }
     }
 }

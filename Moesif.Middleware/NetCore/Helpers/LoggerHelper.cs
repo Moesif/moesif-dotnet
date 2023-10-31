@@ -8,7 +8,7 @@ using Moesif.Api.Exceptions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Moesif.Middleware.Helpers;
-
+using Microsoft.Extensions.Logging;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -21,36 +21,38 @@ namespace Moesif.Middleware.NetCore.Helpers
 {
     public class LoggerHelper
     {
-        public async static void LogDebugMessage(bool debug, String msg)
+        ILogger _logger;
+        public LoggerHelper(ILogger logger)
         {
-            if (debug)
-            {
-                await Console.Out.WriteLineAsync(msg);
-            }
+            _logger = logger;
+        }
+        public void LogDebugMessage(bool debug, String msg)
+        {
+            _logger.LogDebug(msg);
         }
 
-        public static string GetConfigStringValues(Dictionary<string, object> moesifOptions, String configName, string defaultValue)
+        public string GetConfigStringValues(Dictionary<string, object> moesifOptions, String configName, string defaultValue)
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToString(config_out) : defaultValue;
         }
 
-        public static bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue)
+        public  bool GetConfigBoolValues(Dictionary<string, object> moesifOptions, String configName, bool defaultValue)
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToBoolean(config_out) : defaultValue;
         }
 
-        public static int GetConfigIntValues(Dictionary<string, object> moesifOptions, String configName, int defaultValue)
+        public  int GetConfigIntValues(Dictionary<string, object> moesifOptions, String configName, int defaultValue)
         {
             var config_out = new object();
             var getConfigOption = moesifOptions.TryGetValue(configName, out config_out);
             return getConfigOption ? Convert.ToInt32(config_out) : defaultValue;
         }
 
-        public static Dictionary<string, object> GetConfigObjectValues(string configName, Dictionary<string, object> moesifOptions, HttpRequest request, HttpResponse response, bool debug)
+        public  Dictionary<string, object> GetConfigObjectValues(string configName, Dictionary<string, object> moesifOptions, HttpRequest request, HttpResponse response, bool debug)
         {
             var object_out = new object();
             var getObject = moesifOptions.TryGetValue(configName, out object_out);
@@ -77,7 +79,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             return objectValue;
         }
 
-        public static string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, HttpRequest request, HttpResponse response, bool debug)
+        public  string GetConfigValues(string configName, Dictionary<string, object> moesifOptions, HttpRequest request, HttpResponse response, bool debug)
         {
             var string_out = new object();
             var getStringValue = moesifOptions.TryGetValue(configName, out string_out);
@@ -103,7 +105,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             return value;
         }
 
-        public static string GetOrCreateTransactionId(IDictionary<string, string> headers, string headerName)
+        public string GetOrCreateTransactionId(IDictionary<string, string> headers, string headerName)
         {
             string transactionId;
             if (headers.ContainsKey(headerName))
@@ -125,7 +127,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             return transactionId;
         }
 
-        public static Dictionary<string, string> AddTransactionId(string headerName, string transactionId, Dictionary<string, string> headers)
+        public  Dictionary<string, string> AddTransactionId(string headerName, string transactionId, Dictionary<string, string> headers)
         {
             if (!string.IsNullOrEmpty(transactionId))
             {
@@ -134,7 +136,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             return headers;
         }
 
-        public static Dictionary<string, string> ToHeaders(IHeaderDictionary headers, bool debug)
+        public  Dictionary<string, string> ToHeaders(IHeaderDictionary headers, bool debug)
         {
             var copyHeaders = new Dictionary<string, string>();
             try
@@ -149,7 +151,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             return copyHeaders;
         }
 
-        public static async Task<string> GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug)
+        public async Task<string> GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug)
         {
             try
             {
@@ -158,18 +160,18 @@ namespace Moesif.Middleware.NetCore.Helpers
             }
             catch (Exception)
             {
-                LoggerHelper.LogDebugMessage(debug, "Error encountered while copying request body");
+                LogDebugMessage(debug, "Error encountered while copying request body");
             }
             return bodyAsText;
         }
 
-        public static string Base64Encode(string plainText)
+        public string Base64Encode(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
 
-        public static Tuple<object, string> Serialize(string data, string contentType, bool logBody, bool debug)
+        public  Tuple<object, string> Serialize(string data, string contentType, bool logBody, bool debug)
         {
             if (string.IsNullOrEmpty(data))
             {
@@ -190,14 +192,14 @@ namespace Moesif.Middleware.NetCore.Helpers
                     }
                     else
                     {
-                        LoggerHelper.LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+                        LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
                         reqBody = Base64Encode(data);
                         requestTransferEncoding = "base64";
                     }
                 }
                 catch (Exception)
                 {
-                    LoggerHelper.LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+                    LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
                     reqBody = Base64Encode(data);
                     requestTransferEncoding = "base64";
                 }

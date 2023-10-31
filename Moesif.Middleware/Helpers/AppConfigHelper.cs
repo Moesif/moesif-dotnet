@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 using Moesif.Middleware.Models;
 using System.Text.RegularExpressions;
 using System.Reflection;
-
+using Microsoft.Extensions.Logging;
 
 namespace Moesif.Middleware.Helpers
 {
     public class AppConfigHelper
     {
 
-        public static async Task<AppConfig> updateConfig(MoesifApiClient client, AppConfig prevConfig, bool debug)
+        public static async Task<AppConfig> updateConfig(MoesifApiClient client, AppConfig prevConfig, bool debug, ILogger logger)
         {
             try
             {
@@ -25,8 +25,7 @@ namespace Moesif.Middleware.Helpers
                     var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
                     appConfig.etag = etag;
                     appConfig.lastUpdatedTime = DateTime.UtcNow;
-                    if(debug)
-                        LoggingHelper.LogMessage("appConfig is updated with " + appConfigResp.Body);
+                    logger.LogDebug("appConfig is updated with {body} ", appConfigResp.Body);
                     return appConfig;
                 }
             }
@@ -34,14 +33,13 @@ namespace Moesif.Middleware.Helpers
             {
                 if (401 <= inst.ResponseCode && inst.ResponseCode <= 403)
                 {
-                    LoggingHelper.LogDebugMessage(debug, "Unauthorized access getting application configuration. Please check your Appplication Id.");
+                    logger.LogDebug("Unauthorized access getting application configuration. Please check your Appplication Id.");
                 }
-                LoggingHelper.LogDebugMessage(debug, "Error getting application configuration, with status code:");
-                LoggingHelper.LogDebugMessage(debug, inst.ResponseCode.ToString());
+                logger.LogDebug( "Error getting application configuration, with status code:{statusCode}", inst.ResponseCode);
             }
             catch (Exception e)
             {
-                LoggingHelper.LogDebugMessage(debug, "Error while parsing the configuration object, setting the sample rate to default. " + e.StackTrace);
+                logger.LogError(e, "Error while parsing the configuration object, setting the sample rate to default");
             }
             return prevConfig;
         }

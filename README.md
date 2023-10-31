@@ -712,10 +712,14 @@ Moesif has validated `Moesif.Middleware` against the following framework.
 | -------------- | -----------------  | 
 | .NET |5.0|
 | .NET |6.0|
+| .NET |7.0|
 | .NET Core|2.0-3.0|
-| .NET Framework MVC |4.5-4.7|
-| .NET Framework Web API|4.5-4.7|
-| .NET Framework Web API SelfHost|4.5-4.7|
+| .NET Framework MVC |4.6-4.7|
+| .NET Framework Web API|4.6-4.7|
+| .NET Framework Web API SelfHost|4.6-4.7|
+
+#### Last Supported Version for .NET 45
+SDK version `1.3.25` supports .NET 4.5, which will be no longer supported. Please upgrade to .NET 4.6.1 or higher.
 
 ## Other integrations
 
