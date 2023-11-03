@@ -143,38 +143,6 @@ namespace Moesif.Middleware.Helpers
             });
         }
 
-        //static void updateEventModel(EventModel eventModel, Rule rule, GovernanceRule governanceRule)
-        //{
-        //    var response = governanceRule.response;
-        //    if(rule == null)
-        //    {
-        //        updateEventModel(eventModel, governanceRule.response, governanceRule._id);
-        //        return;
-        //    }
-        //    var headers = response.headers;
-        //    headers ??= new Dictionary<string, string>();
-        //    var variables = rule.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
-        //    variables ??= new Dictionary<string, string>();
-        //    response.headers = headers.ToDictionary(kv => kv.Key, kv =>
-        //    {
-        //        var value = kv.Value;
-        //        foreach (var v in variables)
-        //        {
-        //            value = value.Replace(v.Key, v.Value);
-        //        }
-        //        return value;
-        //    });
-
-        //    var body = response.body.ToString();
-        //    foreach (var v in variables)
-        //    {
-        //        body = body.Replace(v.Key, v.Value);
-        //    }
-        //    response.body = body;
-
-        //    updateEventModel(eventModel, response, governanceRule._id);
-
-        //}
 
         static void updateEventModel(EventModel eventModel, Response response, string ruleId)
         {
@@ -224,8 +192,6 @@ namespace Moesif.Middleware.Helpers
                                 Match m = Regex.Match(fieldlValue.ToString(), c.value, RegexOptions.IgnoreCase);
                                 if (!m.Success)
                                 {
-                                    //matched = false;
-                                    //break;
                                     return false;
                                 }
                                 else
@@ -235,8 +201,6 @@ namespace Moesif.Middleware.Helpers
                             }
                             else
                             {
-                                //matched = false;
-                                //break;
                                 return false;
                             }
 
@@ -314,7 +278,6 @@ namespace Moesif.Middleware.Helpers
                             }
                         }
                     }
-                    //return matching;
                 }
                 else
                 {
@@ -329,7 +292,6 @@ namespace Moesif.Middleware.Helpers
                             }
                         }
                     }
-                    //return matching;
                 }
 
             }
