@@ -55,28 +55,17 @@ namespace Moesif.Middleware.Helpers
             else
             {
                 var requestMap = RequestMapHelper.createRequestMap(eventModel);
-                var matchingUser = findMatchingEntityRule(eventModel.UserId, "user", governace, config);
-                foreach ((Rule rule, GovernanceRule governanceRule) t in matchingUser)
-                {
-                    // return the first match
-                    if (isRegexMatch(t.governanceRule, requestMap))
-                    {
-                        updateEventModel(eventModel, t.rule, t.governanceRule);
-                        return true;
-                    }
-                }
-                var matchingCompany = findMatchingEntityRule(eventModel.CompanyId, "company", governace, config);
-                foreach ((Rule rule, GovernanceRule governanceRule) t in matchingCompany)
-                {
-                    // return the first match
-                    if (isRegexMatch(t.governanceRule, requestMap))
-                    {
-                        updateEventModel(eventModel, t.rule, t.governanceRule);
-                        return true;
-                    }
-                }
+                var matchingRules = new List<(Rule, GovernanceRule)>();
+                var matchingUser = findMatchingEntityRule(eventModel.UserId, "user", governace, config, requestMap);
+                matchingRules.AddRange(matchingUser);
+              
+               
+                var matchingCompany = findMatchingEntityRule(eventModel.CompanyId, "company", governace, config, requestMap);
+                matchingRules.AddRange(matchingCompany);
+               
 
                 var regexRules = new List<GovernanceRule>();
+                var matchingRegexRules = new List<(Rule, GovernanceRule)>();
                 foreach (GovernanceRule r in governace.rules)
                 {
                     if (r.type == "regex")
@@ -86,30 +75,64 @@ namespace Moesif.Middleware.Helpers
                 }
                 foreach (GovernanceRule r in regexRules)
                 {
-                    // return the first match
                     if (isRegexMatch(r, requestMap))
                     {
-                        updateEventModel(eventModel, r.response, r._id);
-                        return true;
+                        matchingRegexRules.Add((null, r));
                     }
+                }
+                matchingRules.AddRange(matchingRegexRules);
+                if(matchingRules.Count > 0)
+                {
+                    updateEventModel(eventModel, matchingRules);
+                    return true;
                 }
                 return false;
             }
         }
 
-        static void updateEventModel(EventModel eventModel, Rule rule, GovernanceRule governanceRule)
+        static void updateEventModel(EventModel eventModel, List<(Rule, GovernanceRule)> matchingRules)
         {
-            var response = governanceRule.response;
-            if(rule == null)
+            var (r, govRule) = matchingRules.First();
+            var response = govRule.response;
+            var body = applyMergeTagtoBody(r, response.body.ToString());
+            var headers = new Dictionary<string, string>();
+            foreach (var (rule, gRule) in matchingRules)
             {
-                updateEventModel(eventModel, governanceRule.response, governanceRule._id);
-                return;
+                foreach (var header in applyMergeTagtoHeaders(rule, gRule.response.headers))
+                {
+                    if (headers.ContainsKey(header.Key))
+                    {
+                        headers[header.Key] = header.Value;
+                    }
+                    else
+                    {
+                        headers.Add(header.Key, header.Value);
+                    }
+                }
             }
-            var headers = response.headers;
-            headers ??= new Dictionary<string, string>();
-            var variables = rule.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
+            response.body = body;
+            response.headers = headers;
+            updateEventModel(eventModel, response, govRule._id);
+        }
+
+        static string applyMergeTagtoBody(Rule rule, string body)
+        {
+            var variables = rule?.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
             variables ??= new Dictionary<string, string>();
-            response.headers = headers.ToDictionary(kv => kv.Key, kv =>
+            foreach (var v in variables)
+            {
+                body = body.Replace(v.Key, v.Value);
+            }
+            return body;
+
+        }
+
+        static Dictionary<string, string> applyMergeTagtoHeaders(Rule rule, Dictionary<string, string> headers)
+        {
+            var variables = rule?.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
+            //var variables = rule == null || rule.values == null ? new Dictionary<string, string>()  : rule.values.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
+            variables ??= new Dictionary<string, string>();
+            return headers.ToDictionary(kv => kv.Key, kv =>
             {
                 var value = kv.Value;
                 foreach (var v in variables)
@@ -118,17 +141,40 @@ namespace Moesif.Middleware.Helpers
                 }
                 return value;
             });
-
-            var body = response.body.ToString();
-            foreach (var v in variables)
-            {
-                body = body.Replace(v.Key, v.Value);
-            }
-            response.body = body;
-
-            updateEventModel(eventModel, response, governanceRule._id);
-
         }
+
+        //static void updateEventModel(EventModel eventModel, Rule rule, GovernanceRule governanceRule)
+        //{
+        //    var response = governanceRule.response;
+        //    if(rule == null)
+        //    {
+        //        updateEventModel(eventModel, governanceRule.response, governanceRule._id);
+        //        return;
+        //    }
+        //    var headers = response.headers;
+        //    headers ??= new Dictionary<string, string>();
+        //    var variables = rule.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
+        //    variables ??= new Dictionary<string, string>();
+        //    response.headers = headers.ToDictionary(kv => kv.Key, kv =>
+        //    {
+        //        var value = kv.Value;
+        //        foreach (var v in variables)
+        //        {
+        //            value = value.Replace(v.Key, v.Value);
+        //        }
+        //        return value;
+        //    });
+
+        //    var body = response.body.ToString();
+        //    foreach (var v in variables)
+        //    {
+        //        body = body.Replace(v.Key, v.Value);
+        //    }
+        //    response.body = body;
+
+        //    updateEventModel(eventModel, response, governanceRule._id);
+
+        //}
 
         static void updateEventModel(EventModel eventModel, Response response, string ruleId)
         {
@@ -178,8 +224,9 @@ namespace Moesif.Middleware.Helpers
                                 Match m = Regex.Match(fieldlValue.ToString(), c.value, RegexOptions.IgnoreCase);
                                 if (!m.Success)
                                 {
-                                    matched = false;
-                                    break;
+                                    //matched = false;
+                                    //break;
+                                    return false;
                                 }
                                 else
                                 {
@@ -188,8 +235,9 @@ namespace Moesif.Middleware.Helpers
                             }
                             else
                             {
-                                matched = false;
-                                break;
+                                //matched = false;
+                                //break;
+                                return false;
                             }
 
                         }
@@ -198,8 +246,7 @@ namespace Moesif.Middleware.Helpers
                             Match m = Regex.Match((string)requestMap.regex_mapping[c.path], c.value, RegexOptions.IgnoreCase);
                             if (!m.Success)
                             {
-                                matched = false;
-                                break;
+                                return false;
                             }
                             else
                             {
@@ -208,8 +255,7 @@ namespace Moesif.Middleware.Helpers
                         }
                         else
                         {
-                            matched = false;
-                            break;
+                            return false;
                         }
 
                     }
@@ -221,7 +267,7 @@ namespace Moesif.Middleware.Helpers
         }
 
 
-        static List<(Rule, GovernanceRule)> findMatchingEntityRule(string entity, string type, Governance governace, AppConfig config)
+        static List<(Rule, GovernanceRule)> findMatchingEntityRule(string entity, string type, Governance governace, AppConfig config, RequestMap requestMap)
         {
             var matching = new List<(Rule, GovernanceRule)>();
             if (entity == null)
@@ -232,7 +278,8 @@ namespace Moesif.Middleware.Helpers
                     {
                         if (govRule.applied_to_unidentified && govRule.type == type)
                         {
-                            matching.Add((null, govRule));
+                            if (isRegexMatch(govRule, requestMap))
+                                matching.Add((null, govRule));
                         }
                     }
                 }
@@ -261,12 +308,13 @@ namespace Moesif.Middleware.Helpers
                             {
                                 if (rule.rules == govRule._id && (govRule.applied_to == null || govRule.applied_to == "matching"))
                                 {
-                                    matching.Add((rule, govRule));
+                                    if(isRegexMatch(govRule, requestMap))
+                                      matching.Add((rule, govRule));
                                 }
                             }
                         }
                     }
-                    return matching;
+                    //return matching;
                 }
                 else
                 {
@@ -276,11 +324,12 @@ namespace Moesif.Middleware.Helpers
                         {
                             if (govRule.type == type && (govRule.applied_to != null && govRule.applied_to == "not_matching"))
                             {
-                                matching.Add((null, govRule));
+                                if(isRegexMatch(govRule, requestMap))
+                                    matching.Add((null, govRule));
                             }
                         }
                     }
-                    return matching;
+                    //return matching;
                 }
 
             }
