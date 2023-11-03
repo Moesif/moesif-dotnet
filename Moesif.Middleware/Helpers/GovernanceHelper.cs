@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
+using System.Data;
+using Rule = Moesif.Middleware.Models.Rule;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -98,6 +100,11 @@ namespace Moesif.Middleware.Helpers
         static void updateEventModel(EventModel eventModel, Rule rule, GovernanceRule governanceRule)
         {
             var response = governanceRule.response;
+            if(rule == null)
+            {
+                updateEventModel(eventModel, governanceRule.response, governanceRule._id);
+                return;
+            }
             var headers = response.headers;
             headers ??= new Dictionary<string, string>();
             var variables = rule.values?.ToDictionary(kv => $"{{{{{kv.Key}}}}}", kv => kv.Value);
@@ -151,22 +158,32 @@ namespace Moesif.Middleware.Helpers
 
         static Boolean isRegexMatch(GovernanceRule govRule, RequestMap requestMap)
         {
-            if (govRule.regex_config != null && govRule.regex_config.Count > 0)
+            if (govRule.regex_config == null || govRule.regex_config.Count == 0)
+                return true;
+
+            foreach (RegexConfig rc in govRule.regex_config)
             {
-                foreach (RegexConfig rc in govRule.regex_config)
+                var matched = false;
+                if (rc.conditions != null)
                 {
-                    var matched = true;
-                    if (rc.conditions != null)
+                    foreach (Condition c in rc.conditions)
                     {
-                        foreach (Condition c in rc.conditions)
+                        if (c.path.StartsWith("request.body.") && requestMap.regex_mapping.ContainsKey("request.body"))
                         {
-                            if (requestMap.regex_mapping.ContainsKey(c.path))
+                            var body = (Newtonsoft.Json.Linq.JObject)requestMap.regex_mapping["request.body"];
+                            var fieldName = c.path.Split('.')[2];
+                            var fieldlValue = body.GetValue(fieldName);
+                            if (fieldlValue != null)
                             {
-                                Match m = Regex.Match(requestMap.regex_mapping[c.path], c.value, RegexOptions.IgnoreCase);
+                                Match m = Regex.Match(fieldlValue.ToString(), c.value, RegexOptions.IgnoreCase);
                                 if (!m.Success)
                                 {
                                     matched = false;
                                     break;
+                                }
+                                else
+                                {
+                                    matched = true;
                                 }
                             }
                             else
@@ -176,20 +193,51 @@ namespace Moesif.Middleware.Helpers
                             }
 
                         }
-                    }
-                    if (matched) return true;
-                }
-                return false;
+                        else if (requestMap.regex_mapping.ContainsKey(c.path))
+                        {
+                            Match m = Regex.Match((string)requestMap.regex_mapping[c.path], c.value, RegexOptions.IgnoreCase);
+                            if (!m.Success)
+                            {
+                                matched = false;
+                                break;
+                            }
+                            else
+                            {
+                                matched = true;
+                            }
+                        }
+                        else
+                        {
+                            matched = false;
+                            break;
+                        }
 
+                    }
+                }
+                if (matched) return true;
             }
-            else
-            return true;
+            return false;
+
         }
+
 
         static List<(Rule, GovernanceRule)> findMatchingEntityRule(string entity, string type, Governance governace, AppConfig config)
         {
             var matching = new List<(Rule, GovernanceRule)>();
-            if (entity == null) return matching;
+            if (entity == null)
+            {
+                if (governace.rules != null)
+                {
+                    foreach (GovernanceRule govRule in governace.rules)
+                    {
+                        if (govRule.applied_to_unidentified && govRule.type == type)
+                        {
+                            matching.Add((null, govRule));
+                        }
+                    }
+                }
+                return matching;
+            }
             Dictionary<string, List<Rule>> entityRules;
             if (type == "user")
                 entityRules = config.user_rules;
@@ -205,25 +253,40 @@ namespace Moesif.Middleware.Helpers
                 if (entityRules.ContainsKey(entity ?? ""))
                 {
                     rules.AddRange(entityRules[entity]);
-                }
-            }
-
-            foreach (Rule rule in rules)
-            {
-                if (governace.rules != null)
-                {
-                    foreach (GovernanceRule govRule in governace.rules)
+                    foreach (Rule rule in rules)
                     {
-                        if (rule.rules == govRule._id)
+                        if (governace.rules != null)
                         {
-                            matching.Add((rule, govRule));
+                            foreach (GovernanceRule govRule in governace.rules)
+                            {
+                                if (rule.rules == govRule._id && (govRule.applied_to == null || govRule.applied_to == "matching"))
+                                {
+                                    matching.Add((rule, govRule));
+                                }
+                            }
                         }
                     }
+                    return matching;
                 }
+                else
+                {
+                    if (governace.rules != null)
+                    {
+                        foreach (GovernanceRule govRule in governace.rules)
+                        {
+                            if (govRule.type == type && (govRule.applied_to != null && govRule.applied_to == "not_matching"))
+                            {
+                                matching.Add((null, govRule));
+                            }
+                        }
+                    }
+                    return matching;
+                }
+
             }
             return matching;
-
         }
+
     }
 }
 

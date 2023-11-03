@@ -1,5 +1,6 @@
 ﻿using Moesif.Api.Models;
 using Moesif.Middleware.Models;
+using System;
 using System.Text.RegularExpressions;
 namespace Moesif.Middleware.Helpers
 {
@@ -16,7 +17,7 @@ namespace Moesif.Middleware.Helpers
             {
                 companyId = model.CompanyId,
                 userId = model.UserId,
-                regex_mapping = new System.Collections.Generic.Dictionary<string, string>()
+                regex_mapping = new System.Collections.Generic.Dictionary<string, object>()
             };
             if (model.Request.Verb != null)
             {
@@ -28,9 +29,12 @@ namespace Moesif.Middleware.Helpers
             }
             if (model.Request.Uri != null)
             {
-                Match m = Regex.Match(model.Request.Uri, "http[s]?://[^/]+(/[^?]+)", RegexOptions.IgnoreCase);
                 var route = "/";
-                if (m.Groups.Count == 2) route = m.Groups[1].Value;
+                try
+                {
+                    route = new System.Uri(model.Request.Uri).LocalPath;
+                }
+                catch (Exception) { }
                 requestMap.regex_mapping.Add("request.route", route);
             }
             if (model.Response != null)
@@ -54,6 +58,7 @@ namespace Moesif.Middleware.Helpers
                 {
                     requestMap.regex_mapping.Add("request.body.query", query.ToString());
                 }
+                requestMap.regex_mapping.Add("request.body", body);
             }
 
             return requestMap;

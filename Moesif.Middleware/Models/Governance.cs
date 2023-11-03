@@ -35,6 +35,8 @@ namespace Moesif.Middleware.Models
         public List<RegexConfig> regex_config { get; set; }
         public List<Variable> variables { get; set; }
         public Response response { get; set; }
+        public bool applied_to_unidentified { get; set; }
+        public string applied_to { get; set; }
 
     }
 

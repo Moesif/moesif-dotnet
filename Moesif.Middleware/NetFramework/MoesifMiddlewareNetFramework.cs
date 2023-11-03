@@ -80,7 +80,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.1", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -100,8 +100,8 @@ namespace Moesif.Middleware.NetFramework
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
-                batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
-                queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Event Queue Size
+                batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
+                queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 100*1000); // Event Queue Size
                 batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
                 appConfigSyncTime = loggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 config = AppConfig.getDefaultAppConfig();

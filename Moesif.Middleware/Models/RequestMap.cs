@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Path = System.String;
-using Value = System.String;
+using Value = System.Object;
 
 namespace Moesif.Middleware.Models
 {
