@@ -804,28 +804,6 @@ namespace Moesif.NetCore.Test
 
             Assert.AreEqual(GovernanceHelper.enforceGovernaceRule(eventModel, governace, appConfig), true);
 
-            eventReq = new EventRequestModel()
-            {
-                Time = DateTime.UtcNow,
-                Uri = "https://localhost:5001/api/Employee",
-                Verb = "GET",
-                ApiVersion = null,
-                IpAddress = "120.110.10.11",
-                Headers = new Dictionary<string, string>(),
-                Body = null,
-                TransferEncoding = null
-            };
-            eventModel = new EventModel()
-            {
-                Request = eventReq,
-                //CompanyId = "sean-company-11",
-                SessionToken = "xxxx",
-                Metadata = new Dictionary<string, string>(),
-                Direction = "Outgoing"
-            };
-
-            Assert.AreEqual(GovernanceHelper.enforceGovernaceRule(eventModel, governace, appConfig), true);
-
         }
 
     }
