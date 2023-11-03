@@ -63,7 +63,7 @@ namespace Moesif.Middleware.Helpers
                     {
                         if (requestMap.regex_mapping.ContainsKey(c.path))
                         {
-                            Match m = Regex.Match(requestMap.regex_mapping[c.path], c.value, RegexOptions.IgnoreCase);
+                            Match m = Regex.Match((string)requestMap.regex_mapping[c.path], c.value, RegexOptions.IgnoreCase);
                             if (!m.Success)
                             {
                                 matched = false;

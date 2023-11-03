@@ -56,7 +56,7 @@ namespace Moesif.Middleware.NetCore
 
         public string authorizationUserIdField; // A field name used to parse the User from authorization header
 
-public DateTime lastWorkerRun = DateTime.MinValue;
+        public DateTime lastWorkerRun = DateTime.MinValue;
 
         public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
@@ -81,7 +81,7 @@ public DateTime lastWorkerRun = DateTime.MinValue;
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString());
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.1", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -102,7 +102,7 @@ public DateTime lastWorkerRun = DateTime.MinValue;
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.3.26", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.1", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -110,8 +110,8 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 clientIpHelper = new ClientIp(); // Create a new instance of client Ip
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
-                batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 25); // Batch Size
-                queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 1000); // Queue Size
+                batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
+                queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 100 * 1000); // Queue Size
                 batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
                 appConfigSyncTime = loggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
@@ -295,10 +295,7 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                 }
                 await httpContext.Response.WriteAsync(eventModel.Response.Body.ToString());
 
-                if(debug)
-                {
-                    _logger.LogDebug("Request is blocked by Governance rule {ruleId}", eventModel.BlockedBy);
-                }
+                _logger.LogDebug("Request is blocked by Governance rule {ruleId}", eventModel.BlockedBy);
 
                 eventModel.Response.Headers["X-Moesif-Transaction-Id"] = transactionId;
                 if (!skipLogging)
@@ -517,6 +514,10 @@ public DateTime lastWorkerRun = DateTime.MinValue;
                     _logger.LogWarning("Unauthorized access sending event to Moesif. Please check your Appplication Id.");
                 }
                 _logger.LogWarning("Error sending event to Moesif, with status code: {statusCode}", inst.ResponseCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in sending event");
             }
         }
 
