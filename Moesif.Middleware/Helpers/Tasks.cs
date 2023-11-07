@@ -58,21 +58,6 @@ namespace Moesif.Middleware.Helpers
                         var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
                         createBatchEventResponse = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value);
 
-                        // Signal events
-                        var configETag = createBatchEventResponse["x-moesif-config-etag"];
-                        var ruleETag = createBatchEventResponse["x-moesif-rules-tag"];
-                        if (!(string.IsNullOrEmpty(configETag)) &&
-                            config.etag != configETag)
-                        {
-                            configEvent.Set();
-                        }
-
-                        if (!(string.IsNullOrEmpty(ruleETag)) &&
-                           governance.etag != ruleETag)
-                        {
-                            governanceEvent.Set();
-                        }
-
                         logger.LogDebug("Events sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }
                     catch (Exception e)

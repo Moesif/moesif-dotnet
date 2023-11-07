@@ -83,7 +83,7 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.2", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.3", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -104,7 +104,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.2", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.3", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -165,7 +165,7 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogError(e, "Error while scheduling appConfig job");
                     }
                     // wait for max 1 hour
-                    configEvent.WaitOne(60*60*1000);
+                    await Task.Delay(60 * 1000);
                 }
             });
             appConfigThread.IsBackground = true;
@@ -193,8 +193,7 @@ namespace Moesif.Middleware.NetCore
                     {
                          _logger.LogError(e, "Error while updating Governance rule");
                     }
-                    // wait for event for max 1 hour
-                    governanceEvent.WaitOne(60 * 60 * 1000);
+                    await Task.Delay(60 * 1000);
                 }
             });
             governanceThread.IsBackground = true;

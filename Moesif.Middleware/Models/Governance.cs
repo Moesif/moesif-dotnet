@@ -37,6 +37,7 @@ namespace Moesif.Middleware.Models
         public Response response { get; set; }
         public bool applied_to_unidentified { get; set; }
         public string applied_to { get; set; }
+        public bool block { get; set; }
 
     }
 

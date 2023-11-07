@@ -39,7 +39,7 @@ namespace Moesif.Middleware.Helpers
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Error while parsing the configuration object, setting the sample rate to default");
+                logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
             return prevConfig;
         }
