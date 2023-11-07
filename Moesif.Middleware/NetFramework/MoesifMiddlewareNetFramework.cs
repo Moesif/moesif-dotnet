@@ -159,7 +159,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         _logger.LogError(e, "Error while scheduling appConfig job at {time}", DateTime.UtcNow);
                     }
-                    await Task.Delay(60 * 1000);
+                    configEvent.WaitOne(60 * 1000);
                 }
             });
             appConfigThread.IsBackground = true;
@@ -187,7 +187,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         _logger.LogError(e, "Error while updating Governance rule at {tine}", DateTime.UtcNow);
                     }
-                    await Task.Delay(60 * 1000);
+                    governanceEvent.WaitOne( 60 * 1000);
                 }
             });
             governanceThread.IsBackground = true;

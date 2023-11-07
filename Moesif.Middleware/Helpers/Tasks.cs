@@ -57,6 +57,22 @@ namespace Moesif.Middleware.Helpers
                         // Send Batch Request
                         var createBatchEventResponse = await client.Api.CreateEventsBatchAsync(batchEvents);
                         createBatchEventResponse = createBatchEventResponse.ToDictionary(k => k.Key.ToLower(), k => k.Value);
+                        // Signal events
+                        var configETag = createBatchEventResponse["x-moesif-config-etag"];
+                        var ruleETag = createBatchEventResponse["x-moesif-rules-tag"];
+                        if (!(string.IsNullOrEmpty(configETag)) &&
+                            config.etag != configETag)
+                        {
+                            configEvent.Set();
+                            logger.LogDebug("AppConfig has changed at {time}", DateTime.UtcNow);
+                        }
+
+                        if (!(string.IsNullOrEmpty(ruleETag)) &&
+                           governance.etag != ruleETag)
+                        {
+                            governanceEvent.Set();
+                            logger.LogDebug("GoveranceRule has changed at {time}", DateTime.UtcNow);
+                        }
 
                         logger.LogDebug("Events sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }

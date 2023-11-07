@@ -162,10 +162,10 @@ namespace Moesif.Middleware.NetCore
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e, "Error while scheduling appConfig job");
+                        _logger.LogError(e, "Error while updating appConfig");
                     }
-                    // wait for max 1 hour
-                    await Task.Delay(60 * 1000);
+                    
+                    configEvent.WaitOne(60 * 1000);
                 }
             });
             appConfigThread.IsBackground = true;
@@ -193,7 +193,7 @@ namespace Moesif.Middleware.NetCore
                     {
                          _logger.LogError(e, "Error while updating Governance rule");
                     }
-                    await Task.Delay(60 * 1000);
+                    governanceEvent.WaitOne(60 * 1000);
                 }
             });
             governanceThread.IsBackground = true;
