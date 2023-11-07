@@ -60,6 +60,8 @@ namespace Moesif.Middleware.NetFramework
 
         public bool debug;
 
+        public string apiVersion;
+
         public bool logBody;
 
         private AutoResetEvent configEvent;
@@ -80,7 +82,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.1", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.2", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -96,7 +98,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.3.25", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.2", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -111,6 +113,14 @@ namespace Moesif.Middleware.NetFramework
                 clientIpHelper = new ClientIp(); // Create a new instance of client Ip
                 authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
                 authorizationUserIdField = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
+                if (moesifOptions.TryGetValue("ApiVersion", out object version))
+                {
+                    apiVersion = version != null ? version.ToString() : null;
+                }
+                else
+                {
+                    apiVersion = null;
+                }
 
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
 
@@ -391,14 +401,6 @@ namespace Moesif.Middleware.NetFramework
 
             string ip = clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = request.Uri.ToString();
-
-            string apiVersion = null;
-            var apiVersion_out = new object();
-            var getApiVersion = moesifOptions.TryGetValue("ApiVersion", out apiVersion_out);
-            if (getApiVersion)
-            {
-                apiVersion = apiVersion_out.ToString();
-            }
 
             var eventReq = new EventRequestModel()
             {
