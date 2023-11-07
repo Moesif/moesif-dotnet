@@ -96,6 +96,7 @@ namespace Moesif.Middleware.Helpers
             var response = govRule.response;
             var body = applyMergeTagtoBody(r, response.body.ToString());
             var headers = new Dictionary<string, string>();
+            matchingRules.Reverse();
             foreach (var (rule, gRule) in matchingRules)
             {
                 foreach (var header in applyMergeTagtoHeaders(rule, gRule.response.headers))

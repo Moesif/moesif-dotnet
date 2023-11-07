@@ -50,6 +50,8 @@ namespace Moesif.Middleware.NetCore
 
         public int appConfigSyncTime; // Time in seconds to sync application configuration
 
+        public string apiVersion;
+
         public ConcurrentQueue<EventModel> MoesifQueue; // Moesif Queue
 
         public string authorizationHeaderName; // A request header field name used to identify the User
@@ -81,7 +83,7 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.1", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.2", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -102,7 +104,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.1", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.2", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -116,6 +118,13 @@ namespace Moesif.Middleware.NetCore
                 appConfigSyncTime = loggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
                 authorizationUserIdField = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
+                if( moesifOptions.TryGetValue("ApiVersion", out object version))
+                {
+                    apiVersion = version!= null ? version.ToString() : null;
+                } else
+                {
+                    apiVersion = null;
+                }
                 MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
                 governance = Governance.getDefaultGovernance();
                 configEvent = new AutoResetEvent(false);
@@ -371,13 +380,6 @@ namespace Moesif.Middleware.NetCore
             string ip = clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = new Uri(request.GetDisplayUrl()).ToString();
 
-            string apiVersion = null;
-            var apiVersion_out = new object();
-            var getApiVersion = moesifOptions.TryGetValue("ApiVersion", out apiVersion_out);
-            if (getApiVersion)
-            {
-                apiVersion = apiVersion_out.ToString();
-            }
 
             var eventReq = new EventRequestModel()
             {
