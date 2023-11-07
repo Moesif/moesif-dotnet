@@ -15,7 +15,7 @@ namespace Moesif.Middleware.Helpers
 {
     public class GovernanceHelper
     {
-    public static async Task<Governance> updateGovernance(MoesifApiClient client, Governance prevGovernance, bool debug, ILogger logger)
+        public static async Task<Governance> updateGovernance(MoesifApiClient client, Governance prevGovernance, bool debug, ILogger logger)
         {
             try
             {
