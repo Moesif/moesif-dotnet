@@ -25,7 +25,7 @@ namespace Moesif.Middleware.Helpers
                     var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
                     appConfig.etag = etag;
                     appConfig.lastUpdatedTime = DateTime.UtcNow;
-                    logger.LogDebug("appConfig is updated with {body} ", appConfigResp.Body);
+                    logger.LogDebug("appConfig is updated with {body} at {time}", appConfigResp.Body, DateTime.UtcNow);
                     return appConfig;
                 }
             }
@@ -39,7 +39,7 @@ namespace Moesif.Middleware.Helpers
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Error while parsing the configuration object, setting the sample rate to default");
+                logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
             return prevConfig;
         }

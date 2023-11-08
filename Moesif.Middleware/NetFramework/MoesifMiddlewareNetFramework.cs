@@ -82,7 +82,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.2", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.3", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -98,7 +98,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.2", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.3", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -159,8 +159,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         _logger.LogError(e, "Error while scheduling appConfig job at {time}", DateTime.UtcNow);
                     }
-                    // wait for max 1 hour
-                    configEvent.WaitOne(60 * 60 * 1000);
+                    configEvent.WaitOne(60 * 1000);
                 }
             });
             appConfigThread.IsBackground = true;
@@ -188,8 +187,7 @@ namespace Moesif.Middleware.NetFramework
                     {
                         _logger.LogError(e, "Error while updating Governance rule at {tine}", DateTime.UtcNow);
                     }
-                    // wait for max 1 hour
-                    governanceEvent.WaitOne(60 * 60 * 1000);
+                    governanceEvent.WaitOne( 60 * 1000);
                 }
             });
             governanceThread.IsBackground = true;

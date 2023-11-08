@@ -25,7 +25,7 @@ namespace Moesif.Middleware.Helpers
                 {
                     var governance = Governance.fromJson(resp.Body);
                     governance.etag = etag;
-                    logger.LogDebug("governance rule updated with {body} ", resp.Body);
+                    logger.LogDebug("governance rule updated with {body} at {time}", resp.Body, DateTime.UtcNow);
                     return governance;
                 }
                 return prevGovernance;
@@ -241,7 +241,7 @@ namespace Moesif.Middleware.Helpers
                 {
                     foreach (GovernanceRule govRule in governace.rules)
                     {
-                        if (govRule.applied_to_unidentified && govRule.type == type)
+                        if (govRule.block && govRule.applied_to_unidentified && govRule.type == type )
                         {
                             if (isRegexMatch(govRule, requestMap))
                                 matching.Add((null, govRule));
@@ -271,7 +271,7 @@ namespace Moesif.Middleware.Helpers
                         {
                             foreach (GovernanceRule govRule in governace.rules)
                             {
-                                if (rule.rules == govRule._id && (govRule.applied_to == null || govRule.applied_to == "matching"))
+                                if (govRule.block && rule.rules == govRule._id && (govRule.applied_to == null || govRule.applied_to == "matching"))
                                 {
                                     if(isRegexMatch(govRule, requestMap))
                                       matching.Add((rule, govRule));
@@ -286,7 +286,7 @@ namespace Moesif.Middleware.Helpers
                     {
                         foreach (GovernanceRule govRule in governace.rules)
                         {
-                            if (govRule.type == type && (govRule.applied_to != null && govRule.applied_to == "not_matching"))
+                            if (govRule.block && govRule.type == type && (govRule.applied_to != null && govRule.applied_to == "not_matching"))
                             {
                                 if(isRegexMatch(govRule, requestMap))
                                     matching.Add((null, govRule));
