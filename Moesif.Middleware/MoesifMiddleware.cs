@@ -13,6 +13,42 @@ using Microsoft.Owin;
 using Moesif.Middleware.NetFramework;
 #endif
 
+class MyILoggerFactory : ILoggerFactory
+{
+    public void AddProvider(ILoggerProvider provider)
+    {
+        ;
+    }
+
+    public ILogger CreateLogger(string categoryName)
+    {
+        return new MyILogger();
+    }
+
+    public void Dispose()
+    {
+        ;
+    }
+};
+
+class MyILogger : ILogger
+{
+    public IDisposable BeginScope<TState>(TState state)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsEnabled(LogLevel logLevel)
+    {
+        return true;
+    }
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    {
+        ;
+    }
+};
+
 #if NETCORE
 namespace Moesif.Middleware
 {
@@ -64,21 +100,28 @@ namespace Moesif.Middleware
 }
 #endif
 
-#if NET45
+#if NET461
 namespace Moesif.Middleware
 {
     public class MoesifMiddleware: OwinMiddleware
     {
         MoesifMiddlewareNetFramework netFrameworkMoesifMiddleware;
 
+        public MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> _middleware, ILoggerFactory logger) : base(next)
+        {
+            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(next, _middleware, logger);
+        }
+
         public MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> _middleware) : base(next)
         {
-            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(next, _middleware);
+            ILoggerFactory logger = new MyILoggerFactory();
+
+            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(next, _middleware, logger);
         }
 
         public MoesifMiddleware(Dictionary<string, object> _middleware) : base(null)
         {
-            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(null, _middleware);
+            netFrameworkMoesifMiddleware = new MoesifMiddlewareNetFramework(_middleware);
         }
 
         public async override Task Invoke(IOwinContext httpContext)
