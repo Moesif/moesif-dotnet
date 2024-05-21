@@ -166,33 +166,38 @@ namespace Moesif.Middleware.NetFramework.Helpers
             _logger.LogDebug(msg);
         }
 
-        public Tuple<object, string> Serialize(string data, string contentType)
+        public Tuple<object, string> Serialize(string data, string contentType, bool logBody)
         {
             if (string.IsNullOrEmpty(data))
             {
                 return new Tuple<object, string>(null, null);
             }
 
-            // Only try parse if is JSON or looks like JSON
-            if (contentType != null && contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
+            if (logBody && contentType != null && !(contentType.ToLower().StartsWith("multipart/form-data")))
             {
-                try
+                // Only try parse if is JSON or looks like JSON
+                if (contentType != null && contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
                 {
-                    return new Tuple<object, string>(JToken.Parse(data), null);
+                    try
+                    {
+                        return new Tuple<object, string>(JToken.Parse(data), null);
+                    }
+                    catch (Exception)
+                    {
+                        var bytes = System.Text.Encoding.UTF8.GetBytes(data);
+                        var base64 = System.Convert.ToBase64String(bytes);
+                        return new Tuple<object, string>(base64, "base64");
+                    }
                 }
-                catch (Exception)
+                else
                 {
                     var bytes = System.Text.Encoding.UTF8.GetBytes(data);
                     var base64 = System.Convert.ToBase64String(bytes);
                     return new Tuple<object, string>(base64, "base64");
                 }
             }
-            else
-            {
-                var bytes = System.Text.Encoding.UTF8.GetBytes(data);
-                var base64 = System.Convert.ToBase64String(bytes);
-                return new Tuple<object, string>(base64, "base64");
-            }
+
+            return new Tuple<object, string>(null, null);
         }
 
         public  Dictionary<string, string> ToHeaders(IDictionary<string, string[]> headers, bool debug)

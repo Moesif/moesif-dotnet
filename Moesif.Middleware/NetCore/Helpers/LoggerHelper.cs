@@ -180,7 +180,7 @@ namespace Moesif.Middleware.NetCore.Helpers
 
             var reqBody = new object();
             string requestTransferEncoding = null;
-            if (logBody)
+            if (logBody && contentType != null && !(contentType.ToLower().StartsWith("multipart/form-data")))
             {
                 try
                 {
