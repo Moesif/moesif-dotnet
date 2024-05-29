@@ -82,7 +82,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.5", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.6", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -98,7 +98,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.5", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.4.6", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
