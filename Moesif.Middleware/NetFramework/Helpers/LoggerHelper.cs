@@ -133,9 +133,9 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return transactionId;
         }
 
-        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding)
+        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding, bool logBody)
         {
-            if (filter != null)
+            if (logBody && filter != null)
             {
                 return filter.ReadStream(contentEncoding);
             }
