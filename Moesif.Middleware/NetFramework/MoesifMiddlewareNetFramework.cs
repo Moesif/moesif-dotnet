@@ -424,7 +424,7 @@ namespace Moesif.Middleware.NetFramework
             string contentEncoding = "";
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
-            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding);            
+            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);            
             var bodyWrapper = loggerHelper.Serialize(body, response.ContentType, logBody);
 
             // Add Transaction Id to Response Header
