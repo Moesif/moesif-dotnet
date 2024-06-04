@@ -137,8 +137,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
         {
             if (logBody && filter != null)
             {
-                string resp = filter.ReadStream(contentEncoding);
-                return resp;
+                return filter.ReadStream(contentEncoding);
             }
             return null;
         }
