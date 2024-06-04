@@ -83,7 +83,7 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.6", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.7", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -104,7 +104,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.6", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.7", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
@@ -399,16 +399,20 @@ namespace Moesif.Middleware.NetCore
             // Response headers
             var rspHeaders = loggerHelper.ToHeaders(response.Headers, debug);
 
-            // ResponseBody
-            string contentEncoding = "";
-            rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            string text = stream.ReadStream(contentEncoding);
-
             // Add Transaction Id to Response Header
             rspHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);
 
-            // Serialize Response body
-            var responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
+
+            var responseWrapper = new Tuple<object, string>(null, null);
+            if (logBody)
+            {
+                // ResponseBody
+                string contentEncoding = "";
+                rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+                string text = stream.ReadStream(contentEncoding);
+                // Serialize Response body
+                responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
+            }
 
             var eventRsp = new EventResponseModel()
             {
