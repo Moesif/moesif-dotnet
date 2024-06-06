@@ -83,7 +83,7 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.7", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.8", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -104,7 +104,7 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.7", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.8", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
