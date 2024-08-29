@@ -66,6 +66,8 @@ namespace Moesif.Middleware.NetCore
 
         public bool logBody;
 
+        public bool isLambda;
+
         private AutoResetEvent configEvent ;
 
         private AutoResetEvent governanceEvent;
@@ -83,7 +85,7 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.8", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.9", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 companyHelper = new CompanyHelper();
                 userHelper = new UserHelper();
@@ -104,8 +106,9 @@ namespace Moesif.Middleware.NetCore
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.8", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.9", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
                 config = AppConfig.getDefaultAppConfig();
                 userHelper = new UserHelper(); // Create a new instance of userHelper
@@ -312,21 +315,28 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
-                var owinResponse = httpContext.Response;
-                StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
-                owinResponse.Body = outputCaptureOwin;
-
-                await _next(httpContext);
-
                 if (skipLogging)
                 {
                     _logger.LogDebug("Skipping the event");
                 }
                 else
                 {
+                    if (isLambda)
+                    {
+                        eventModel.Response = await FormatLambdaResponse(httpContext, transactionId);
 
-                    eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
-                    if(eventModel.CompanyId == null)
+                    } else
+                    {
+                        var owinResponse = httpContext.Response;
+                        StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                        owinResponse.Body = outputCaptureOwin;
+
+                        await _next(httpContext);
+
+                        eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
+                    }
+
+                    if (eventModel.CompanyId == null)
                     {
                        
                         eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
@@ -418,6 +428,54 @@ namespace Moesif.Middleware.NetCore
             {
                 Time = DateTime.UtcNow,
                 Status = response.StatusCode,
+                Headers = rspHeaders,
+                Body = responseWrapper.Item1,
+                TransferEncoding = responseWrapper.Item2
+            };
+            return eventRsp;
+        }
+
+        private async Task<EventResponseModel> FormatLambdaResponse(HttpContext httpContext, string transactionId)
+        {
+            // Response headers
+            var rspHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
+
+            // Add Transaction Id to Response Header
+            rspHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);
+
+            var responseWrapper = new Tuple<object, string>(null, null);
+            if (logBody)
+            {
+                // ResponseBody
+                string contentEncoding = "";
+                rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+                //string text = stream.ReadStream(contentEncoding);
+
+                var originalResponseBodyStream = httpContext.Response.Body;
+                string responseBody = string.Empty;
+                using (var responseBodyStream = new MemoryStream())
+                {
+                    httpContext.Response.Body = responseBodyStream; // Use the memory stream for the response
+
+                    // Call the next middleware in the pipeline
+                    await _next(httpContext);
+
+                    // Capture the response
+                    httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+                    responseBody = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+                    httpContext.Response.Body.Seek(0, SeekOrigin.Begin); // Reset the position for the response to be sent
+
+                    // Copy the response body back to the original stream
+                    await responseBodyStream.CopyToAsync(originalResponseBodyStream);
+                }
+
+                // Serialize Response body
+                responseWrapper = loggerHelper.Serialize(responseBody, httpContext.Response.ContentType, logBody, debug);
+            }
+            var eventRsp = new EventResponseModel()
+            {
+                Time = DateTime.UtcNow,
+                Status = httpContext.Response.StatusCode,
                 Headers = rspHeaders,
                 Body = responseWrapper.Item1,
                 TransferEncoding = responseWrapper.Item2
