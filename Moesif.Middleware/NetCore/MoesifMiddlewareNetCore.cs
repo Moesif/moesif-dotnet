@@ -449,7 +449,6 @@ namespace Moesif.Middleware.NetCore
                 // ResponseBody
                 string contentEncoding = "";
                 rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-                //string text = stream.ReadStream(contentEncoding);
 
                 var originalResponseBodyStream = httpContext.Response.Body;
                 string responseBody = string.Empty;
