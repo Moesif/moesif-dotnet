@@ -315,6 +315,12 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
+                var owinResponse = httpContext.Response;
+                StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                owinResponse.Body = outputCaptureOwin;
+
+                await _next(httpContext);
+
                 if (skipLogging)
                 {
                     _logger.LogDebug("Skipping the event");
@@ -327,12 +333,6 @@ namespace Moesif.Middleware.NetCore
 
                     } else
                     {
-                        var owinResponse = httpContext.Response;
-                        StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
-                        owinResponse.Body = outputCaptureOwin;
-
-                        await _next(httpContext);
-
                         eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
                     }
 
@@ -455,9 +455,6 @@ namespace Moesif.Middleware.NetCore
                 using (var responseBodyStream = new MemoryStream())
                 {
                     httpContext.Response.Body = responseBodyStream; // Use the memory stream for the response
-
-                    // Call the next middleware in the pipeline
-                    await _next(httpContext);
 
                     // Capture the response
                     httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
