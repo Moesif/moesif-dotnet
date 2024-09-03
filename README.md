@@ -36,8 +36,8 @@ Install-Package Moesif.Middleware
 
 Then jump to usage instructions for your specific framework:
 
-- [.Net Core and .NET 5 installation](#use-the-middleware-in-net-core-and-net-50)
-- [.NET Framework installation](#net-framework-installation)
+- [.NET Core and .NET 5 installation](#use-the-middleware-in-net-core-and-net-50)
+- [.NET Framework installation](#use-the-middleware-in-net-framework)
 
 ## Configure the Middleware
 See the following to learn how to configure the middleware for your use case.
@@ -203,6 +203,7 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
    </td>
   </tr>
 </table>
+
 A string that [identifies your application in Moesif](#get-your-moesif-application-id).
 
 #### `Skip`
@@ -235,7 +236,7 @@ Optional.
 
 A function that takes a request and a response, and returns `true` if you want to skip this particular event.
 
-#### __`IdentifyUser`__
+#### `IdentifyUser`
 <table>
   <tr>
    <th scope="col">
@@ -267,7 +268,7 @@ A function that takes a request and a response, and returns a string that repres
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
-#### __`IdentifyCompany`__
+#### `IdentifyCompany`
 <table>
   <tr>
    <th scope="col">
@@ -297,7 +298,7 @@ Optional.
 
 A function that takes a request and a response, and returns a string that represents the company ID for this event.
 
-#### __`GetSessionToken`__
+#### `GetSessionToken`
 <table>
   <tr>
    <th scope="col">
@@ -329,7 +330,7 @@ A function that takes a request and a response, and returns a string that repres
 
 Similar to users and companies, Moesif tries to retrieve session tokens automatically. But if your setup differs from the standard, this function can be helpful for tying events together, and help you replay the events.
 
-#### __`GetMetadata`__
+#### `GetMetadata`
 <table>
   <tr>
    <th scope="col">
@@ -361,7 +362,7 @@ A function that returns an object that allows you to add custom metadata that wi
 
 The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a virtual machine instance ID, a trace ID, or a tenant ID with the request.
 
-#### __`MaskEventModel`__
+#### `MaskEventModel`
 <table>
   <tr>
    <th scope="col">
@@ -407,7 +408,7 @@ public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEv
 };
 ```
 
-#### __`ApiVersion`__
+#### `ApiVersion`
 <table>
   <tr>
    <th scope="col">
@@ -425,7 +426,7 @@ Optional.
 
 The API version associated with this particular event.
 
-#### __`LocalDebug`__
+#### `LocalDebug`
 <table>
   <tr>
    <th scope="col">
@@ -499,7 +500,7 @@ Optional.
 
 Field name in JWT or OpenId token's payload for identifying users. Only applicable if [`AuthorizationHeaderName`](#authorizationheadername) is set and is a bearer token.
 
-#### __`IsLambda`__
+#### `IsLambda`
 <table>
   <tr>
    <th scope="col">
@@ -568,7 +569,7 @@ Optional.
 A function that returns an object that allows you
 to add custom metadata associated with the event. The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a VM instance ID, a trace ID, or a tenant ID with the request.
 
-##### __`GetSessionTokenOutgoing`__
+##### `GetSessionTokenOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -600,7 +601,7 @@ A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and 
 
 Moesif tries to get the session token automatically, but if you setup differs from the standard, this function can be helpful for tying events together and help you replay the events.
 
-##### __`IdentifyUserOutgoing`__
+##### `IdentifyUserOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -632,7 +633,7 @@ A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and 
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
-##### __`IdentifyCompanyOutgoing`__
+##### `IdentifyCompanyOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -660,7 +661,7 @@ Moesif identifies users automatically. But if your setup differs from the standa
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns company ID string for this event.
 
-##### __`SkipOutgoing`__
+##### `SkipOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -690,7 +691,7 @@ Optional.
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns `true` if you want to skip this particular event.
 
-##### __`MaskEventModelOutgoing`__
+##### `MaskEventModelOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -722,7 +723,7 @@ A function that takes a Moesif event model and returns an `EventModel` with desi
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see the [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
-##### __`LogBodyOutgoing`__
+##### `LogBodyOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -805,10 +806,11 @@ In this configuration options, the request and response objects passed in corres
    </td>
   </tr>
 </table>
+
 A string that [identifies your application in Moesif](#get-your-moesif-application-id).
 
 
-#### __`Skip`__
+#### `Skip`
 <table>
   <tr>
    <th scope="col">
@@ -839,7 +841,7 @@ Optional.
 A function that takes a request and a response, and returns `true` if you want to skip this particular event.
 
 
-#### __`IdentifyUser`__
+#### `IdentifyUser`
 <table>
   <tr>
    <th scope="col">
@@ -872,7 +874,7 @@ A function that takes a request and a response, and returns a string that repres
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
 
-#### __`IdentifyCompany`__
+#### `IdentifyCompany`
 <table>
   <tr>
    <th scope="col">
@@ -902,7 +904,7 @@ Optional.
 
 A function that takes a request and a response, and returns a string that represents the company ID for this event.
 
-#### __`GetSessionToken`__
+#### `GetSessionToken`
 <table>
   <tr>
    <th scope="col">
@@ -934,7 +936,7 @@ A function that takes a request and a response, and returns a string that repres
 
 Similar to users and companies, Moesif tries to retrieve session tokens automatically. But if your setup differs from the standard, this function can be helpful for tying events together, and help you replay the events.
 
-#### __`GetMetadata`__
+#### `GetMetadata`
 <table>
   <tr>
    <th scope="col">
@@ -966,7 +968,7 @@ A function that returns an object that allows you to add custom metadata that wi
 
 The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a virtual machine instance ID, a trace ID, or a tenant ID with the request.
 
-#### __`MaskEventModel`__
+#### `MaskEventModel`
 <table>
   <tr>
    <th scope="col">
@@ -1010,7 +1012,7 @@ public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEv
 };
 ```
 
-#### __`ApiVersion`__
+#### `ApiVersion`
 <table>
   <tr>
    <th scope="col">
@@ -1028,7 +1030,7 @@ Optional.
 
 The API version associated with this particular event.
 
-#### __`LocalDebug`__
+#### `LocalDebug`
 <table>
   <tr>
    <th scope="col">
@@ -1066,7 +1068,7 @@ Set to `true` to print internal log messages for debugging SDK integration issue
 
 Set to `false` to not log the request and response body to Moesif.
 
-#### __`DisableStreamOverride`__
+#### `DisableStreamOverride`
 <table>
   <tr>
    <th scope="col">
@@ -1165,7 +1167,7 @@ Optional.
 A function that returns an object that allows you
 to add custom metadata associated with the event. The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a VM instance ID, a trace ID, or a tenant ID with the request.
 
-##### __`GetSessionTokenOutgoing`__
+##### `GetSessionTokenOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1197,7 +1199,7 @@ A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and 
 
 Moesif tries to get the session token automatically, but if you setup differs from the standard, this function can be helpful for tying events together and help you replay the events.
 
-##### __`IdentifyUserOutgoing`__
+##### `IdentifyUserOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1229,7 +1231,7 @@ A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and 
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
-##### __`IdentifyCompanyOutgoing`__
+##### `IdentifyCompanyOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1257,7 +1259,7 @@ Moesif identifies users automatically. But if your setup differs from the standa
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns company ID string for this event.
 
-##### __`SkipOutgoing`__
+##### `SkipOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1287,7 +1289,7 @@ Optional.
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns `true` if you want to skip this particular event.
 
-##### __`MaskEventModelOutgoing`__
+##### `MaskEventModelOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1319,7 +1321,7 @@ A function that takes a Moesif event model and returns an `EventModel` with desi
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see the [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
-##### __`LogBodyOutgoing`__
+##### `LogBodyOutgoing`
 <table>
   <tr>
    <th scope="col">
@@ -1410,8 +1412,8 @@ The `metadata` field can contain any customer demographic or other info you want
 
 For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-user).
 
-## Update Users in Batch
-To update a list of [users](https://www.moesif.com/docs/getting-started/users/) in one batch, use the `UpdateUsersBatch()` method.
+### Update Users in Batch
+To update a list of [users](https://www.moesif.com/docs/getting-started/users/) in one batch, use the `UpdateUsersBatch` method.
 
 Similar to UpdateUser, but used to update a list of users in one batch.
 Only the `user_id` field is required.
@@ -1481,7 +1483,7 @@ The `metadata` field can contain any customer demographic or other info you want
 
 This method is a convenient helper that calls the Moesif API library. For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-users-in-batch).
 
-## Update a Single Company
+### Update a Single Company
 To update a single [company](https://www.moesif.com/docs/getting-started/companies/), use the `UpdateCompany` method.
 
 ```csharp
@@ -1532,8 +1534,8 @@ The `metadata` field can contain any customer demographic or other info you want
 
 This method is a convenient helper that calls the Moesif API library. For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-company).
 
-## Update Companies in Batch
-To update a list of [companies](https://www.moesif.com/docs/getting-started/companies/) in one batch, use the `updateCompaniesBatch()` function.
+### Update Companies in Batch
+To update a list of [companies](https://www.moesif.com/docs/getting-started/companies/) in one batch, use the `UpdateCompaniesBatch` method.
 
 ```csharp
 List<Dictionary<string, object>> companiesBatch = new List<Dictionary<string, object>>();
@@ -1686,7 +1688,7 @@ Moesif has validated `Moesif.Middleware` against the following framework version
 | .NET Framework Web API|4.6-4.7|
 | .NET Framework Web API SelfHost|4.6-4.7|
 
-#### Last Supported Version for .NET 45
+### Last Supported Version for .NET 4.5
 SDK version `1.3.25` supports .NET 4.5, which will be no longer supported. Please upgrade to .NET 4.6.1 or higher.
 
 ## Explore Other Integrations
