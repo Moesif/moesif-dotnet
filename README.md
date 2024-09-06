@@ -42,8 +42,8 @@ Then jump to usage instructions for your specific framework:
 ## Configure the Middleware
 See the following to learn how to configure the middleware for your use case.
 
-- [.NET Core configuration options]()
-- [.NET Framework configuration options]()
+- [.NET Core configuration options](#net-core-configuration-options)
+- [.NET Framework configuration options](#net-framework-configuration-options)
 
 
 ## Use the Middleware in .NET Core and .NET 5.0
@@ -51,7 +51,7 @@ See the following to learn how to configure the middleware for your use case.
 Follow these instructions to use this middleware in .NET 5 or .NET Core 2.1 and higher:
 
 1. In `Startup.cs` file in your project directory, add `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` to the pipeline.
-    To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
+    To collect the most context, we recommend that you add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
 2. Add the middleware in your application:
 
 ```csharp
@@ -82,6 +82,8 @@ public class Startup {
     }
 }
 ```
+
+Replace *`YOUR_MOESIF_APPLICATION_ID`* with [your Moesif Application ID](#get-your-moesif-application-id).
 
 ## Use the Middleware in .NET Framework
 
@@ -1611,7 +1613,7 @@ The following sections discuss some specific troubleshooting scenarios.
 Certain serializers for Windows Communication Foundation (WCF) may not correctly bind the request body when using logging middleware like Moesif.
 If your app uses Windows Communication Foundation (WCF), you may find that your business logic has errors accessing the request body such as for `POST` and `PUT` requests.
 
-To fix this, set the option [DisableStreamOverride](#disablestreamoverride) to `true`:
+To fix this, set the option [`DisableStreamOverride`](#disablestreamoverride) to `true`:
 
 ```csharp
 Dictionary<string, object> moesifOptions = new Dictionary<string, object>
@@ -1672,11 +1674,11 @@ To capture the API calls handled by `ExceptionHandler`, make sure that the `app.
 2. From your terminal, navigate to the root directory of the middleware.
 3. Run `Install-Package Moesif.Middleware`.
 4. Add your [Moesif Application ID](#get-your-moesif-application-id) to `Moesif.Middleware.Test/MoesifMiddlewareTest.cs`.
-5. The tests live in the `Moesif.Middleware.Test` project. In order to invoke these test cases, you need NUnit 3.0 Test Adapter Extension for Visual Studio. Once the SDK is complied, the test cases should appear in the **Test Explorer** window. Here, you can click **Run All** to execute these test cases.
+5. The tests live in the `Moesif.Middleware.Test` project. In order to invoke these test cases, you need NUnit 3.0 Test Adapter Extension for Visual Studio. Once the SDK finishes compiling, the test cases should appear in the **Test Explorer** window. Here, you can click **Run All** to execute these test cases.
 
 ## Tested Versions
 
-Moesif has validated `Moesif.Middleware` against the following framework versions.
+Moesif has validated this middleware against the following framework versions.
 
 |                | Framework Version  |
 | -------------- | -----------------  |
