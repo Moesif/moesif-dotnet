@@ -107,9 +107,21 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            long createLoggerTime = 0;
+            long createInitCientAndOptTime = 0;
+            long fetchAppConfigTime = 0;
+            long fetchGovRuleTime = 0;
+
             moesifOptions = _middleware;
             _logger = logger.CreateLogger("Moesif.Middleware.NetCore");
             loggerHelper = new LoggerHelper(_logger);
+
+            createLoggerTime = stopwatch.ElapsedMilliseconds;
+
+            stopwatch.Restart();
 
             try
             {
@@ -141,6 +153,12 @@ namespace Moesif.Middleware.NetCore
                 {
                     apiVersion = null;
                 }
+
+
+                createInitCientAndOptTime = stopwatch.ElapsedMilliseconds;
+
+                stopwatch.Restart();
+
                 //MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
                 //governance = Governance.getDefaultGovernance();
                 //configEvent = new AutoResetEvent(false);
@@ -150,18 +168,33 @@ namespace Moesif.Middleware.NetCore
                 {
                     _logger.LogError("Skip calling schedule function because isLambda true");
                     // update Application config
-                    Stopwatch stopwatch = new Stopwatch();
-                    stopwatch.Start();
-                    config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
-                    _logger.LogInformation(config.sample_rate.ToString());
-                    _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                    //Stopwatch stopwatch = new Stopwatch();
+                    //stopwatch.Start();
+
+                    //AppConfigHelper.updateConfig(client, config, debug, _logger);
+
+                    //config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
+                    Task.Run(async () => await AppConfigHelper.updateConfig(client, config, debug, _logger));
+                    //AppConfigHelper.updateConfig(client, config, debug, _logger);
+                    //_logger.LogInformation(config.sample_rate.ToString());
+                    //_logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+
+                    fetchAppConfigTime = stopwatch.ElapsedMilliseconds;
 
                     stopwatch.Reset(); // Reset the stopwatch to 0
-                    stopwatch.Start();
-                    governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
-                    _logger.LogInformation(governance.rules.ToString());
-                    _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
-                    stopwatch.Stop();
+                    //stopwatch.Start();
+
+                    //GovernanceHelper.updateGovernance(client, governance, debug, _logger);
+
+                    //governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
+                    Task.Run(async () => await GovernanceHelper.updateGovernance(client, governance, debug, _logger));
+                    //GovernanceHelper.updateGovernance(client, governance, debug, _logger);
+                    //_logger.LogInformation(governance.rules.ToString());
+                    //_logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                    //stopwatch.Stop();
+
+                    fetchGovRuleTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
                 } else
                 {
                     if (isBatchingEnabled) ScheduleWorker();
@@ -176,6 +209,16 @@ namespace Moesif.Middleware.NetCore
                 _logger.LogError(e, "MoesifMiddlewareNetCore initialiation error");
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
+
+            stopwatch.Stop();
+
+            _logger.LogError($@"
+                                Exiting MoesifMiddleware Init with time: {createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds} ms
+                                createLoggerTime took: {createLoggerTime} ms
+                                createInitCientAndOptTime took: {createInitCientAndOptTime} ms
+                                fetchAppConfigTime took: {fetchAppConfigTime} ms
+                                fetchGovRuleTime took: {fetchGovRuleTime} ms");
+
         }
 
         private void ScheduleAppConfig()
