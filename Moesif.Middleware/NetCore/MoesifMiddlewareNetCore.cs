@@ -25,6 +25,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
+        public static string APP_VERSION = "moesif-netcore/1.4.9";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -94,8 +95,8 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.9", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 //companyHelper = new CompanyHelper();
                 //userHelper = new UserHelper();
             }
@@ -107,9 +108,21 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            long createLoggerTime = 0;
+            long createInitCientAndOptTime = 0;
+            long fetchAppConfigTime = 0;
+            long fetchGovRuleTime = 0;
+
             moesifOptions = _middleware;
             _logger = logger.CreateLogger("Moesif.Middleware.NetCore");
             loggerHelper = new LoggerHelper(_logger);
+
+            createLoggerTime = stopwatch.ElapsedMilliseconds;
+
+            stopwatch.Restart();
 
             try
             {
@@ -140,6 +153,12 @@ namespace Moesif.Middleware.NetCore
                 } else
                 {
                     apiVersion = null;
+                }
+
+                if (debug)
+                {
+                    createInitCientAndOptTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
                 }
                 //MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
                 //governance = Governance.getDefaultGovernance();
@@ -209,6 +228,17 @@ namespace Moesif.Middleware.NetCore
             {
                 _logger.LogError(e, "MoesifMiddlewareNetCore initialiation error");
                 throw new Exception("Please provide the application Id to send events to Moesif");
+            }
+
+            if (debug)
+            {
+                stopwatch.Stop();
+                _logger.LogError($@"
+                                Exiting MoesifMiddleware Init with time: {createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds} ms
+                                createLoggerTime took: {createLoggerTime} ms
+                                createInitCientAndOptTime took: {createInitCientAndOptTime} ms
+                                fetchAppConfigTime took: {fetchAppConfigTime} ms
+                                fetchGovRuleTime took: {fetchGovRuleTime} ms");
             }
         }
 
@@ -760,7 +790,7 @@ namespace Moesif.Middleware.NetCore
                         computeWeightTime = stopwatch.ElapsedMilliseconds;
                         stopwatch.Restart();
                     }
-                
+
                     if (isBatchingEnabled)
                     {
                         _logger.LogError("Should not go here XXXX ");
