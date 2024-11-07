@@ -150,24 +150,58 @@ namespace Moesif.Middleware.NetCore
                 {
                     _logger.LogError("Skip calling schedule function because isLambda true");
                     // update Application config
-                    Stopwatch stopwatch = new Stopwatch();
-                    stopwatch.Start();
+                    Stopwatch stopwatch = null;
+                    if (debug)
+                    {
+                        stopwatch = new Stopwatch();
+                        stopwatch.Start();
+                    }
                     config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
                     _logger.LogInformation(config.sample_rate.ToString());
-                    _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
 
-                    stopwatch.Reset(); // Reset the stopwatch to 0
-                    stopwatch.Start();
+                    if (debug)
+                    {
+                        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        stopwatch.Reset(); // Reset the stopwatch to 0
+                        stopwatch.Start();
+                    }
                     governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
                     _logger.LogInformation(governance.rules.ToString());
-                    _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
-                    stopwatch.Stop();
+
+                    if (debug)
+                    {
+                        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        stopwatch.Stop();
+                    }
                 } else
                 {
                     if (isBatchingEnabled) ScheduleWorker();
 
+                    Stopwatch stopwatch = null;
+                    if (debug)
+                    {
+                        stopwatch = new Stopwatch();
+                        stopwatch.Start();
+                    }
+
                     ScheduleAppConfig();
+
+                    _logger.LogInformation(config.sample_rate.ToString());
+                    if (debug)
+                    {
+                        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        stopwatch.Reset(); // Reset the stopwatch to 0
+                        stopwatch.Start();
+                    }
+
                     ScheduleGovernanceRule();
+
+                    if (debug)
+                    {
+                        _logger.LogInformation(governance.rules.ToString());
+                        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        stopwatch.Stop();
+                    }
                 }
 
             }
@@ -193,7 +227,8 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogDebug("Last App Config Worker Run - {time}  for thread Id - {thread}" , lastAppConfigWorkerRun, Thread.CurrentThread.ManagedThreadId);
 
                         // update Application config
-                        config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
+                        Task.Run(async () => config = await AppConfigHelper.updateConfig(client, config, debug, _logger) );
+                        // config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
                     }
                     catch (Exception e)
                     {
@@ -287,22 +322,28 @@ namespace Moesif.Middleware.NetCore
 
         public async Task Invoke(HttpContext httpContext)
         {
-            Stopwatch stopwatch = new Stopwatch();
-
             _logger.LogError("Inside Invoke logger");
 
-            stopwatch.Start();
+            Stopwatch stopwatch = null;
+
+            if (debug)
+            {
+                stopwatch = new Stopwatch();
+                stopwatch.Start();
+            }
 
             // Initialize Transaction Id
             string transactionId = null;
             EventRequestModel request;
             (request, transactionId) = await FormatRequest(httpContext.Request, transactionId);
 
-            long formatLambdaRequest = stopwatch.ElapsedMilliseconds;
+            if (debug)
+            {
+                long formatLambdaRequest = stopwatch.ElapsedMilliseconds;
 
-            //_logger.LogError($"Format request time: {firstMeasurement} milliseconds");
-
-            stopwatch.Restart();
+                //_logger.LogError($"Format request time: {firstMeasurement} milliseconds");
+                stopwatch.Restart();
+            }
 
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -373,9 +414,11 @@ namespace Moesif.Middleware.NetCore
 
                 await _next(httpContext);
 
-                upstreamResponseTime = stopwatch.ElapsedMilliseconds;
-
-                stopwatch.Restart();
+                if (debug)
+                {
+                    upstreamResponseTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
 
                 if (skipLogging)
                 {
@@ -386,74 +429,98 @@ namespace Moesif.Middleware.NetCore
                     if (isLambda)
                     {
                         eventModel.Response = await FormatLambdaResponse(httpContext, transactionId);
-
-                        formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-
-                        //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
+                        if (debug)
+                        {
+                            formatLambdaResponse = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
+                        }
                     } else
                     {
                         eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
-
-                        formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-                        //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
+                        if (debug)
+                        {
+                            formatLambdaResponse = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
+                        }
                     }
 
-                    stopwatch.Restart();
+                    if (debug)
+                    {
+                        stopwatch.Restart();
+
+                    }
 
                     if (eventModel.CompanyId == null)
                     {
-                       
-                        eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                       eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
                     }
 
-                    getCompanyIdTime = stopwatch.ElapsedMilliseconds;
-
-                    stopwatch.Restart();
+                    if (debug)
+                    {
+                        getCompanyIdTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
 
                     if (eventModel.UserId == null)
                     {
                         eventModel.UserId = getUserId(httpContext, eventModel.Request);
                     }
-                    getUserIdTime = stopwatch.ElapsedMilliseconds;
 
-                    stopwatch.Restart();
+                    if (debug)
+                    {
+                        getUserIdTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
 
                     eventModel.Metadata = loggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
-                    getMetadataTime = stopwatch.ElapsedMilliseconds;
-
-                    stopwatch.Restart();
+                    if (debug)
+                    {
+                        getMetadataTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
 
                     eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
-                    getSessionTokenTime = stopwatch.ElapsedMilliseconds;
-
-                    stopwatch.Restart();
-
+                    if (debug)
+                    {
+                        getSessionTokenTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
                     _logger.LogDebug("Calling the API to send the event to Moesif");
                     //Send event to Moesif async
                     if (isLambda)
                     {
                         await LogEventAsync(eventModel);
-                        sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
-                        //_logger.LogError($"LogEventAsync time: {thirdMeasurement} milliseconds");
+                        if (debug)
+                        {
+                            sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"LogEventAsync time: {thirdMeasurement} milliseconds");
+                        }
                     }
                     else
                     {
                         await Task.Run(async () => await LogEventAsync(eventModel));
-                        sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
-                        //_logger.LogError($"Task LogEventAsync time: {thirdMeasurement} milliseconds");
+                        if (debug)
+                        {
+                            sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Task LogEventAsync time: {thirdMeasurement} milliseconds");
+                        }
                     }
 
-                    stopwatch.Restart();
+                    if (debug)
+                    {
+                        stopwatch.Restart();
+                    }
                 }
             }
 
-            stopwatch.Stop();
-
-            // Get the elapsed time in milliseconds
-            //_logger.LogError($"Exiting Invoke with time: {formatLambdaRequest + formatLambdaResponse + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} milliseconds where Format request took: {formatLambdaRequest} ms, Format response took: {formatLambdaResponse} ms, and send event async took: {sendEventAsyncTime} ms ");
-            _logger.LogError($@"
+            if(debug)
+            {
+                stopwatch.Stop();
+                // Get the elapsed time in milliseconds
+                //_logger.LogError($"Exiting Invoke with time: {formatLambdaRequest + formatLambdaResponse + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} milliseconds where Format request took: {formatLambdaRequest} ms, Format response took: {formatLambdaResponse} ms, and send event async took: {sendEventAsyncTime} ms ");
+                _logger.LogError($@"
                                 Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
                                 Format request took: {formatLambdaRequest} ms
                                 Fetch Upstream response took: {upstreamResponseTime} ms
@@ -463,6 +530,7 @@ namespace Moesif.Middleware.NetCore
                                 getMetadataTime took: {getMetadataTime} ms
                                 getSessionTokenTime took: {getSessionTokenTime} ms
                                 Send event async took: {sendEventAsyncTime} ms");
+            }
         }
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
@@ -612,9 +680,12 @@ namespace Moesif.Middleware.NetCore
         private async Task LogEventAsync(EventModel eventModel)
         {
 
-            Stopwatch stopwatch = new Stopwatch();
-
-            stopwatch.Start();
+            Stopwatch stopwatch = null;
+            if (debug)
+            {
+                stopwatch = new Stopwatch();
+                stopwatch.Start();
+            }
 
             long getMaskEventTime = 0;
             long createRequestMapTime = 0;
@@ -648,9 +719,11 @@ namespace Moesif.Middleware.NetCore
                 }
             }
 
-            getMaskEventTime = stopwatch.ElapsedMilliseconds;
-
-            stopwatch.Restart();
+            if (debug)
+            {
+                getMaskEventTime = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
+            }
 
             // Send Events
             try
@@ -658,31 +731,36 @@ namespace Moesif.Middleware.NetCore
                 // Get Sampling percentage
                 RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
 
-                createRequestMapTime = stopwatch.ElapsedMilliseconds;
-
-                stopwatch.Restart();
-
+                if (debug)
+                {
+                    createRequestMapTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
 
-                samplingPercentageTime = stopwatch.ElapsedMilliseconds;
-
-                stopwatch.Restart();
-
+                if (debug)
+                {
+                    samplingPercentageTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
 
-                randomPercentageTime = stopwatch.ElapsedMilliseconds;
-
-                stopwatch.Restart();
-
+                if (debug)
+                {
+                    randomPercentageTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
                 if (samplingPercentage >= randomPercentage)
                 {
                     eventModel.Weight = AppConfigHelper.calculateWeight(samplingPercentage);
 
-                    computeWeightTime = stopwatch.ElapsedMilliseconds;
-
-                    stopwatch.Restart();
-
+                    if (debug)
+                    {
+                        computeWeightTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+                
                     if (isBatchingEnabled)
                     {
                         _logger.LogError("Should not go here XXXX ");
@@ -705,16 +783,18 @@ namespace Moesif.Middleware.NetCore
 
                         _logger.LogError("Single Event sent successfully to Moesif");
 
-                        foreach (KeyValuePair<string, string> kvp in ceResp)
-                        {
-                            _logger.LogError($"Key: {kvp.Key}, Value: {kvp.Value}");
-                        }
+                            if (debug)
+                            {
+                                foreach (KeyValuePair<string, string> kvp in ceResp)
+                                {
+                                    _logger.LogError($"Key: {kvp.Key}, Value: {kvp.Value}");
+                                }
 
-                        _logger.LogError("Print Dict ce - ");
+                                _logger.LogError("Print Dict ce - ");
 
-                        createEventAsyncTime = stopwatch.ElapsedMilliseconds;
-
-                        stopwatch.Restart();
+                                createEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                                stopwatch.Restart();
+                            }
                     }
                 }
                 else
@@ -735,9 +815,11 @@ namespace Moesif.Middleware.NetCore
                 _logger.LogError(ex, "Exception in sending event");
             }
 
-            stopwatch.Stop();
+            if (debug)
+            {
+                stopwatch.Stop();
 
-            _logger.LogError($@"
+                _logger.LogError($@"
                                 Exiting LogEventAsync with time: {getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
                                 getMaskEventTime took: {getMaskEventTime} ms
                                 createRequestMapTime took: {createRequestMapTime} ms
@@ -746,7 +828,7 @@ namespace Moesif.Middleware.NetCore
                                 computeWeightTime took: {computeWeightTime} ms
                                 createEventAsyncTime took: {createEventAsyncTime} ms");
 
-
+            }
         }
 
     }
