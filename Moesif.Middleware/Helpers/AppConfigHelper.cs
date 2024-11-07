@@ -41,6 +41,8 @@ namespace Moesif.Middleware.Helpers
             {
                 logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
+
+            await Task.Delay(8000); // Asynchronously wait for 2 seconds
             return prevConfig;
         }
 
