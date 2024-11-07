@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define MOESIF_INSTRUMENT 1
+
+using System;
 using System.IO;
 using System.Text;
 using System.Linq;
@@ -9,6 +11,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Moesif.Middleware.Helpers;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -173,13 +176,34 @@ namespace Moesif.Middleware.NetCore.Helpers
 
         public  Tuple<object, string> Serialize(string data, string contentType, bool logBody, bool debug)
         {
+#if MOESIF_INSTRUMENT
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            _logger.LogError($@"
+                                Serialize Body: {data}");
+
+            long checkForEmptyDataAndInitObj = 0;
+            long parseJsonData = 0;
+            long parseBase64Data = 0;
+            long exceptionBase64Data = 0;
+#endif
+
             if (string.IsNullOrEmpty(data))
             {
+#if MOESIF_INSTRUMENT
+                stopwatch.Stop();
+                _logger.LogError($@"
+                                Exiting Serialize Body as empty data with time: {stopwatch.ElapsedMilliseconds} ms");
+#endif
                 return new Tuple<object, string>(null, null);
             }
 
             var reqBody = new object();
             string requestTransferEncoding = null;
+#if MOESIF_INSTRUMENT
+            checkForEmptyDataAndInitObj = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             if (logBody && contentType != null && !(contentType.ToLower().StartsWith("multipart/form-data")))
             {
                 try
@@ -189,12 +213,20 @@ namespace Moesif.Middleware.NetCore.Helpers
                     {
                         reqBody = ApiHelper.JsonDeserialize<object>(data);
                         requestTransferEncoding = "json";
+#if MOESIF_INSTRUMENT
+                        parseJsonData = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+#endif
                     }
                     else
                     {
                         LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
                         reqBody = Base64Encode(data);
                         requestTransferEncoding = "base64";
+#if MOESIF_INSTRUMENT
+                        parseBase64Data = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+#endif
                     }
                 }
                 catch (Exception)
@@ -202,8 +234,21 @@ namespace Moesif.Middleware.NetCore.Helpers
                     LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
                     reqBody = Base64Encode(data);
                     requestTransferEncoding = "base64";
+#if MOESIF_INSTRUMENT
+                    exceptionBase64Data = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+#endif
                 }
             }
+#if MOESIF_INSTRUMENT
+            stopwatch.Stop();
+            _logger.LogError($@"
+                                Exiting Serialize Body with time: {checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds} ms
+                                checkForEmptyDataAndInitObj took: {checkForEmptyDataAndInitObj} ms
+                                parseJsonData took: {parseJsonData} ms
+                                parseBase64Data took: {parseBase64Data} ms
+                                exceptionBase64Data took: {exceptionBase64Data} ms");
+#endif
 
             return new Tuple<object, string>(reqBody, requestTransferEncoding);
         }

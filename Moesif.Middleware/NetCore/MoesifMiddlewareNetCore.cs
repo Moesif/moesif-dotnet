@@ -214,7 +214,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
                     {
                         _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
-                        _logger.LogInformation(config.sample_rate.ToString());
+                        _logger.LogError($"Sampling percentage in Init is - {config.sample_rate.ToString()} ");
                         stopwatch.Reset(); // Reset the stopwatch to 0
                         stopwatch.Start();
                     }
@@ -266,8 +266,8 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogDebug("Last App Config Worker Run - {time}  for thread Id - {thread}" , lastAppConfigWorkerRun, Thread.CurrentThread.ManagedThreadId);
 
                         // update Application config
-                        Task.Run(async () => config = await AppConfigHelper.updateConfig(client, config, debug, _logger) );
-                        //config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
+                        //Task.Run(async () => config = await AppConfigHelper.updateConfig(client, config, debug, _logger) );
+                        config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
                     }
                     catch (Exception e)
                     {
@@ -296,8 +296,8 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogDebug("Last Governance Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
 
                         // update Governance Rule
-                        Task.Run(async () => governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger));
-                        //governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
+                        //Task.Run(async () => governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger));
+                        governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
                     }
                     catch (Exception e)
                     {
@@ -541,6 +541,7 @@ namespace Moesif.Middleware.NetCore
                     if (isLambda)
                     {
                         await LogEventAsync(eventModel);
+                        //Task.Run(async () => await LogEventAsync(eventModel));
 #if MOESIF_INSTRUMENT
                         {
                             sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
@@ -550,7 +551,7 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        await Task.Run(async () => await LogEventAsync(eventModel));
+                        Task.Run(async () => await LogEventAsync(eventModel));
 #if MOESIF_INSTRUMENT
                         {
                             sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
