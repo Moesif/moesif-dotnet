@@ -108,9 +108,12 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
+            Stopwatch stopwatch = null;
+            if (debug)
+            {
+                new Stopwatch();
+                stopwatch.Start();
+            }
             long createLoggerTime = 0;
             long createInitCientAndOptTime = 0;
             long fetchAppConfigTime = 0;
@@ -120,9 +123,11 @@ namespace Moesif.Middleware.NetCore
             _logger = logger.CreateLogger("Moesif.Middleware.NetCore");
             loggerHelper = new LoggerHelper(_logger);
 
-            createLoggerTime = stopwatch.ElapsedMilliseconds;
-
-            stopwatch.Restart();
+            if (debug)
+            {
+                createLoggerTime = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
+            }
 
             try
             {
@@ -165,41 +170,39 @@ namespace Moesif.Middleware.NetCore
                 //configEvent = new AutoResetEvent(false);
                 //governanceEvent = new AutoResetEvent(false);
 
-                if (isLambda)
-                {
-                    _logger.LogError("Skip calling schedule function because isLambda true");
-                    // update Application config
-                    Stopwatch stopwatch = null;
-                    if (debug)
-                    {
-                        stopwatch = new Stopwatch();
-                        stopwatch.Start();
-                    }
-                    config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
-                    _logger.LogInformation(config.sample_rate.ToString());
+                //if (isLambda)
+                //{
+                //    _logger.LogError("Skip calling schedule function because isLambda true");
+                //    // update Application config
+                //    if (debug)
+                //    {
+                //        stopwatch.Reset(); // Reset the stopwatch to 0
+                //        stopwatch.Start();
+                //    }
+                //    config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
+                //    _logger.LogInformation(config.sample_rate.ToString());
 
-                    if (debug)
-                    {
-                        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
-                        stopwatch.Reset(); // Reset the stopwatch to 0
-                        stopwatch.Start();
-                    }
-                    governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
-                    _logger.LogInformation(governance.rules.ToString());
+                //    if (debug)
+                //    {
+                //        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                //        stopwatch.Reset(); // Reset the stopwatch to 0
+                //        stopwatch.Start();
+                //    }
+                //    governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
+                //    _logger.LogInformation(governance.rules.ToString());
 
-                    if (debug)
-                    {
-                        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
-                        stopwatch.Stop();
-                    }
-                } else
+                //    if (debug)
+                //    {
+                //        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                //        stopwatch.Stop();
+                //    }
+                //} else
                 {
                     if (isBatchingEnabled) ScheduleWorker();
 
-                    Stopwatch stopwatch = null;
                     if (debug)
                     {
-                        stopwatch = new Stopwatch();
+                        stopwatch.Reset(); // Reset the stopwatch to 0
                         stopwatch.Start();
                     }
 
@@ -550,16 +553,16 @@ namespace Moesif.Middleware.NetCore
                 stopwatch.Stop();
                 // Get the elapsed time in milliseconds
                 //_logger.LogError($"Exiting Invoke with time: {formatLambdaRequest + formatLambdaResponse + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} milliseconds where Format request took: {formatLambdaRequest} ms, Format response took: {formatLambdaResponse} ms, and send event async took: {sendEventAsyncTime} ms ");
-                _logger.LogError($@"
-                                Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
-                                Format request took: {formatLambdaRequest} ms
-                                Fetch Upstream response took: {upstreamResponseTime} ms
-                                Format response took: {formatLambdaResponse} ms
-                                getCompanyId took: {getCompanyIdTime} ms
-                                getUserIdTime took: {getUserIdTime} ms
-                                getMetadataTime took: {getMetadataTime} ms
-                                getSessionTokenTime took: {getSessionTokenTime} ms
-                                Send event async took: {sendEventAsyncTime} ms");
+                //_logger.LogError($@"
+                //                Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                //                Format request took: {formatLambdaRequest} ms
+                //                Fetch Upstream response took: {upstreamResponseTime} ms
+                //                Format response took: {formatLambdaResponse} ms
+                //                getCompanyId took: {getCompanyIdTime} ms
+                //                getUserIdTime took: {getUserIdTime} ms
+                //                getMetadataTime took: {getMetadataTime} ms
+                //                getSessionTokenTime took: {getSessionTokenTime} ms
+                //                Send event async took: {sendEventAsyncTime} ms");
             }
         }
 
