@@ -1,4 +1,4 @@
-﻿#define MOESIF_INSTRUMENT 1
+﻿#define MOESIF_INSTRUMENT
 
 using System;
 using System.IO;
