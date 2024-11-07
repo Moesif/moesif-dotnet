@@ -298,7 +298,7 @@ namespace Moesif.Middleware.NetCore
             EventRequestModel request;
             (request, transactionId) = await FormatRequest(httpContext.Request, transactionId);
 
-            long firstMeasurement = stopwatch.ElapsedMilliseconds;
+            long formatLambdaRequest = stopwatch.ElapsedMilliseconds;
 
             //_logger.LogError($"Format request time: {firstMeasurement} milliseconds");
 
@@ -341,8 +341,13 @@ namespace Moesif.Middleware.NetCore
                 eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
             }
 
-            long secondMeasurement = 0;
-            long thirdMeasurement = 0;
+            long formatLambdaResponse = 0;
+            long sendEventAsyncTime = 0;
+            long upstreamResponseTime = 0;
+            long getCompanyIdTime = 0;
+            long getUserIdTime = 0;
+            long getMetadataTime = 0;
+            long getSessionTokenTime = 0;
 
             if (GovernanceHelper.enforceGovernaceRule(eventModel, governance, config))
             {
@@ -368,6 +373,10 @@ namespace Moesif.Middleware.NetCore
 
                 await _next(httpContext);
 
+                upstreamResponseTime = stopwatch.ElapsedMilliseconds;
+
+                stopwatch.Restart();
+
                 if (skipLogging)
                 {
                     _logger.LogDebug("Skipping the event");
@@ -378,14 +387,14 @@ namespace Moesif.Middleware.NetCore
                     {
                         eventModel.Response = await FormatLambdaResponse(httpContext, transactionId);
 
-                        secondMeasurement = stopwatch.ElapsedMilliseconds;
+                        formatLambdaResponse = stopwatch.ElapsedMilliseconds;
 
                         //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
                     } else
                     {
                         eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
 
-                        secondMeasurement = stopwatch.ElapsedMilliseconds;
+                        formatLambdaResponse = stopwatch.ElapsedMilliseconds;
                         //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
                     }
 
@@ -396,24 +405,43 @@ namespace Moesif.Middleware.NetCore
                        
                         eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
                     }
-                    if(eventModel.UserId == null)
+
+                    getCompanyIdTime = stopwatch.ElapsedMilliseconds;
+
+                    stopwatch.Restart();
+
+                    if (eventModel.UserId == null)
                     {
                         eventModel.UserId = getUserId(httpContext, eventModel.Request);
                     }
+                    getUserIdTime = stopwatch.ElapsedMilliseconds;
+
+                    stopwatch.Restart();
+
                     eventModel.Metadata = loggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+
+                    getMetadataTime = stopwatch.ElapsedMilliseconds;
+
+                    stopwatch.Restart();
+
                     eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
+
+                    getSessionTokenTime = stopwatch.ElapsedMilliseconds;
+
+                    stopwatch.Restart();
 
                     _logger.LogDebug("Calling the API to send the event to Moesif");
                     //Send event to Moesif async
                     if (isLambda)
                     {
                         await LogEventAsync(eventModel);
-                        thirdMeasurement = stopwatch.ElapsedMilliseconds;
+                        sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
                         //_logger.LogError($"LogEventAsync time: {thirdMeasurement} milliseconds");
-                    } else
+                    }
+                    else
                     {
                         await Task.Run(async () => await LogEventAsync(eventModel));
-                        thirdMeasurement = stopwatch.ElapsedMilliseconds;
+                        sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
                         //_logger.LogError($"Task LogEventAsync time: {thirdMeasurement} milliseconds");
                     }
 
@@ -424,7 +452,17 @@ namespace Moesif.Middleware.NetCore
             stopwatch.Stop();
 
             // Get the elapsed time in milliseconds
-            _logger.LogError($"Exiting Invoke with time: {firstMeasurement + secondMeasurement + thirdMeasurement + stopwatch.ElapsedMilliseconds} milliseconds where Format request took: {firstMeasurement} ms, Format response took: {secondMeasurement} ms, and send event async took: {thirdMeasurement} ms ");
+            //_logger.LogError($"Exiting Invoke with time: {formatLambdaRequest + formatLambdaResponse + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} milliseconds where Format request took: {formatLambdaRequest} ms, Format response took: {formatLambdaResponse} ms, and send event async took: {sendEventAsyncTime} ms ");
+            _logger.LogError($@"
+                                Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                                Format request took: {formatLambdaRequest} ms
+                                Fetch Upstream response took: {upstreamResponseTime} ms
+                                Format response took: {formatLambdaResponse} ms
+                                getCompanyId took: {getCompanyIdTime} ms
+                                getUserIdTime took: {getUserIdTime} ms
+                                getMetadataTime took: {getMetadataTime} ms
+                                getSessionTokenTime took: {getSessionTokenTime} ms
+                                Send event async took: {sendEventAsyncTime} ms");
         }
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
@@ -574,6 +612,17 @@ namespace Moesif.Middleware.NetCore
         private async Task LogEventAsync(EventModel eventModel)
         {
 
+            Stopwatch stopwatch = new Stopwatch();
+
+            stopwatch.Start();
+
+            long getMaskEventTime = 0;
+            long createRequestMapTime = 0;
+            long samplingPercentageTime = 0;
+            long randomPercentageTime = 0;
+            long computeWeightTime = 0;
+            long createEventAsyncTime = 0;
+
             // Get Mask Event
             var maskEvent_out = new object();
             var getMaskEvent = moesifOptions.TryGetValue("MaskEventModel", out maskEvent_out);
@@ -599,21 +648,45 @@ namespace Moesif.Middleware.NetCore
                 }
             }
 
+            getMaskEventTime = stopwatch.ElapsedMilliseconds;
+
+            stopwatch.Restart();
+
             // Send Events
             try
             {
                 // Get Sampling percentage
                 RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
+
+                createRequestMapTime = stopwatch.ElapsedMilliseconds;
+
+                stopwatch.Restart();
+
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
+
+                samplingPercentageTime = stopwatch.ElapsedMilliseconds;
+
+                stopwatch.Restart();
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
+
+                randomPercentageTime = stopwatch.ElapsedMilliseconds;
+
+                stopwatch.Restart();
+
                 if (samplingPercentage >= randomPercentage)
                 {
                     eventModel.Weight = AppConfigHelper.calculateWeight(samplingPercentage);
 
+                    computeWeightTime = stopwatch.ElapsedMilliseconds;
+
+                    stopwatch.Restart();
+
                     if (isBatchingEnabled)
                     {
+                        _logger.LogError("Should not go here XXXX ");
+
                         _logger.LogDebug("Add Event to the batch");
 
                         if (MoesifQueue.Count < queueSize)
@@ -628,9 +701,20 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        await client.Api.CreateEventAsync(eventModel);
+                        var ceResp = await client.Api.CreateEventAsync(eventModel, !isLambda);
 
-                        _logger.LogDebug("Event sent successfully to Moesif");
+                        _logger.LogError("Single Event sent successfully to Moesif");
+
+                        foreach (KeyValuePair<string, string> kvp in ceResp)
+                        {
+                            _logger.LogError($"Key: {kvp.Key}, Value: {kvp.Value}");
+                        }
+
+                        _logger.LogError("Print Dict ce - ");
+
+                        createEventAsyncTime = stopwatch.ElapsedMilliseconds;
+
+                        stopwatch.Restart();
                     }
                 }
                 else
@@ -650,6 +734,19 @@ namespace Moesif.Middleware.NetCore
             {
                 _logger.LogError(ex, "Exception in sending event");
             }
+
+            stopwatch.Stop();
+
+            _logger.LogError($@"
+                                Exiting LogEventAsync with time: {getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                                getMaskEventTime took: {getMaskEventTime} ms
+                                createRequestMapTime took: {createRequestMapTime} ms
+                                samplingPercentageTime took: {samplingPercentageTime} ms
+                                randomPercentageTime took: {randomPercentageTime} ms
+                                computeWeightTime took: {computeWeightTime} ms
+                                createEventAsyncTime took: {createEventAsyncTime} ms");
+
+
         }
 
     }
