@@ -27,7 +27,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/1.4.9";
+        public static string APP_VERSION = "moesif-netcore/1.5.0";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -110,31 +110,31 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
-            #if MOESIF_INSTRUMENT
+#if MOESIF_INSTRUMENT
             Stopwatch stopwatch = stopwatch = new Stopwatch();
             stopwatch.Start();
             long createLoggerTime = 0;
             long createInitCientAndOptTime = 0;
             long fetchAppConfigTime = 0;
             long fetchGovRuleTime = 0;
-            #endif
+#endif
 
             moesifOptions = _middleware;
             _logger = logger.CreateLogger("Moesif.Middleware.NetCore");
             loggerHelper = new LoggerHelper(_logger);
 
-            #if MOESIF_INSTRUMENT
+#if MOESIF_INSTRUMENT
             {
                 createLoggerTime = stopwatch.ElapsedMilliseconds;
                 stopwatch.Restart();
             }
-            #endif
+#endif
 
             try
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.9", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
@@ -161,12 +161,12 @@ namespace Moesif.Middleware.NetCore
                     apiVersion = null;
                 }
 
-                #if MOESIF_INSTRUMENT
+#if MOESIF_INSTRUMENT
                 {
                     createInitCientAndOptTime = stopwatch.ElapsedMilliseconds;
                     stopwatch.Restart();
                 }
-                #endif
+#endif
                 //MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
                 //governance = Governance.getDefaultGovernance();
                 //configEvent = new AutoResetEvent(false);
