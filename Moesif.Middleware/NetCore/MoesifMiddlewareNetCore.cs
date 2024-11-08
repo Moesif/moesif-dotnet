@@ -1,4 +1,4 @@
-﻿#define MOESIF_INSTRUMENT
+﻿//#define MOESIF_INSTRUMENT
 
 using System;
 using System.Diagnostics;
@@ -836,7 +836,7 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        var ceResp = await client.Api.CreateEventAsync(eventModel); //, !isLambda);
+                        var ceResp = await client.Api.CreateEventAsync(eventModel, !isLambda);
 
                         _logger.LogError("Single Event sent successfully to Moesif");
 
