@@ -25,7 +25,7 @@ namespace Moesif.Middleware.Helpers
                 {
                     var governance = Governance.fromJson(resp.Body);
                     governance.etag = etag;
-                    logger.LogError("governance rule updated with {body} at {time} ", resp.Body, governance.lastUpdatedTime);
+                    logger.LogDebug("governance rule updated with {body} at {time} ", resp.Body, governance.lastUpdatedTime);
                     return governance;
                 }
                 return prevGovernance;

@@ -877,7 +877,7 @@ namespace Moesif.Middleware.NetCore
                         //    });
                         //_logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
-                        _logger.LogInformation("Event sent successfully to Moesif");
+                        _logger.LogDebug("Event sent successfully to Moesif");
 
 #if MOESIF_INSTRUMENT
                         {
