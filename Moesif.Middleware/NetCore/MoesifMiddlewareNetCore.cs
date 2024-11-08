@@ -22,7 +22,6 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Moesif.Middleware.NetCore.Helpers;
 #endif
 
-
 #if NETCORE
 namespace Moesif.Middleware.NetCore
 {
@@ -202,13 +201,6 @@ namespace Moesif.Middleware.NetCore
                 //} else
                 {
                     if (isBatchingEnabled) ScheduleWorker();
-                    #if MOESIF_INSTRUMENT
-                    
-                    {
-                        stopwatch.Reset(); // Reset the stopwatch to 0
-                        stopwatch.Start();
-                    }
-                    #endif
 
                     ScheduleAppConfig();
 #if MOESIF_INSTRUMENT
@@ -362,7 +354,6 @@ namespace Moesif.Middleware.NetCore
 
         public async Task Invoke(HttpContext httpContext)
         {
-            _logger.LogError("Inside Invoke logger");
 #if MOESIF_INSTRUMENT
 
             Stopwatch stopwatch = null;
@@ -387,7 +378,6 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
             {
                 formatLambdaRequest = stopwatch.ElapsedMilliseconds;
-
                 //_logger.LogError($"Format request time: {firstMeasurement} milliseconds");
                 stopwatch.Restart();
             }
@@ -588,8 +578,23 @@ namespace Moesif.Middleware.NetCore
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
+#if MOESIF_INSTRUMENT
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            long convertToHeadersTime = 0;
+            long setHeaderEnableBufferingTime = 0;
+            long getRequestContent = 0;
+            long addTxIdTime = 0;
+            long serializeReqBody = 0;
+            long getIpAndPrepModel = 0;
+#endif
             // Request headers
             var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
+#if MOESIF_INSTRUMENT
+            convertToHeadersTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
 
             // RequestBody
             request.EnableBuffering(bufferThreshold: 1000000);
@@ -602,8 +607,15 @@ namespace Moesif.Middleware.NetCore
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
-
+#if MOESIF_INSTRUMENT
+            setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+#if MOESIF_INSTRUMENT
+            getRequestContent = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
 
             // Add Transaction Id to the Request Header
             bool disableTransactionId = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
@@ -612,10 +624,16 @@ namespace Moesif.Middleware.NetCore
                 transactionId = loggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
                 reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
-
+#if MOESIF_INSTRUMENT
+            addTxIdTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             // Serialize request body
             var bodyWrapper = loggerHelper.Serialize(bodyAsText, request.ContentType, logBody, debug);
-
+#if MOESIF_INSTRUMENT
+            serializeReqBody = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             // Client Ip Address
             string ip = clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = new Uri(request.GetDisplayUrl()).ToString();
@@ -632,6 +650,20 @@ namespace Moesif.Middleware.NetCore
                 Body = bodyWrapper.Item1,
                 TransferEncoding = bodyWrapper.Item2
             };
+
+#if MOESIF_INSTRUMENT
+            getIpAndPrepModel = stopwatch.ElapsedMilliseconds;
+            stopwatch.Stop();
+            _logger.LogError($@"
+                                Exiting FormatRequest with time: {convertToHeadersTime + setHeaderEnableBufferingTime + getRequestContent + addTxIdTime + serializeReqBody + getIpAndPrepModel + stopwatch.ElapsedMilliseconds} ms
+                                convertToHeadersTime took: {convertToHeadersTime} ms
+                                setHeaderEnableBufferingTime took: {setHeaderEnableBufferingTime} ms
+                                getRequestContent took: {getRequestContent} ms
+                                addTxIdTime took: {addTxIdTime} ms
+                                serializeReqBody took: {serializeReqBody} ms
+                                getIpAndPrepModel took: {getIpAndPrepModel} ms");
+#endif
+
             return (eventReq, transactionId);
         }
 
@@ -735,7 +767,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            
+
             long getMaskEventTime = 0;
             long createRequestMapTime = 0;
             long samplingPercentageTime = 0;
@@ -789,7 +821,7 @@ namespace Moesif.Middleware.NetCore
                 }
 #endif
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
-                _logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
+                //_logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
 
 #if MOESIF_INSTRUMENT
                 {
@@ -836,19 +868,19 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        var ceResp = await client.Api.CreateEventAsync(eventModel, !isLambda);
+                        //_logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                        //Task.Run(async () => client.Api.CreateEventAsync(eventModel, !isLambda));
+                        await client.Api.CreateEventAsync(eventModel, !isLambda);
+                        //var t1 = Task.Run(async () => {
+                        //    Thread.Sleep(500);
+                        //    Console.WriteLine("------ AFTER 2SEC Delay PRINTINg at -----: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                        //    });
+                        //_logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
-                        _logger.LogError("Single Event sent successfully to Moesif");
+                        _logger.LogInformation("Event sent successfully to Moesif");
 
 #if MOESIF_INSTRUMENT
                         {
-                            foreach (KeyValuePair<string, string> kvp in ceResp)
-                            {
-                                _logger.LogError($"Key: {kvp.Key}, Value: {kvp.Value}");
-                            }
-
-                            _logger.LogError("Print Dict ce - ");
-
                             createEventAsyncTime = stopwatch.ElapsedMilliseconds;
                             stopwatch.Restart();
                         }
