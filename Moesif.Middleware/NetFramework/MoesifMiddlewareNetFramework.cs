@@ -33,7 +33,7 @@ namespace Moesif.Middleware.NetFramework
         public UserHelper userHelper; // Initialize user helper
 
         public CompanyHelper companyHelper; // Initialize company helper
-        
+
         public ClientIp clientIpHelper; // Initialize client ip helper
 
         public volatile AppConfig config; // The only AppConfig instance shared among threads
@@ -46,7 +46,7 @@ namespace Moesif.Middleware.NetFramework
 
         public int batchSize; // Queue batch size
 
-        public int queueSize; // Event Queue size 
+        public int queueSize; // Event Queue size
 
         public int batchMaxTime; // Time in seconds for next batch
 
@@ -82,7 +82,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.2", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -98,7 +98,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.2", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
@@ -194,7 +194,7 @@ namespace Moesif.Middleware.NetFramework
             governanceThread.Start();
         }
 
-        private void ScheduleWorker() 
+        private void ScheduleWorker()
         {
             _logger.LogDebug("Starting a new thread to read the queue and send event to moesif");
             Thread workerThread = new Thread(async () => // Create a new thread to read the queue and send event to moesif
@@ -246,7 +246,7 @@ namespace Moesif.Middleware.NetFramework
             companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
-        public async override Task Invoke(IOwinContext httpContext) 
+        public async override Task Invoke(IOwinContext httpContext)
         {
             // Buffering mvc reponse
             StreamHelper outputCaptureMVC = null;
@@ -322,7 +322,7 @@ namespace Moesif.Middleware.NetFramework
                 }
                 else
                 {
-                    // Select stream to use 
+                    // Select stream to use
                     StreamHelper streamToUse = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0) ? outputCaptureOwin : outputCaptureMVC;
 
                     // Prepare Moesif Event Response model
@@ -379,10 +379,10 @@ namespace Moesif.Middleware.NetFramework
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
             try
-            { 
+            {
                 body = await loggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
             }
-            catch 
+            catch
             {
                 _logger.LogDebug("Cannot read request body.");
             }
@@ -424,7 +424,7 @@ namespace Moesif.Middleware.NetFramework
             string contentEncoding = "";
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
-            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);            
+            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);
             var bodyWrapper = loggerHelper.Serialize(body, response.ContentType, logBody);
 
             // Add Transaction Id to Response Header
@@ -522,7 +522,7 @@ namespace Moesif.Middleware.NetFramework
             }
         }
 
-        
+
     }
 }
 #endif
