@@ -25,7 +25,7 @@ namespace Moesif.Middleware.Helpers
                     var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
                     appConfig.etag = etag;
                     appConfig.lastUpdatedTime = DateTime.UtcNow;
-                    logger.LogDebug("appConfig is updated with {body} at {time}", appConfigResp.Body, DateTime.UtcNow);
+                    logger.LogError("appConfig is updated with {body} at {time} sampling_rate {sample}", appConfigResp.Body, appConfig.lastUpdatedTime, appConfig.sample_rate);
                     return appConfig;
                 }
             }
