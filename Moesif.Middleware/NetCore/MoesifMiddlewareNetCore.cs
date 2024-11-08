@@ -1,4 +1,7 @@
-﻿using System;
+﻿//#define MOESIF_INSTRUMENT
+
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -24,21 +27,27 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
+        public static string APP_VERSION = "moesif-netcore/1.4.9";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
 
-        public UserHelper userHelper; // Initialize user helper
+        //public UserHelper userHelper; // Initialize user helper
+        public static UserHelper userHelper = new UserHelper(); // Initialize user helper
 
-        public CompanyHelper companyHelper; // Initialize company helper
+        //public CompanyHelper companyHelper; // Initialize company helper
+        public static CompanyHelper companyHelper = new CompanyHelper(); // Initialize company helper
 
-        public ClientIp clientIpHelper; // Initialize client ip helper
+        //public ClientIp clientIpHelper; // Initialize client ip helper
+        public static ClientIp clientIpHelper = new ClientIp(); // Initialize client ip helper
 
-        public volatile AppConfig config;  // The AppConfig
-
-        public volatile Governance governance; // Governance Rule
+        //public volatile AppConfig config;  // The AppConfig
+        public static volatile AppConfig config = AppConfig.getDefaultAppConfig();  // The AppConfig
+        
+        //public volatile Governance governance; // Governance Rule
+        public static volatile Governance governance = Governance.getDefaultGovernance(); // Governance Rule
 
         public bool isBatchingEnabled; // Enable Batching
 
@@ -52,7 +61,8 @@ namespace Moesif.Middleware.NetCore
 
         public string apiVersion;
 
-        public ConcurrentQueue<EventModel> MoesifQueue; // Moesif Queue
+        //public ConcurrentQueue<EventModel> MoesifQueue; // Moesif Queue
+        public static ConcurrentQueue<EventModel> MoesifQueue = new ConcurrentQueue<EventModel>(); // Moesif Queue
 
         public string authorizationHeaderName; // A request header field name used to identify the User
 
@@ -62,15 +72,17 @@ namespace Moesif.Middleware.NetCore
 
         public DateTime lastAppConfigWorkerRun = DateTime.MinValue;
 
-        public bool debug;
+        public bool debug = false;
 
         public bool logBody;
 
         public bool isLambda;
 
-        private AutoResetEvent configEvent ;
+        //private AutoResetEvent configEvent ;
+        private static AutoResetEvent configEvent = new AutoResetEvent(false);
 
-        private AutoResetEvent governanceEvent;
+        //private AutoResetEvent governanceEvent;
+        private static AutoResetEvent governanceEvent = new AutoResetEvent(false);
 
         private ILogger _logger;
 
@@ -85,10 +97,10 @@ namespace Moesif.Middleware.NetCore
             try
             {
                 // Initialize client
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netcore/1.4.9", debug);
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                companyHelper = new CompanyHelper();
-                userHelper = new UserHelper();
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
+                //companyHelper = new CompanyHelper();
+                //userHelper = new UserHelper();
             }
             catch (Exception)
             {
@@ -98,9 +110,25 @@ namespace Moesif.Middleware.NetCore
 
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
+            #if MOESIF_INSTRUMENT
+            Stopwatch stopwatch = stopwatch = new Stopwatch();
+            stopwatch.Start();
+            long createLoggerTime = 0;
+            long createInitCientAndOptTime = 0;
+            long fetchAppConfigTime = 0;
+            long fetchGovRuleTime = 0;
+            #endif
+
             moesifOptions = _middleware;
             _logger = logger.CreateLogger("Moesif.Middleware.NetCore");
             loggerHelper = new LoggerHelper(_logger);
+
+            #if MOESIF_INSTRUMENT
+            {
+                createLoggerTime = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
+            }
+            #endif
 
             try
             {
@@ -110,33 +138,90 @@ namespace Moesif.Middleware.NetCore
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
-                config = AppConfig.getDefaultAppConfig();
-                userHelper = new UserHelper(); // Create a new instance of userHelper
-                companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
-                clientIpHelper = new ClientIp(); // Create a new instance of client Ip
-                isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
+                //config = AppConfig.getDefaultAppConfig();
+                //userHelper = new UserHelper(); // Create a new instance of userHelper
+                //companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
+                //clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+                //isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
+                isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", !isLambda); // Enable batching, defaults to true if not lambda
                 batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
                 queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 100 * 1000); // Queue Size
                 batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
                 appConfigSyncTime = loggerHelper.GetConfigIntValues(moesifOptions, "appConfigSyncTime", 300); // App config sync time in seconds
                 authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
                 authorizationUserIdField = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
-                if( moesifOptions.TryGetValue("ApiVersion", out object version))
+
+                //_logger.LogError($"Init isLambda: {isLambda} debug: {debug} isBatchingEnabled {isBatchingEnabled} and logBody: {logBody}");
+
+                if ( moesifOptions.TryGetValue("ApiVersion", out object version))
                 {
                     apiVersion = version!= null ? version.ToString() : null;
                 } else
                 {
                     apiVersion = null;
                 }
-                MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
-                governance = Governance.getDefaultGovernance();
-                configEvent = new AutoResetEvent(false);
-                governanceEvent = new AutoResetEvent(false);
 
-                if (isBatchingEnabled) ScheduleWorker();
+                #if MOESIF_INSTRUMENT
+                {
+                    createInitCientAndOptTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+                #endif
+                //MoesifQueue = new ConcurrentQueue<EventModel>(); // Initialize queue
+                //governance = Governance.getDefaultGovernance();
+                //configEvent = new AutoResetEvent(false);
+                //governanceEvent = new AutoResetEvent(false);
 
-                ScheduleAppConfig();
-                ScheduleGovernanceRule();
+                //if (isLambda)
+                //{
+                //    _logger.LogError("Skip calling schedule function because isLambda true");
+                //    // update Application config
+                //    if (debug)
+                //    {
+                //        stopwatch.Reset(); // Reset the stopwatch to 0
+                //        stopwatch.Start();
+                //    }
+                //    config = AppConfigHelper.updateConfig(client, config, debug, _logger).Result;
+                //    _logger.LogInformation(config.sample_rate.ToString());
+
+                //    if (debug)
+                //    {
+                //        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                //        stopwatch.Reset(); // Reset the stopwatch to 0
+                //        stopwatch.Start();
+                //    }
+                //    governance = GovernanceHelper.updateGovernance(client, governance, debug, _logger).Result;
+                //    _logger.LogInformation(governance.rules.ToString());
+
+                //    if (debug)
+                //    {
+                //        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                //        stopwatch.Stop();
+                //    }
+                //} else
+                {
+                    if (isBatchingEnabled) ScheduleWorker();
+
+                    ScheduleAppConfig();
+#if MOESIF_INSTRUMENT
+                    {
+                        _logger.LogInformation($"Fetching app config took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        _logger.LogError($"Sampling percentage in Init is - {config.sample_rate.ToString()} ");
+                        stopwatch.Reset(); // Reset the stopwatch to 0
+                        stopwatch.Start();
+                    }
+#endif
+
+                    ScheduleGovernanceRule();
+
+#if MOESIF_INSTRUMENT
+                    {
+                        _logger.LogInformation($"Fetching gov rules took time: {stopwatch.ElapsedMilliseconds} milliseconds");
+                        // _logger.LogInformation(governance.rules.ToString());
+                        stopwatch.Stop();
+                    }
+#endif
+                }
 
             }
             catch (Exception e)
@@ -144,6 +229,18 @@ namespace Moesif.Middleware.NetCore
                 _logger.LogError(e, "MoesifMiddlewareNetCore initialiation error");
                 throw new Exception("Please provide the application Id to send events to Moesif");
             }
+
+#if MOESIF_INSTRUMENT
+            {
+                stopwatch.Stop();
+                _logger.LogError($@"
+                                Exiting MoesifMiddleware Init with time: {createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds} ms
+                                createLoggerTime took: {createLoggerTime} ms
+                                createInitCientAndOptTime took: {createInitCientAndOptTime} ms
+                                fetchAppConfigTime took: {fetchAppConfigTime} ms
+                                fetchGovRuleTime took: {fetchGovRuleTime} ms");
+            }
+#endif
         }
 
         private void ScheduleAppConfig()
@@ -161,6 +258,7 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogDebug("Last App Config Worker Run - {time}  for thread Id - {thread}" , lastAppConfigWorkerRun, Thread.CurrentThread.ManagedThreadId);
 
                         // update Application config
+                        //Task.Run(async () => config = await AppConfigHelper.updateConfig(client, config, debug, _logger) );
                         config = await AppConfigHelper.updateConfig(client, config, debug, _logger);
                     }
                     catch (Exception e)
@@ -190,6 +288,7 @@ namespace Moesif.Middleware.NetCore
                         _logger.LogDebug("Last Governance Worker Run - " + lastAppConfigWorkerRun.ToString() + " for thread Id - " + Thread.CurrentThread.ManagedThreadId.ToString());
 
                         // update Governance Rule
+                        //Task.Run(async () => governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger));
                         governance = await GovernanceHelper.updateGovernance(client, governance, debug, _logger);
                     }
                     catch (Exception e)
@@ -255,10 +354,34 @@ namespace Moesif.Middleware.NetCore
 
         public async Task Invoke(HttpContext httpContext)
         {
+#if MOESIF_INSTRUMENT
+
+            Stopwatch stopwatch = null;
+            long formatLambdaRequest = 0;
+            long formatLambdaResponse = 0;
+            long sendEventAsyncTime = 0;
+            long upstreamResponseTime = 0;
+            long getCompanyIdTime = 0;
+            long getUserIdTime = 0;
+            long getMetadataTime = 0;
+            long getSessionTokenTime = 0;
+
+            stopwatch = new Stopwatch();
+            stopwatch.Start();
+#endif
+
             // Initialize Transaction Id
             string transactionId = null;
             EventRequestModel request;
             (request, transactionId) = await FormatRequest(httpContext.Request, transactionId);
+
+#if MOESIF_INSTRUMENT
+            {
+                formatLambdaRequest = stopwatch.ElapsedMilliseconds;
+                //_logger.LogError($"Format request time: {firstMeasurement} milliseconds");
+                stopwatch.Restart();
+            }
+#endif
 
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -321,6 +444,13 @@ namespace Moesif.Middleware.NetCore
 
                 await _next(httpContext);
 
+#if MOESIF_INSTRUMENT
+                {
+                    upstreamResponseTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+#endif
+
                 if (skipLogging)
                 {
                     _logger.LogDebug("Skipping the event");
@@ -331,34 +461,140 @@ namespace Moesif.Middleware.NetCore
                     {
                         eventModel.Response = await FormatLambdaResponse(httpContext, transactionId);
 
+#if MOESIF_INSTRUMENT
+                        {
+                            formatLambdaResponse = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
+                        }
+#endif
                     } else
                     {
                         eventModel.Response = FormatResponse(httpContext.Response, outputCaptureOwin, transactionId);
+#if MOESIF_INSTRUMENT
+                        {
+                            formatLambdaResponse = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
+                        }
+#endif
                     }
+
+#if MOESIF_INSTRUMENT
+                    {
+                        stopwatch.Restart();
+
+                    }
+#endif
 
                     if (eventModel.CompanyId == null)
                     {
-                       
-                        eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
+                       eventModel.CompanyId = loggerHelper.GetConfigValues("IdentifyCompany", moesifOptions, httpContext.Request, httpContext.Response, debug);
                     }
-                    if(eventModel.UserId == null)
+
+#if MOESIF_INSTRUMENT
+                    {
+                        getCompanyIdTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+#endif
+
+                    if (eventModel.UserId == null)
                     {
                         eventModel.UserId = getUserId(httpContext, eventModel.Request);
                     }
+
+#if MOESIF_INSTRUMENT
+                    {
+                        getUserIdTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+#endif
+
                     eventModel.Metadata = loggerHelper.GetConfigObjectValues("GetMetadata", moesifOptions, httpContext.Request, httpContext.Response, debug);
+
+#if MOESIF_INSTRUMENT
+                    {
+                        getMetadataTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+#endif
+
                     eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
+#if MOESIF_INSTRUMENT
+                    {
+                        getSessionTokenTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+#endif
                     _logger.LogDebug("Calling the API to send the event to Moesif");
                     //Send event to Moesif async
-                    await Task.Run(async () => await LogEventAsync(eventModel));
+                    if (isLambda)
+                    {
+                        await LogEventAsync(eventModel);
+                        //Task.Run(async () => await LogEventAsync(eventModel));
+#if MOESIF_INSTRUMENT
+                        {
+                            sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"LogEventAsync time: {thirdMeasurement} milliseconds");
+                        }
+#endif
+                    }
+                    else
+                    {
+                        Task.Run(async () => await LogEventAsync(eventModel));
+#if MOESIF_INSTRUMENT
+                        {
+                            sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                            //_logger.LogError($"Task LogEventAsync time: {thirdMeasurement} milliseconds");
+                        }
+#endif
+                    }
+
+#if MOESIF_INSTRUMENT
+                    {
+                        stopwatch.Restart();
+                    }
+#endif
                 }
             }
+
+#if MOESIF_INSTRUMENT
+            {
+                stopwatch.Stop();
+                // Get the elapsed time in milliseconds
+                _logger.LogError($@"
+                                Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                                Format request took: {formatLambdaRequest} ms
+                                Fetch Upstream response took: {upstreamResponseTime} ms
+                                Format response took: {formatLambdaResponse} ms
+                                getCompanyId took: {getCompanyIdTime} ms
+                                getUserIdTime took: {getUserIdTime} ms
+                                getMetadataTime took: {getMetadataTime} ms
+                                getSessionTokenTime took: {getSessionTokenTime} ms
+                                Send event async took: {sendEventAsyncTime} ms");
+            }
+#endif
         }
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
+#if MOESIF_INSTRUMENT
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            long convertToHeadersTime = 0;
+            long setHeaderEnableBufferingTime = 0;
+            long getRequestContent = 0;
+            long addTxIdTime = 0;
+            long serializeReqBody = 0;
+            long getIpAndPrepModel = 0;
+#endif
             // Request headers
             var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
+#if MOESIF_INSTRUMENT
+            convertToHeadersTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
 
             // RequestBody
             request.EnableBuffering(bufferThreshold: 1000000);
@@ -371,8 +607,15 @@ namespace Moesif.Middleware.NetCore
             reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
             reqHeaders.TryGetValue("Content-Length", out contentLength);
             int.TryParse(contentLength, out parsedContentLength);
-
+#if MOESIF_INSTRUMENT
+            setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+#if MOESIF_INSTRUMENT
+            getRequestContent = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
 
             // Add Transaction Id to the Request Header
             bool disableTransactionId = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
@@ -381,10 +624,16 @@ namespace Moesif.Middleware.NetCore
                 transactionId = loggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
                 reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
-
+#if MOESIF_INSTRUMENT
+            addTxIdTime = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             // Serialize request body
             var bodyWrapper = loggerHelper.Serialize(bodyAsText, request.ContentType, logBody, debug);
-
+#if MOESIF_INSTRUMENT
+            serializeReqBody = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+#endif
             // Client Ip Address
             string ip = clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = new Uri(request.GetDisplayUrl()).ToString();
@@ -401,6 +650,20 @@ namespace Moesif.Middleware.NetCore
                 Body = bodyWrapper.Item1,
                 TransferEncoding = bodyWrapper.Item2
             };
+
+#if MOESIF_INSTRUMENT
+            getIpAndPrepModel = stopwatch.ElapsedMilliseconds;
+            stopwatch.Stop();
+            _logger.LogError($@"
+                                Exiting FormatRequest with time: {convertToHeadersTime + setHeaderEnableBufferingTime + getRequestContent + addTxIdTime + serializeReqBody + getIpAndPrepModel + stopwatch.ElapsedMilliseconds} ms
+                                convertToHeadersTime took: {convertToHeadersTime} ms
+                                setHeaderEnableBufferingTime took: {setHeaderEnableBufferingTime} ms
+                                getRequestContent took: {getRequestContent} ms
+                                addTxIdTime took: {addTxIdTime} ms
+                                serializeReqBody took: {serializeReqBody} ms
+                                getIpAndPrepModel took: {getIpAndPrepModel} ms");
+#endif
+
             return (eventReq, transactionId);
         }
 
@@ -501,6 +764,17 @@ namespace Moesif.Middleware.NetCore
 
         private async Task LogEventAsync(EventModel eventModel)
         {
+#if MOESIF_INSTRUMENT
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            long getMaskEventTime = 0;
+            long createRequestMapTime = 0;
+            long samplingPercentageTime = 0;
+            long randomPercentageTime = 0;
+            long computeWeightTime = 0;
+            long createEventAsyncTime = 0;
+#endif
 
             // Get Mask Event
             var maskEvent_out = new object();
@@ -527,21 +801,59 @@ namespace Moesif.Middleware.NetCore
                 }
             }
 
+#if MOESIF_INSTRUMENT
+            {
+                getMaskEventTime = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
+            }
+#endif
+
             // Send Events
             try
             {
                 // Get Sampling percentage
                 RequestMap requestMap = RequestMapHelper.createRequestMap(eventModel);
+
+#if MOESIF_INSTRUMENT
+                {
+                    createRequestMapTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+#endif
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
+                //_logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
+
+#if MOESIF_INSTRUMENT
+                {
+                    samplingPercentageTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+#endif
 
                 Random random = new Random();
                 double randomPercentage = random.NextDouble() * 100;
+
+#if MOESIF_INSTRUMENT
+                {
+                    randomPercentageTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+#endif
                 if (samplingPercentage >= randomPercentage)
                 {
                     eventModel.Weight = AppConfigHelper.calculateWeight(samplingPercentage);
 
+#if MOESIF_INSTRUMENT
+                    {
+                        computeWeightTime = stopwatch.ElapsedMilliseconds;
+                        stopwatch.Restart();
+                    }
+#endif
+
                     if (isBatchingEnabled)
                     {
+                        _logger.LogError("Should not go here XXXX ");
+
                         _logger.LogDebug("Add Event to the batch");
 
                         if (MoesifQueue.Count < queueSize)
@@ -556,9 +868,23 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        await client.Api.CreateEventAsync(eventModel);
+                        //_logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                        //Task.Run(async () => client.Api.CreateEventAsync(eventModel, !isLambda));
+                        await client.Api.CreateEventAsync(eventModel, !isLambda);
+                        //var t1 = Task.Run(async () => {
+                        //    Thread.Sleep(500);
+                        //    Console.WriteLine("------ AFTER 2SEC Delay PRINTINg at -----: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                        //    });
+                        //_logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
                         _logger.LogDebug("Event sent successfully to Moesif");
+
+#if MOESIF_INSTRUMENT
+                        {
+                            createEventAsyncTime = stopwatch.ElapsedMilliseconds;
+                            stopwatch.Restart();
+                        }
+#endif
                     }
                 }
                 else
@@ -578,6 +904,21 @@ namespace Moesif.Middleware.NetCore
             {
                 _logger.LogError(ex, "Exception in sending event");
             }
+
+#if MOESIF_INSTRUMENT
+            {
+                stopwatch.Stop();
+                _logger.LogError($@"
+                                Exiting LogEventAsync with time: {getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                                getMaskEventTime took: {getMaskEventTime} ms
+                                createRequestMapTime took: {createRequestMapTime} ms
+                                samplingPercentageTime took: {samplingPercentageTime} ms
+                                randomPercentageTime took: {randomPercentageTime} ms
+                                computeWeightTime took: {computeWeightTime} ms
+                                createEventAsyncTime took: {createEventAsyncTime} ms");
+
+            }
+#endif
         }
 
     }

@@ -25,7 +25,7 @@ namespace Moesif.Middleware.Helpers
                     var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigResp.Body);
                     appConfig.etag = etag;
                     appConfig.lastUpdatedTime = DateTime.UtcNow;
-                    logger.LogDebug("appConfig is updated with {body} at {time}", appConfigResp.Body, DateTime.UtcNow);
+                    logger.LogDebug("appConfig is updated with {body} at {time} sampling_rate {sample}", appConfigResp.Body, appConfig.lastUpdatedTime, appConfig.sample_rate);
                     return appConfig;
                 }
             }
@@ -41,6 +41,8 @@ namespace Moesif.Middleware.Helpers
             {
                 logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
+
+            await Task.Delay(8000); // Asynchronously wait for 2 seconds
             return prevConfig;
         }
 
