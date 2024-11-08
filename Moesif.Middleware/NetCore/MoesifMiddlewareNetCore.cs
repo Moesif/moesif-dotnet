@@ -27,7 +27,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/1.5.1";
+        public static string APP_VERSION = "moesif-netcore/1.5.2";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -45,7 +45,7 @@ namespace Moesif.Middleware.NetCore
 
         //public volatile AppConfig config;  // The AppConfig
         public static volatile AppConfig config = AppConfig.getDefaultAppConfig();  // The AppConfig
-        
+
         //public volatile Governance governance; // Governance Rule
         public static volatile Governance governance = Governance.getDefaultGovernance(); // Governance Rule
 
@@ -265,7 +265,7 @@ namespace Moesif.Middleware.NetCore
                     {
                         _logger.LogError(e, "Error while updating appConfig");
                     }
-                    
+
                     configEvent.WaitOne(60 * 1000);
                 }
             });
