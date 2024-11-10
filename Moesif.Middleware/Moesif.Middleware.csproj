@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Moesif.Api" Version="2.0.9" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
@@ -19,11 +18,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.1.22" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.1.22" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+<!--  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
     <DefineConstants>NETCORE</DefineConstants>
-  </PropertyGroup>
+  </PropertyGroup>-->
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net" />
@@ -32,8 +31,8 @@
     <Reference Include="System.Web" />
     <PackageReference Include="Microsoft.Owin" Version="4.2.2" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">
-    <DefineConstants>NET461</DefineConstants>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net462'">
+    <DefineConstants>NET462</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

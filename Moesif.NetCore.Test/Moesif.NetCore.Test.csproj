@@ -17,6 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj" />
+    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
+      <ReferenceSourceTarget></ReferenceSourceTarget>
+    </ProjectReference>
   </ItemGroup>
 </Project>
