@@ -27,7 +27,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/1.5.1";
+        public static string APP_VERSION = "moesif-netcore/3.0.1-a";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;

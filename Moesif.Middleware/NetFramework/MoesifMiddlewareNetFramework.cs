@@ -30,6 +30,7 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
+        public static string APP_VERSION = "moesif-netframework/3.0.1-a";
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -86,7 +87,7 @@ namespace Moesif.Middleware.NetFramework
             _logger = null;
             loggerHelper = new LoggerHelper(_logger);
             debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
+            client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
             // clientIpHelper = new ClientIp(); // Create a new instance of client Ip
@@ -102,7 +103,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Initialize client
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
-                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
+                client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
