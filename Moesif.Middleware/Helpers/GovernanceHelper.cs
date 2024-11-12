@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
+// using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using System.Text.Json.Nodes;
 using Rule = Moesif.Middleware.Models.Rule;
 
 namespace Moesif.Middleware.Helpers
@@ -185,9 +186,10 @@ namespace Moesif.Middleware.Helpers
                     {
                         if (c.path.StartsWith("request.body.") && requestMap.regex_mapping.ContainsKey("request.body"))
                         {
-                            var body = (Newtonsoft.Json.Linq.JObject)requestMap.regex_mapping["request.body"];
+                            // var body = (Newtonsoft.Json.Linq.JObject)requestMap.regex_mapping["request.body"];
+                            var body = (JsonObject)requestMap.regex_mapping["request.body"];
                             var fieldName = c.path.Split('.')[2];
-                            var fieldlValue = body.GetValue(fieldName);
+                            var fieldlValue = body[fieldName];
                             if (fieldlValue != null)
                             {
                                 Match m = Regex.Match(fieldlValue.ToString(), c.value, RegexOptions.IgnoreCase);

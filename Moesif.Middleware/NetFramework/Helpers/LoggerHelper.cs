@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿// using Newtonsoft.Json;
+// using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -14,7 +14,8 @@ using System.Xml.Serialization;
 using Moesif.Middleware.Helpers;
 using Microsoft.Extensions.Logging;
 
-#if NET461
+#if NET462
+using System.Text.Json;
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework.Helpers;
 
@@ -180,7 +181,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 {
                     try
                     {
-                        return new Tuple<object, string>(JToken.Parse(data), null);
+                        return new Tuple<object, string>(JsonDocument.Parse(data), null);
                     }
                     catch (Exception)
                     {

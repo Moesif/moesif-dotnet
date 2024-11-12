@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
-using System.Text;
+// using System.IO;
+// using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,14 +14,18 @@ using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.Logging;
-#if NET461
+using Moesif.Api.Http.Client;
+#if NET462
 using Microsoft.Owin;
 using System.Web;
+using Moesif.Api.Http.Response;
 using Moesif.Middleware.NetFramework.Helpers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 #endif
 
-#if NET461
+#if NET462
 namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
@@ -34,7 +38,7 @@ namespace Moesif.Middleware.NetFramework
 
         public CompanyHelper companyHelper; // Initialize company helper
         
-        public ClientIp clientIpHelper; // Initialize client ip helper
+        // public ClientIp clientIpHelper; // Initialize client ip helper
 
         public volatile AppConfig config; // The only AppConfig instance shared among threads
 
@@ -85,7 +89,7 @@ namespace Moesif.Middleware.NetFramework
             client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
             userHelper = new UserHelper(); // Create a new instance of userHelper
             companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
-            clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+            // clientIpHelper = new ClientIp(); // Create a new instance of client Ip
         }
 
         public MoesifMiddlewareNetFramework(OwinMiddleware next, Dictionary<string, object> _middleware, ILoggerFactory logger) : base(next)
@@ -110,7 +114,7 @@ namespace Moesif.Middleware.NetFramework
                 governance = Governance.getDefaultGovernance();
                 userHelper = new UserHelper(); // Create a new instance of userHelper
                 companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
-                clientIpHelper = new ClientIp(); // Create a new instance of client Ip
+                // clientIpHelper = new ClientIp(); // Create a new instance of client Ip
                 authorizationHeaderName = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationHeaderName", "authorization");
                 authorizationUserIdField = loggerHelper.GetConfigStringValues(moesifOptions, "AuthorizationUserIdField", "sub");
                 if (moesifOptions.TryGetValue("ApiVersion", out object version))
@@ -251,6 +255,7 @@ namespace Moesif.Middleware.NetFramework
             // Buffering mvc reponse
             StreamHelper outputCaptureMVC = null;
             HttpResponse httpResponse = HttpContext.Current?.Response;
+            // HttpResponse httpResponse = httpContext.Response;
             if (httpResponse != null)
             {
                 outputCaptureMVC = new StreamHelper(httpResponse.Filter);
@@ -364,6 +369,20 @@ namespace Moesif.Middleware.NetFramework
             }
         }
 
+        public string GetClientIp(IOwinRequest request)
+        {
+            // Retrieve the client's IP address
+            string ipAddress = request.Environment["server.RemoteIpAddress"] as string;
+
+            // Check for X-Forwarded-For header if behind a proxy
+            if (request.Headers.ContainsKey("X-Forwarded-For"))
+            {
+                ipAddress = request.Headers["X-Forwarded-For"];
+            }
+
+            return ipAddress;
+        }
+
         private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
         {
             // Request headers
@@ -397,7 +416,7 @@ namespace Moesif.Middleware.NetFramework
                 reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
 
-            string ip = clientIpHelper.GetClientIp(reqHeaders, request);
+            string ip = GetClientIp(request); // clientIpHelper.GetClientIp(reqHeaders, request);
             var uri = request.Uri.ToString();
 
             var eventReq = new EventRequestModel()

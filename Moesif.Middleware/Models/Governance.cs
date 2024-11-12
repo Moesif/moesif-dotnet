@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Moesif.Api;
-using Newtonsoft.Json;
+// using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Moesif.Middleware.Models
 {

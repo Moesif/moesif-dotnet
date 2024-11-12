@@ -5,7 +5,9 @@ using CompanyId = System.String;
 using Name = System.String;
 using IpAddress = System.String;
 using SampleRate = System.Int32;
-using Newtonsoft.Json;
+// using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Moesif.Middleware.Models
 {
