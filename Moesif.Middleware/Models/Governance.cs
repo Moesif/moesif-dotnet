@@ -32,8 +32,8 @@ namespace Moesif.Middleware.Models
 
     public class GovernanceRule
     {
-        public string _id;
-        public string type;
+        public string _id { get; set; }
+        public string type { get; set; }
         public List<RegexConfig> regex_config { get; set; }
         public List<Variable> variables { get; set; }
         public Response response { get; set; }

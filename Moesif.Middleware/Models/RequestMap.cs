@@ -9,7 +9,7 @@ namespace Moesif.Middleware.Models
     {
         public String companyId { get; set; }
         public String userId { get; set; }
-        public Dictionary<Path, Value> regex_mapping;
+        public Dictionary<Path, Value> regex_mapping { get; set; }
     }
 }
 

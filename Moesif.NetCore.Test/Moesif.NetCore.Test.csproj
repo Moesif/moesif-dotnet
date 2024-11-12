@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -13,12 +13,12 @@
     <PackageReference Include="Moq" Version="4.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.2.0" />
-    <PackageReference Include="Moesif.Api" Version="2.0.9" />
+<!--    <PackageReference Include="Moesif.Api" Version="2.0.9" />-->
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
-      <ReferenceSourceTarget></ReferenceSourceTarget>
+<!--      <ReferenceSourceTarget></ReferenceSourceTarget>-->
     </ProjectReference>
   </ItemGroup>
 </Project>
