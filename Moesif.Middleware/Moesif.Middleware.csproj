@@ -18,7 +18,7 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-<!--    <PackageReference Include="Moesif.Api" Version="3.0.9"/>-->
+    <PackageReference Include="Moesif.Api" Version="3.0.9"/>
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
@@ -57,9 +57,9 @@
   <ItemGroup>
     <None Remove="Microsoft.Owin" />
   </ItemGroup>
-<ItemGroup>
-    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj">
-      <ReferenceSourceTarget></ReferenceSourceTarget>
-    </ProjectReference>
-</ItemGroup>
+  <PropertyGroup>
+    <NuspecFile>Moesif.Middleware.nuspec</NuspecFile>
+    <NuspecProperties>$(NuspecProperties);configuration=$(Configuration)</NuspecProperties>
+    <NuspecBasePath>$(OutputPath)</NuspecBasePath>
+  </PropertyGroup>
 </Project>
