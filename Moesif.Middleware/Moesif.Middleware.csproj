@@ -18,7 +18,7 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-<!--    <PackageReference Include="Moesif.Api" Version="3.0.1-a"/>-->
+<!--    <PackageReference Include="Moesif.Api" Version="3.0.9"/>-->
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
