@@ -29,7 +29,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="Moesif.Api" Version="2.0.9"/>
+    <PackageReference Include="Moesif.Api" Version="2.0.9" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
@@ -58,6 +58,8 @@
     <None Remove="Microsoft.Owin" />
   </ItemGroup>
 <ItemGroup>
-    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj" />
+    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj">
+      <ReferenceSourceTarget></ReferenceSourceTarget>
+    </ProjectReference>
 </ItemGroup>
 </Project>
