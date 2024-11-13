@@ -464,7 +464,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
                         {
                             formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-                            //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
+                            _logger.LogError($"Format lambda response time: {formatLambdaResponse} milliseconds");
                         }
 #endif
                     } else
@@ -473,7 +473,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
                         {
                             formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-                            //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
+                            _logger.LogError($"Format response time: {formatLambdaResponse} milliseconds");
                         }
 #endif
                     }
@@ -524,6 +524,7 @@ namespace Moesif.Middleware.NetCore
                     {
                         getSessionTokenTime = stopwatch.ElapsedMilliseconds;
                         stopwatch.Restart();
+                        _logger.LogError("Calling the API to send the event to Moesif");
                     }
 #endif
                     _logger.LogDebug("Calling the API to send the event to Moesif");
@@ -821,10 +822,11 @@ namespace Moesif.Middleware.NetCore
                 }
 #endif
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
-                //_logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
+                //_logger.LogDebug($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
 
 #if MOESIF_INSTRUMENT
                 {
+                    _logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
                     samplingPercentageTime = stopwatch.ElapsedMilliseconds;
                     stopwatch.Restart();
                 }
@@ -868,19 +870,22 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        //_logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+#if MOESIF_INSTRUMENT
+                        _logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+#endif
                         //Task.Run(async () => client.Api.CreateEventAsync(eventModel, !isLambda));
                         await client.Api.CreateEventAsync(eventModel, !isLambda);
                         //var t1 = Task.Run(async () => {
                         //    Thread.Sleep(500);
                         //    Console.WriteLine("------ AFTER 2SEC Delay PRINTINg at -----: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
                         //    });
-                        //_logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
                         _logger.LogDebug("Event sent successfully to Moesif");
 
 #if MOESIF_INSTRUMENT
                         {
+                            _logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                            _logger.LogError("Event sent successfully to Moesif");
                             createEventAsyncTime = stopwatch.ElapsedMilliseconds;
                             stopwatch.Restart();
                         }

@@ -1,6 +1,7 @@
 ﻿using Moesif.Api.Models;
 using Moesif.Middleware.Models;
 using System;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 namespace Moesif.Middleware.Helpers
@@ -10,6 +11,27 @@ namespace Moesif.Middleware.Helpers
         static string Base64Decode(string text)
         {
             return System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(text));
+        }
+
+        /**
+         * Function to convert object to JsonObject. Returns null if not possible.
+         */
+        public static JsonObject GetJsonObject(object obj)
+        {
+            JsonObject objJson = null;
+            
+            // Serialize the object to string
+            var objStr = JsonSerializer.Serialize(obj);
+            
+            // Parse the JSON string to JsonNode
+            JsonNode objNode = JsonNode.Parse(objStr);
+            if (objNode != null)
+            {
+                // Get JsonObject
+                objJson = objNode.AsObject();   
+            }
+
+            return objJson;
         }
 
         public static RequestMap createRequestMap(EventModel model) 
@@ -50,7 +72,7 @@ namespace Moesif.Middleware.Helpers
             if (model.Request.TransferEncoding == "json")
             {
                 // Newtonsoft.Json.Linq.JObject body = (Newtonsoft.Json.Linq.JObject)model.Request.Body;
-                JsonObject body = (JsonObject)model.Request.Body;
+                JsonObject body = GetJsonObject(model.Request.Body);
                 if (body != null)
                 {
                     if (body.ContainsKey("operationName"))

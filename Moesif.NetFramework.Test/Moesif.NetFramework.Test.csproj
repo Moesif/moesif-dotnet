@@ -35,10 +35,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
-      <Project>{c5630a28-3d85-4865-9467-b4682ee18060}</Project>
-      <Name>Moesif.Middleware</Name>
-    </ProjectReference>
+    <PackageReference Include="Moesif.Middleware" Version="1.5.1" />
+<!--    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">-->
+<!--      <Project>{c5630a28-3d85-4865-9467-b4682ee18060}</Project>-->
+<!--      <Name>Moesif.Middleware</Name>-->
+<!--    </ProjectReference>-->
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
