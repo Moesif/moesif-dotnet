@@ -154,11 +154,16 @@ namespace Moesif.Middleware.NetCore.Helpers
             return copyHeaders;
         }
 
-        public async Task<string> GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug)
+        public async Task<string> GetRequestContents(string bodyAsText, HttpRequest request, string contentEncoding, int parsedContentLength, bool debug, bool logBody, int maxBodySize)
         {
+            if (parsedContentLength > maxBodySize)
+            {
+                return "Exceeded-Max-Request-Body-Size";
+            }
+
             try
             {
-                bodyAsText = await Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength);
+                bodyAsText = await Compression.UncompressStream(request.Body, contentEncoding, parsedContentLength, logBody, maxBodySize);
                 request.Body.Position = 0;
             }
             catch (Exception)

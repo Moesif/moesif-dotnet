@@ -9,9 +9,9 @@ namespace Moesif.Middleware.Helpers
 {
     class Compression
     {
-       public static async Task<string> UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize)
+       public static async Task<string> UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize, bool logBody, int maxBodySize)
         {
-            if (!memoryStream.CanRead)
+            if (!logBody || !memoryStream.CanRead)
             {
                 return null;
             }
@@ -58,6 +58,12 @@ namespace Moesif.Middleware.Helpers
             }
 
             memoryStream.Seek(0L, SeekOrigin.Begin);
+            
+            if (bodyString.Length > maxBodySize)
+            {
+                bodyString = "Exceeded-Max-Body-Size";
+            }
+            
             return bodyString;
         }
     }

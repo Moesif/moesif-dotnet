@@ -75,6 +75,8 @@ namespace Moesif.Middleware.NetCore
         public bool debug = false;
 
         public bool logBody;
+        public int requestMaxBodySize = 1000;
+        public int responseMaxBodySize = 1000;
 
         public bool isLambda;
 
@@ -136,6 +138,8 @@ namespace Moesif.Middleware.NetCore
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                requestMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "RequestMaxBodySize", 100000);
+                responseMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "ResponseMaxBodySize", 100000);
                 isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
                 //config = AppConfig.getDefaultAppConfig();
@@ -612,7 +616,7 @@ namespace Moesif.Middleware.NetCore
             setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
 #endif
-            bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+            bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug, logBody, requestMaxBodySize);
 #if MOESIF_INSTRUMENT
             getRequestContent = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
@@ -624,6 +628,11 @@ namespace Moesif.Middleware.NetCore
             {
                 transactionId = loggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
                 reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
+            }
+
+            if (!logBody)
+            {
+                reqHeaders["X-Moesif-LogBody-Enabled"] = logBody.ToString();
             }
 #if MOESIF_INSTRUMENT
             addTxIdTime = stopwatch.ElapsedMilliseconds;
@@ -648,7 +657,7 @@ namespace Moesif.Middleware.NetCore
                 ApiVersion = apiVersion,
                 IpAddress = ip,
                 Headers = reqHeaders,
-                Body = bodyWrapper.Item1,
+                Body = bodyWrapper.Item1, // "Skipped_Because_Exceeded_Limit"
                 TransferEncoding = bodyWrapper.Item2
             };
 
@@ -684,6 +693,13 @@ namespace Moesif.Middleware.NetCore
                 string contentEncoding = "";
                 rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
                 string text = stream.ReadStream(contentEncoding);
+                // Check if response body exceeded max size supported
+                if (text.Length > responseMaxBodySize)
+                {
+                    rspHeaders["X-Moesif-BodySize-Exceeded"] = true.ToString();
+                    text = null;
+                }
+                
                 // Serialize Response body
                 responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
             }
