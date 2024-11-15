@@ -134,18 +134,26 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return transactionId;
         }
 
-        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding, bool logBody)
+        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding, bool logBody, int maxBodySize, out bool maxBodySizeExceeded)
         {
+            maxBodySizeExceeded = false;
             if (logBody && filter != null)
             {
-                return filter.ReadStream(contentEncoding);
+                string text = filter.ReadStream(contentEncoding);
+                // Check if response body exceeded max size supported
+                if (text.Length > maxBodySize)
+                {
+                    maxBodySizeExceeded = true;
+                    text = null;
+                }
+                return text
             }
             return null;
         }
 
-        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
+        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride, bool logBody)
         {
-            if (request == null || request.Body == null || !request.Body.CanRead)
+            if (!logBody || request == null || request.Body == null || !request.Body.CanRead)
             {
                 return string.Empty;
             }

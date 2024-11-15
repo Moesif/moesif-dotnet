@@ -10,9 +10,11 @@ using Xunit;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Net;
+using System.Text;
 using Moesif.Api.Models;
 using Moesif.Middleware.Models;
 using Moesif.Api;
+using Newtonsoft.Json;
 using Assert = NUnit.Framework.Assert;
 
 namespace Moesif.NetCore.Test
@@ -54,8 +56,9 @@ namespace Moesif.NetCore.Test
     };
 
 
-    public class MoesifNetCoreTest{
-
+    public class MoesifNetCoreTest
+    {
+        public static string APP_VERSION = "3.0.11";
         public Dictionary<string, object> moesifOptions = new Dictionary<string, object>();
 
         public MoesifMiddleware moesifMiddleware;
@@ -128,13 +131,88 @@ namespace Moesif.NetCore.Test
             return moesifEvent;
         };
 
+        public static string LARGE_PAYLOAD = @"{
+	        ""_id"": ""HB9584KSHFU42OJP"",
+	        ""name"": ""Shea Bender"",
+	        ""dob"": ""2016-07-09"",
+	        ""address"": {
+		        ""street"": ""1390 Franklin"",
+		        ""town"": ""Kingussie"",
+		        ""postode"": ""WR4 3FD""
+	        },
+	        ""telephone"": ""+254-9362-240-050"",
+	        ""pets"": [
+		        ""SUGAR"",
+		        ""Teddy""
+	        ],
+	        ""score"": 4.8,
+	        ""email"": ""danae9008@yours.com"",
+	        ""url"": ""https://consortium.com"",
+	        ""description"": ""sticky contracts jose pills democratic ar perspectives education jim boot bold compression hence distinct usd disturbed art read religious songs"",
+	        ""verified"": false,
+	        ""salary"": 29367
+        }";
+        public Mock<HttpContext> GetMockEvent(bool smallPayload)
+        {
+            MemoryStream requestMemoryStream = null;
+            MemoryStream responseMemoryStream = null;
+            if (smallPayload)
+            {
+                // Create a JSON object
+                var jsonObject = new { Name = "John Doe", Age = 30 };
+                var jsonString = JsonConvert.SerializeObject(jsonObject);
+    
+                // Set up the request body
+                var byteArray = Encoding.UTF8.GetBytes(jsonString);
+                requestMemoryStream = new MemoryStream(byteArray);
+                responseMemoryStream = new MemoryStream(byteArray);
+            }
+            else
+            {
+                // Set up the request body
+                var byteArray = Encoding.UTF8.GetBytes(LARGE_PAYLOAD);
+                requestMemoryStream = new MemoryStream(byteArray);
+                responseMemoryStream = new MemoryStream(byteArray);
+            }
+
+            string pathString = $"/42752/reviews?small_payload={smallPayload}";
+            
+            var loggerMock = new Mock<ILogger>();
+            var requestMock = new Mock<HttpRequest>();
+            requestMock.Setup(x => x.Scheme).Returns("https");
+            requestMock.Setup(x => x.Host).Returns(new HostString("acmeinc.com"));
+            requestMock.Setup(x => x.Path).Returns(new PathString(pathString));
+            requestMock.Setup(x => x.PathBase).Returns(new PathString("/items"));
+            requestMock.Setup(x => x.Method).Returns("GET");
+            requestMock.Setup(x => x.Body).Returns(requestMemoryStream);
+            requestMock.Setup(x => x.QueryString).Returns(new QueryString("?key=value"));
+            requestMock.Setup(x => x.HttpContext.Connection.RemoteIpAddress).Returns(IPAddress.Parse("219.148.232.216"));
+            requestMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
+            requestMock.Setup(x => x.Headers.Add("User-Agent", "MoesifNetCoreTest-" + APP_VERSION));
+
+            var responseMock = new Mock<HttpResponse>();
+            responseMock.Setup(x => x.StatusCode).Returns(200);
+            responseMock.Setup(x => x.ContentType).Returns("application/json");
+            responseMock.Setup(x => x.Body).Returns(responseMemoryStream);
+            responseMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
+
+
+            var contextMock = new Mock<HttpContext>();
+            contextMock.Setup(x => x.Request).Returns(requestMock.Object);
+            contextMock.Setup(x => x.Response).Returns(responseMock.Object);
+
+            return contextMock;
+        }
+
         public MoesifNetCoreTest() {
             string moesifApplicationId = Environment.GetEnvironmentVariable("MOESIF_APPLICATION_ID") ?? "Your Moesif Application Id";
             moesifOptions.Add("ApplicationId", moesifApplicationId);
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
+            moesifOptions.Add("RequestMaxBodySize", 100);
+            moesifOptions.Add("ResponseMaxBodySize", 100);
             moesifOptions.Add("LogBodyOutgoing", true);
-            moesifOptions.Add("ApiVersion", "1.0.0");
+            moesifOptions.Add("ApiVersion", APP_VERSION);
             moesifOptions.Add("IdentifyUser", IdentifyUser);
             moesifOptions.Add("IdentifyCompany", IdentifyCompany);
             moesifOptions.Add("GetMetadata", GetMetadata);
@@ -155,28 +233,8 @@ namespace Moesif.NetCore.Test
         [Fact]
         public async Task It_Should_Log_Event()
         {
-            var loggerMock = new Mock<ILogger>();
-            var requestMock = new Mock<HttpRequest>();
-            requestMock.Setup(x => x.Scheme).Returns("https");
-            requestMock.Setup(x => x.Host).Returns(new HostString("acmeinc.com"));
-            requestMock.Setup(x => x.Path).Returns(new PathString("/42752/reviews"));
-            requestMock.Setup(x => x.PathBase).Returns(new PathString("/items"));
-            requestMock.Setup(x => x.Method).Returns("GET");
-            requestMock.Setup(x => x.Body).Returns(new MemoryStream());
-            requestMock.Setup(x => x.QueryString).Returns(new QueryString("?key=value"));
-            requestMock.Setup(x => x.HttpContext.Connection.RemoteIpAddress).Returns(IPAddress.Parse("219.148.232.216"));
-            requestMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
-
-            var responseMock = new Mock<HttpResponse>();
-            responseMock.Setup(x => x.StatusCode).Returns(200);
-            responseMock.Setup(x => x.ContentType).Returns("application/json");
-            responseMock.Setup(x => x.Body).Returns(new MemoryStream(System.Text.Encoding.Unicode.GetBytes("{ \"key\": \"value\"}")));
-            responseMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
-
-
-            var contextMock = new Mock<HttpContext>();
-            contextMock.Setup(x => x.Request).Returns(requestMock.Object);
-            contextMock.Setup(x => x.Response).Returns(responseMock.Object);
+            bool smallPayload = true;
+            var contextMock = GetMockEvent(smallPayload);
 
             await Task.Delay(1000);
             await moesifMiddleware.Invoke(contextMock.Object);
