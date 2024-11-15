@@ -1,4 +1,5 @@
 # Moesif Middleware for .NET
+
 by [Moesif](https://moesif.com), the [API analytics](https://www.moesif.com/features/api-analytics) and [API monetization](https://www.moesif.com/solutions/metered-api-billing) platform.
 
 [![Built For][ico-built-for]][link-built-for]
@@ -6,20 +7,21 @@ by [Moesif](https://moesif.com), the [API analytics](https://www.moesif.com/feat
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-Moesif .NET middleware SDK automatically logs incoming and outgoing API calls 
-and sends them to [Moesif](https://www.moesif.com) for API analytics and monitoring.
-This middleware allows you to integrate Moesif's API analytics and 
-API monetization features into your .NET applications with minimal configuration. 
+Moesif .NET middleware SDK automatically logs incoming and outgoing API calls and sends them to [Moesif](https://www.moesif.com) for API analytics and monitoring.
+This middleware allows you to integrate Moesif's API analytics and
+API monetization features into your .NET applications with minimal configuration.
 
 > If you're new to Moesif, see [our Getting Started](https://www.moesif.com/docs/) resources to quickly get up and running.
 
 ## Prerequisites
+
 Before using this middleware, make sure you have the following:
 
 - [An active Moesif account](https://moesif.com/wrap)
 - [A Moesif Application ID](#get-your-moesif-application-id)
 
 ### Get Your Moesif Application ID
+
 After you log into [Moesif Portal](https://www.moesif.com/wrap), you can get your Moesif Application ID during the onboarding steps. You can always access the Application ID any time by following these steps from Moesif Portal after logging in:
 
 1. Select the account icon to bring up the settings menu.
@@ -28,23 +30,34 @@ After you log into [Moesif Portal](https://www.moesif.com/wrap), you can get you
 <img class="lazyload blur-up" src="images/app_id.png" width="700" alt="Accessing the settings menu in Moesif Portal">
 
 ## Install the Middleware
+
 Install the Nuget Package for the middleware:
 
 ```bash
 Install-Package Moesif.Middleware
 ```
 
+| Version  | Supported Framework |
+| -------- | ------------------- |
+|  >=3.0.9 | .NET6 or above      |
+|  < 2.0.0 | .NET5 or NET Core 2 or below |
+
 Then jump to usage instructions for your specific framework:
 
+- [.NET6 installation](#use-the-middleware-in-net60-and-higher)
 - [.NET Core and .NET 5 installation](#use-the-middleware-in-net-core-and-net-50)
 - [.NET Framework installation](#use-the-middleware-in-net-framework)
 
 ## Configure the Middleware
+
 See the following to learn how to configure the middleware for your use case.
 
 - [.NET Core configuration options](#net-core-configuration-options)
 - [.NET Framework configuration options](#net-framework-configuration-options)
 
+## Use the Middleware in .NET6.0 and higher
+
+Please use Moesif.Middleware version `3.0.9` or higher for .NET6 or higher framework. Rest of instrusctions are same.
 
 ## Use the Middleware in .NET Core and .NET 5.0
 
@@ -121,6 +134,7 @@ Replace *`YOUR_MOESIF_APPLICATION_ID`* with [your Moesif Application ID](#get-yo
 ### Add OWIN Dependencies
 
 #### IIS integrated pipeline
+
 If your .NET application runs on IIS or Visual Studio IIS Express using integrated mode, install the OWIN SystemWeb package if not done so already.
 
 ```bash
@@ -129,11 +143,11 @@ Install-Package Microsoft.Owin.Host.SystemWeb
 
 For more information, see [OWIN Middleware in the IIS integrated pipeline](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/owin-middleware-in-the-iis-integrated-pipeline).
 
-
 Moesif does not support IIS running in classic mode (backwards compatibility for IIS 6.0). Unless your app predates IIS 6.0 and requires classic mode, we recomend you switch to integrated mode.
 {: .notice--primary}
 
 #### Self-Host executable
+
 While uncommon, if your application is a self-hosted executable that does not run on IIS, you may have to install the SelfHost package if not done so already:
 
 1. [For .NET Web API applications](https://docs.microsoft.com/en-us/aspnet/web-api/overview/hosting-aspnet-web-api/use-owin-to-self-host-web-api):
@@ -141,6 +155,7 @@ While uncommon, if your application is a self-hosted executable that does not ru
     ```powershell
     Install-Package Microsoft.AspNet.WebApi.OwinSelfHost
     ```
+
 2. [For all other .NET applications](https://docs.microsoft.com/en-us/aspnet/aspnet/overview/owin-and-katana/getting-started-with-owin-and-katana#self-host-owin-in-a-console-application):
 
     ```powershell
@@ -148,9 +163,11 @@ While uncommon, if your application is a self-hosted executable that does not ru
     ```
 
 ## Configuration Options
+
 The following sections describe the middleware's configuration options for [.NET Core](#net-core-configuration-options) and [.NET Framework](#net-framework-configuration-options).
 
 ### .NET Core Configuration Options
+
 The next sections describe the available configuration options for .NET Core. Here's a sample configuration using:
 
 ```csharp
@@ -193,204 +210,76 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 ```
 
 #### `ApplicationId` (Required)
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>String</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 A string that [identifies your application in Moesif](#get-your-moesif-application-id).
 
 #### `Skip`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`boolean`|
 
 Optional.
 
 A function that takes a request and a response, and returns `true` if you want to skip this particular event.
 
 #### `IdentifyUser`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes a request and a response, and returns a string that represents the user ID used by your system. 
+A function that takes a request and a response, and returns a string that represents the user ID used by your system.
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
 #### `IdentifyCompany`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
 A function that takes a request and a response, and returns a string that represents the company ID for this event.
 
 #### `GetSessionToken`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes a request and a response, and returns a string that represents the session token for this event. 
+A function that takes a request and a response, and returns a string that represents the session token for this event.
 
 Similar to users and companies, Moesif tries to retrieve session tokens automatically. But if your setup differs from the standard, this function can be helpful for tying events together, and help you replay the events.
 
 #### `GetMetadata`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>dictionary</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`dictionary`|
 
 Optional.
 
-A function that returns an object that allows you to add custom metadata that will be associated with the event. 
+A function that returns an object that allows you to add custom metadata that will be associated with the event.
 
 The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a virtual machine instance ID, a trace ID, or a tenant ID with the request.
 
 #### `MaskEventModel`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(EventModel)</code>
-   </td>
-   <td>
-    <code>EventModel</code>
-   </td>
-  </tr>
-</table>
 
-A function that takes an a Moesif event model and returns an `EventModel` with desired data removed. 
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(EventModel)`|`EventModel`|
+
+A function that takes an a Moesif event model and returns an `EventModel` with desired data removed.
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
@@ -411,120 +300,85 @@ public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEv
 ```
 
 #### `ApiVersion`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>String</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 The API version associated with this particular event.
 
 #### `LocalDebug`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`boolean`|
 
 Set to `true` to print internal log messages for debugging SDK integration issues.
 
 #### `LogBody`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Default
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-   <td>
-    <code>true</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
 
 Set to `false` to not log the request and response body to Moesif.
 
+#### `RequestMaxBodySize`
+
+|Data type|Default|
+|-|-|
+|`Number`|`100000`|
+
+The maximum request body size in bytes to log when sending the data to Moesif. Request body will not be logged if its size exceeds `RequestMaxBodySize`.
+
+#### `ResponseMaxBodySize`
+
+|Data type|Default|
+|-|-|
+|`Number`|`100000`|
+
+The maximum response body size in bytes to log when sending the data to Moesif. Response body will not be logged if its size exceeds `RequestMaxBodySize`.
+
 #### `AuthorizationHeaderName`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 Request header containing a bearer or basic token to extract user ID. Also, supports a comma-separated string. Moesif checks headers in order like `X-Api-Key`,`Authorization`, and so on.
 
 #### `AuthorizationUserIdField`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 Field name in JWT or OpenId token's payload for identifying users. Only applicable if [`AuthorizationHeaderName`](#authorizationheadername) is set and is a bearer token.
 
 #### `IsLambda`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Default
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-   <td>
-    <code>false</code>
-   </td>
-  </tr>
-</table>
 
-Set to `true` if integrating with AWS Lambda functions. 
+|Data type|Default|
+|-|-|
+|`boolean`|`false`|
+
+Set to `true` if integrating with AWS Lambda functions.
+
+### `EnableBatching`
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
+
+Moesif logs events in batches. Set to `false` if you want to send the API events one by one. This option is reset to `false` if `IsLambda` true.
 
 #### Capture Outgoing Requests in .NET Core
+
 You can capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package.
 
 The following snippet shows how to configure your application to start capturing outgoing calls:
@@ -541,30 +395,10 @@ HttpClient client = new HttpClient(handler);
 The following configuration options are available for outgoing API calls. Several options are functions that take request and response as input arguments. These request and response objects correspond to [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects respectively.
 
 ##### `GetMetadataOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>dictionary</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`dictionary`|
 
 Optional.
 
@@ -572,182 +406,69 @@ A function that returns an object that allows you
 to add custom metadata associated with the event. The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a VM instance ID, a trace ID, or a tenant ID with the request.
 
 ##### `GetSessionTokenOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns the session token string for this event. 
+A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns the session token string for this event.
 
 Moesif tries to get the session token automatically, but if you setup differs from the standard, this function can be helpful for tying events together and help you replay the events.
 
 ##### `IdentifyUserOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns a user ID string used by your system. 
+A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns a user ID string used by your system.
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
 ##### `IdentifyCompanyOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns company ID string for this event.
 
 ##### `SkipOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`boolean`|
 
 Optional.
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns `true` if you want to skip this particular event.
 
 ##### `MaskEventModelOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(EventModel)</code>
-   </td>
-   <td>
-    <code>EventModel</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(EventModel)`|`EventModel`|
 
 Optional.
 
-A function that takes a Moesif event model and returns an `EventModel` with desired data removed. 
+A function that takes a Moesif event model and returns an `EventModel` with desired data removed.
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see the [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
 ##### `LogBodyOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Default
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-   <td>
-    <code>true</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
 
 Set to `false` to not log the request and response body to Moesif.
 
 ### .NET Framework Configuration Options
+
 The next sections describe the available configuration options for .NET Framework. Here's a sample configuration:
 
 ```csharp
@@ -796,207 +517,76 @@ static public Dictionary<string, object> moesifOptions = new Dictionary<string, 
 In this configuration options, the request and response objects passed in correspond to [`IOwinRequest`](https://docs.microsoft.com/en-us/previous-versions/aspnet/dn308194(v%3Dvs.113)) request and [`IOwinResponse`](https://docs.microsoft.com/en-us/previous-versions/aspnet/dn308204(v%3Dvs.113)) response objects respectively.
 
 #### `ApplicationId` (Required)
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>String</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 A string that [identifies your application in Moesif](#get-your-moesif-application-id).
 
-
 #### `Skip`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`boolean`|
 
 Optional.
 
 A function that takes a request and a response, and returns `true` if you want to skip this particular event.
 
-
 #### `IdentifyUser`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes a request and a response, and returns a string that represents the user ID used by your system. 
+A function that takes a request and a response, and returns a string that represents the user ID used by your system.
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
-
 #### `IdentifyCompany`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
 A function that takes a request and a response, and returns a string that represents the company ID for this event.
 
 #### `GetSessionToken`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes a request and a response, and returns a string that represents the session token for this event. 
+A function that takes a request and a response, and returns a string that represents the session token for this event.
 
 Similar to users and companies, Moesif tries to retrieve session tokens automatically. But if your setup differs from the standard, this function can be helpful for tying events together, and help you replay the events.
 
 #### `GetMetadata`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequest, HttpResponse)</code>
-   </td>
-   <td>
-    <code>dictionary</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`dictionary`|
 
 Optional.
 
-A function that returns an object that allows you to add custom metadata that will be associated with the event. 
+A function that returns an object that allows you to add custom metadata that will be associated with the event.
 
 The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a virtual machine instance ID, a trace ID, or a tenant ID with the request.
 
 #### `MaskEventModel`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(EventModel)</code>
-   </td>
-   <td>
-    <code>EventModel</code>
-   </td>
-  </tr>
-</table>
 
-A function that takes an a Moesif event model and returns an `EventModel` with desired data removed. 
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(EventModel)`|`EventModel`|
+
+A function that takes an a Moesif event model and returns an `EventModel` with desired data removed.
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
@@ -1015,114 +605,61 @@ public static Func<EventModel, EventModel> MaskEventModel = (EventModel moesifEv
 ```
 
 #### `ApiVersion`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>String</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 The API version associated with this particular event.
 
 #### `LocalDebug`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`boolean`|
 
 Set to `true` to print internal log messages for debugging SDK integration issues.
 
 #### `LogBody`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Default
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-   <td>
-    <code>true</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
 
 Set to `false` to not log the request and response body to Moesif.
 
 #### `DisableStreamOverride`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`boolean`|
 
 Set to `true` to disable overriding the request body stream. This is required if your app is using Windows Communication Foundation (WCF). Otherwise, you may experience issues when your business logic accesses the request body.
 
 #### `AuthorizationHeaderName`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 Request header containing a bearer or basic token to extract user ID. Also, supports a comma-separated string. Moesif checks headers in order like `X-Api-Key`,`Authorization`, and so on.
 
 #### `AuthorizationUserIdField`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|
+|-|
+|`string`|
 
 Optional.
 
 Field name in JWT or OpenId token's payload for identifying users. Only applicable if [`AuthorizationHeaderName`](#authorizationheadername) is set and is a bearer token.
 
 #### Capture Outgoing Requests in .NET Core
+
 You can capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [System.Net.Http](https://docs.microsoft.com/en-us/dotnet/api/system.net.http?view=netframework-4.8) package.
 
 The following snippet shows how to configure your application to start capturing outgoing calls:
@@ -1139,30 +676,10 @@ HttpClient client = new HttpClient(handler);
 The following configuration options are available for outgoing API calls. Several options are functions that take request and response as input arguments. These request and response objects correspond to [HttpRequestMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httprequestmessage) request and [HttpResponseMessage](https://docs.microsoft.com/en-us/uwp/api/windows.web.http.httpresponsemessage) response objects respectively.
 
 ##### `GetMetadataOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>dictionary</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`dictionary`|
 
 Optional.
 
@@ -1170,178 +687,64 @@ A function that returns an object that allows you
 to add custom metadata associated with the event. The metadata must be a dictionary that can be converted to JSON. For example, you may want to save a VM instance ID, a trace ID, or a tenant ID with the request.
 
 ##### `GetSessionTokenOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns the session token string for this event. 
+A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns the session token string for this event.
 
 Moesif tries to get the session token automatically, but if you setup differs from the standard, this function can be helpful for tying events together and help you replay the events.
 
 ##### `IdentifyUserOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 Optional.
 
-A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns a user ID string used by your system. 
+A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns a user ID string used by your system.
 
 Moesif identifies users automatically. But if your setup differs from the standard implementations, provide this function to ensure user identification properly.
 
 ##### `IdentifyCompanyOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>string</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`string`|
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns company ID string for this event.
 
 ##### `SkipOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(HttpRequestMessage, HttpResponseMessage)</code>
-   </td>
-   <td>
-    <code>boolean</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(HttpRequest, HttpResponse)`|`boolean`|
 
 Optional.
 
 A function that takes an `HttpRequestMessage` and an `HttpResponseMessage`, and returns `true` if you want to skip this particular event.
 
 ##### `MaskEventModelOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Parameters
-   </th>
-   <th scope="col">
-    Return type
-   </th>
-  </tr>
-  <tr>
-   <td>
-    Function
-   </td>
-   <td>
-    <code>(EventModel)</code>
-   </td>
-   <td>
-    <code>EventModel</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Parameters|Return type|
+|-|-|-|
+|Function|`(EventModel)`|`EventModel`|
 
 Optional.
 
-A function that takes a Moesif event model and returns an `EventModel` with desired data removed. 
+A function that takes a Moesif event model and returns an `EventModel` with desired data removed.
 
 Use this if you prefer to write your own mask function. The return value must be a valid `EventModel` required by Moesif data ingestion API. For more information, see the [Moesif C# API documentation](https://www.moesif.com/docs/api?csharp#).
 
 ##### `LogBodyOutgoing`
-<table>
-  <tr>
-   <th scope="col">
-    Data type
-   </th>
-   <th scope="col">
-    Default
-   </th>
-  </tr>
-  <tr>
-   <td>
-    <code>boolean</code>
-   </td>
-   <td>
-    <code>true</code>
-   </td>
-  </tr>
-</table>
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
 
 Set to `false` to not log the request and response body to Moesif.
 
@@ -1352,7 +755,6 @@ Set to `false` to not log the request and response body to Moesif.
 See the [.NET Core examples](https://github.com/Moesif/moesif-netcore-example)
 using .NET Core 2.0 and .NET Core 3.0
 
-
 ### .NET Framework Examples
 
 - [.NET Framework Example](https://github.com/Moesif/moesif-netframework-example) using .NET Framework 4.6.1 and IIS
@@ -1361,6 +763,7 @@ using .NET Core 2.0 and .NET Core 3.0
 The following examples demonstrate how to add and update customer information.
 
 ### Update a Single User
+
 To create or update a [user](https://www.moesif.com/docs/getting-started/users/) profile in Moesif, use the `UpdateUser` method.
 
 ```csharp
@@ -1405,7 +808,6 @@ MoesifMiddleware moesifMiddleware = new MoesifMiddleware(Dictionary<string, obje
 // .NET Framework
 // MoesifMiddleware moesifMiddleware = new MoesifMiddleware(OwinMiddleware next, Dictionary<string, object> moesifOptions)
 
-
 // Update the user asynchronously
 moesifMiddleware.UpdateUser(user);
 ```
@@ -1415,6 +817,7 @@ The `metadata` field can contain any customer demographic or other info you want
 For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-user).
 
 ### Update Users in Batch
+
 To update a list of [users](https://www.moesif.com/docs/getting-started/users/) in one batch, use the `UpdateUsersBatch` method.
 
 Similar to UpdateUser, but used to update a list of users in one batch.
@@ -1486,6 +889,7 @@ The `metadata` field can contain any customer demographic or other info you want
 This method is a convenient helper that calls the Moesif API library. For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-users-in-batch).
 
 ### Update a Single Company
+
 To update a single [company](https://www.moesif.com/docs/getting-started/companies/), use the `UpdateCompany` method.
 
 ```csharp
@@ -1537,6 +941,7 @@ The `metadata` field can contain any customer demographic or other info you want
 This method is a convenient helper that calls the Moesif API library. For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-a-company).
 
 ### Update Companies in Batch
+
 To update a list of [companies](https://www.moesif.com/docs/getting-started/companies/) in one batch, use the `UpdateCompaniesBatch` method.
 
 ```csharp
@@ -1600,7 +1005,8 @@ The `metadata` field can contain any customer demographic or other info you want
 This method is a convenient helper that calls the Moesif API library. For more information, see the function documentation in [Moesif C# API Reference](https://www.moesif.com/docs/api?csharp#update-companies-in-batch).
 
 ## Troubleshoot
-For a general troubleshooting guide that can help you solve common problems, see [Server Troubleshooting Guide](https://www.moesif.com/docs/troubleshooting/server-troubleshooting-guide/). 
+
+For a general troubleshooting guide that can help you solve common problems, see [Server Troubleshooting Guide](https://www.moesif.com/docs/troubleshooting/server-troubleshooting-guide/).
 
 Other troubleshooting supports:
 
@@ -1610,6 +1016,7 @@ Other troubleshooting supports:
 The following sections discuss some specific troubleshooting scenarios.
 
 ### Issue Reading Request Body in WCF
+
 Certain serializers for Windows Communication Foundation (WCF) may not correctly bind the request body when using logging middleware like Moesif.
 If your app uses Windows Communication Foundation (WCF), you may find that your business logic has errors accessing the request body such as for `POST` and `PUT` requests.
 
@@ -1624,6 +1031,7 @@ Dictionary<string, object> moesifOptions = new Dictionary<string, object>
 ```
 
 ### Traditional Monolith Website broken
+
 Some monolith apps which contain both a website and an API in the same app may issues when API logging middleware is enabled.
 This is usually due to interactions with other custom middleware.
 
@@ -1654,6 +1062,7 @@ You  need to set the following option to ensure the response body is logged and 
             options.AllowSynchronousIO = true;
         });
     ```
+
 - For .NET Core and .NET 6+, when using a `WebApplicationBuilder` in `Program.cs`:
 
     ```csharp
@@ -1666,6 +1075,7 @@ You  need to set the following option to ensure the response body is logged and 
 [See the .NET documentation](https://learn.microsoft.com/en-us/dotnet/core/compatibility/aspnetcore#http-synchronous-io-disabled-in-all-servers) relating to the origins of the `AllowSynchronousIO` option. For more information about this workaround, see [.NET Core 3.0 AllowSynchronousIO Workaround](https://khalidabuhakmeh.com/dotnet-core-3-dot-0-allowsynchronousio-workaround).
 
 ## Ensuring Errors Handled by ExceptionHandler Are Logged
+
 To capture the API calls handled by `ExceptionHandler`, make sure that the `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` precedes the `app.UseExceptionHandler()` in the pipeline.
 
 ## How to Test
@@ -1680,7 +1090,7 @@ To capture the API calls handled by `ExceptionHandler`, make sure that the `app.
 
 Moesif has validated this middleware against the following framework versions.
 
-|                | Framework Version  |
+|    Framework   | Framework Version  |
 | -------------- | -----------------  |
 | .NET |5.0|
 | .NET |6.0|
@@ -1691,6 +1101,7 @@ Moesif has validated this middleware against the following framework versions.
 | .NET Framework Web API SelfHost|4.6-4.7|
 
 ### Last Supported Version for .NET 4.5
+
 SDK version `1.3.25` supports .NET 4.5, which will be no longer supported. Please upgrade to .NET 4.6.1 or higher.
 
 ## Explore Other Integrations

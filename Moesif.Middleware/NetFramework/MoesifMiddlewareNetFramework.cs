@@ -63,6 +63,8 @@ namespace Moesif.Middleware.NetFramework
         public string apiVersion;
 
         public bool logBody;
+        public int requestMaxBodySize = 1000;
+        public int responseMaxBodySize = 1000;
 
         private AutoResetEvent configEvent;
 
@@ -100,6 +102,8 @@ namespace Moesif.Middleware.NetFramework
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), "moesif-netframework/1.5.1", debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                requestMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "RequestMaxBodySize", 100000);
+                responseMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "ResponseMaxBodySize", 100000);
                 isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
                 disableStreamOverride = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableStreamOverride", false); // Reset Request Body position
                 batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
@@ -267,7 +271,7 @@ namespace Moesif.Middleware.NetFramework
             EventRequestModel request;
 
             // Prepare Moeif Event Request Model
-            (request, transactionId) = await ToRequest(httpContext.Request, transactionId);
+            (request, transactionId) = await ToRequest(httpContext.Request, transactionId, logBody, requestMaxBodySize);
 
             // Add Transaction Id to the Response Header
             if (!string.IsNullOrEmpty(transactionId))
@@ -363,8 +367,16 @@ namespace Moesif.Middleware.NetFramework
                 return userId;
             }
         }
+    
+        public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
+        {
+            object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
+            string bodyPayload = ApiHelper.JsonSerialize(payload);
 
-        private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId)
+            return bodyPayload;
+        }
+
+        private async Task<(EventRequestModel, String)> ToRequest(IOwinRequest request, string transactionId, bool logBody, int maxBodySize)
         {
             // Request headers
             var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
@@ -380,7 +392,24 @@ namespace Moesif.Middleware.NetFramework
             int.TryParse(contentLength, out parsedContentLength);
             try
             { 
-                body = await loggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride);
+                // Check if body exceeded max size supported or no body content
+                if (parsedContentLength == 0)
+                {
+                    body = null;
+                }
+                else if (parsedContentLength > requestMaxBodySize)
+                {
+                    body = GetExceededBodyForBodySize("request", parsedContentLength, requestMaxBodySize);
+                }
+                else
+                {
+                    body = await loggerHelper.GetRequestContents(request, contentEncoding, parsedContentLength, disableStreamOverride, logBody);
+                }
+                // Check if body exceeded max size supported
+                if (!string.IsNullOrWhiteSpace(body) && body.Length > requestMaxBodySize)
+                {
+                    body = GetExceededBodyForBodySize("request", body.Length, requestMaxBodySize);
+                }
             }
             catch 
             {
@@ -424,7 +453,12 @@ namespace Moesif.Middleware.NetFramework
             string contentEncoding = "";
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
-            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);            
+            var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);
+            // Check if body exceeded max size supported
+            if (!string.IsNullOrWhiteSpace(body) && body.Length > responseMaxBodySize)
+            {
+                body = GetExceededBodyForBodySize("response", body.Length, responseMaxBodySize);
+            }
             var bodyWrapper = loggerHelper.Serialize(body, response.ContentType, logBody);
 
             // Add Transaction Id to Response Header

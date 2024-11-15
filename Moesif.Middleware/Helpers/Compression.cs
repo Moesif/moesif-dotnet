@@ -9,9 +9,9 @@ namespace Moesif.Middleware.Helpers
 {
     class Compression
     {
-       public static async Task<string> UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize)
+       public static async Task<string> UncompressStream(Stream memoryStream, string contentEncoding, int bufferSize, bool logBody)
         {
-            if (!memoryStream.CanRead)
+            if (!logBody || !memoryStream.CanRead)
             {
                 return null;
             }

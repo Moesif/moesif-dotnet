@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Moesif.Middleware</id>
-    <version>1.5.1</version>
+    <version>1.5.2</version>
     <title>MoesifMiddleware</title>
     <authors>Moesif</authors>
 	  <owners>Moesif</owners>
@@ -28,7 +28,7 @@
 		</group>
 		<group targetFramework="net461">
 			<dependency id="Microsoft.Owin" version="4.2.2" />
-			<dependency id="Moesif.Api" version="2.0.8" />
+			<dependency id="Moesif.Api" version="2.0.9" />
 			<dependency id="System.ValueTuple" version="4.5.0" />
 			<dependency id="Newtonsoft.Json" version="13.0.2" />
       <dependency id="System.IdentityModel.Tokens.Jwt" version="6.35.0" />

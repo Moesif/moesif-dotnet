@@ -12,9 +12,11 @@ using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Net.Http;
 using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -75,6 +77,8 @@ namespace Moesif.Middleware.NetCore
         public bool debug = false;
 
         public bool logBody;
+        public int requestMaxBodySize = 1000;
+        public int responseMaxBodySize = 1000;
 
         public bool isLambda;
 
@@ -136,6 +140,8 @@ namespace Moesif.Middleware.NetCore
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                requestMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "RequestMaxBodySize", 100000);
+                responseMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "ResponseMaxBodySize", 100000);
                 isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
                 //config = AppConfig.getDefaultAppConfig();
@@ -576,6 +582,14 @@ namespace Moesif.Middleware.NetCore
 #endif
         }
 
+        public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
+        {
+            object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
+            string bodyPayload = ApiHelper.JsonSerialize(payload);
+
+            return bodyPayload;
+        }
+        
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
 #if MOESIF_INSTRUMENT
@@ -611,7 +625,25 @@ namespace Moesif.Middleware.NetCore
             setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
 #endif
-            bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+            // Check if body exceeded max size supported or no body content
+            if (parsedContentLength == 0)
+            {
+                bodyAsText = null;
+            }
+            else if (parsedContentLength > requestMaxBodySize)
+            {
+                bodyAsText = GetExceededBodyForBodySize("request", parsedContentLength, requestMaxBodySize);
+            }
+            else
+            {
+                bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug, logBody);
+            }
+
+            // Check if body exceeded max size supported
+            if (!string.IsNullOrWhiteSpace(bodyAsText) && bodyAsText.Length > requestMaxBodySize)
+            {
+                bodyAsText = GetExceededBodyForBodySize("request", bodyAsText.Length, requestMaxBodySize);
+            }
 #if MOESIF_INSTRUMENT
             getRequestContent = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
@@ -683,6 +715,11 @@ namespace Moesif.Middleware.NetCore
                 string contentEncoding = "";
                 rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
                 string text = stream.ReadStream(contentEncoding);
+                // Check if response body exceeded max size supported
+                if (!string.IsNullOrWhiteSpace(text) && text.Length > responseMaxBodySize)
+                {
+                    text = GetExceededBodyForBodySize("response", text.Length, responseMaxBodySize);
+                }
                 // Serialize Response body
                 responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
             }
