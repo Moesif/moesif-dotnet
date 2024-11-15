@@ -27,7 +27,7 @@ After you log into [Moesif Portal](https://www.moesif.com/wrap), you can get you
 1. Select the account icon to bring up the settings menu.
 2. Select **Installation** or **API Keys**.
 3. Copy your Moesif Application ID from the **Collector Application ID** field.
-<img class="lazyload blur-up" src="images/app_id.png" width="700" alt="Accessing the settings menu in Moesif Portal">
+   <img class="lazyload blur-up" src="images/app_id.png" width="700" alt="Accessing the settings menu in Moesif Portal">
 
 ## Install the Middleware
 
@@ -37,8 +37,14 @@ Install the Nuget Package for the middleware:
 Install-Package Moesif.Middleware
 ```
 
+| Version  | Supported Framework |
+| -------- | ------------------- |
+|  >=3.0.9 | .NET6 or above      |
+|  < 2.0.0 | .NET5 or NET Core 2 or below |
+
 Then jump to usage instructions for your specific framework:
 
+- [.NET6 installation](#use-the-middleware-in-net60-and-higher)
 - [.NET Core and .NET 5 installation](#use-the-middleware-in-net-core-and-net-50)
 - [.NET Framework installation](#use-the-middleware-in-net-framework)
 
@@ -49,12 +55,16 @@ See the following to learn how to configure the middleware for your use case.
 - [.NET Core configuration options](#net-core-configuration-options)
 - [.NET Framework configuration options](#net-framework-configuration-options)
 
+## Use the Middleware in .NET6.0 and higher
+
+Please use Moesif.Middleware version `3.0.9` or higher for .NET6 or higher framework. Rest of instrusctions are same.
+
 ## Use the Middleware in .NET Core and .NET 5.0
 
 Follow these instructions to use this middleware in .NET 5 or .NET Core 2.1 and higher:
 
 1. In `Startup.cs` file in your project directory, add `app.UseMiddleware<MoesifMiddleware>(moesifOptions);` to the pipeline.
-    To collect the most context, we recommend that you add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
+   To collect the most context, we recommend that you add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
 2. Add the middleware in your application:
 
 ```csharp
@@ -93,7 +103,7 @@ Replace *`YOUR_MOESIF_APPLICATION_ID`* with [your Moesif Application ID](#get-yo
 Follow these instructiosn to use the middleware in .NET Framework 4.5 and higher.
 
 1. In `Startup.cs` file in your project directory, please add `app.Use<MoesifMiddleware>(moesifOptions);` to the pipeline.
-    To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
+   To collect the most context, it is recommended to add the middleware after other middleware such as SessionMiddleware and AuthenticationMiddleware.
 2. Add the middleware to your application:
 
 ```csharp
@@ -315,6 +325,22 @@ Set to `true` to print internal log messages for debugging SDK integration issue
 
 Set to `false` to not log the request and response body to Moesif.
 
+#### `RequestMaxBodySize`
+
+|Data type|Default|
+|-|-|
+|`Number`|`100000`|
+
+The maximum request body size in bytes to log when sending the data to Moesif. Request body will not be logged if its size exceeds `RequestMaxBodySize`.
+
+#### `ResponseMaxBodySize`
+
+|Data type|Default|
+|-|-|
+|`Number`|`100000`|
+
+The maximum response body size in bytes to log when sending the data to Moesif. Response body will not be logged if its size exceeds `RequestMaxBodySize`.
+
 #### `AuthorizationHeaderName`
 
 |Data type|
@@ -342,6 +368,14 @@ Field name in JWT or OpenId token's payload for identifying users. Only applicab
 |`boolean`|`false`|
 
 Set to `true` if integrating with AWS Lambda functions.
+
+### `EnableBatching`
+
+|Data type|Default|
+|-|-|
+|`boolean`|`true`|
+
+Moesif logs events in batches. Set to `false` if you want to send the API events one by one. This option is reset to `false` if `IsLambda` true.
 
 #### Capture Outgoing Requests in .NET Core
 

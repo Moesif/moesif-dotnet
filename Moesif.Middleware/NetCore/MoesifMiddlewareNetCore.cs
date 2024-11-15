@@ -75,8 +75,8 @@ namespace Moesif.Middleware.NetCore
         public bool debug = false;
 
         public bool logBody;
-        public int requestMaxBodySize = 1000;
-        public int responseMaxBodySize = 1000;
+        public int requestMaxBodySize = 100000;
+        public int responseMaxBodySize = 100000;
 
         public bool isLambda;
 
@@ -580,6 +580,14 @@ namespace Moesif.Middleware.NetCore
             }
 #endif
         }
+        
+        public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
+        {
+            object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
+            string bodyPayload = ApiHelper.JsonSerialize(payload);
+
+            return bodyPayload;
+        }
 
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
@@ -616,7 +624,29 @@ namespace Moesif.Middleware.NetCore
             setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
 #endif
-            bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug, logBody, requestMaxBodySize);
+            // Check if body exceeded max size supported or no body content
+            if (parsedContentLength == 0)
+            {
+                // no body content
+                bodyAsText = null;
+            }
+            else if (parsedContentLength > requestMaxBodySize)
+            {
+                // Body size exceeds max limit. Use an info message body.
+                bodyAsText = GetExceededBodyForBodySize("request", parsedContentLength, requestMaxBodySize);
+            }
+            else
+            {
+                // Body size is within allowed max limit or unknown. Read the body.
+                bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug, logBody);
+            }
+
+            // Check if body exceeded max size supported
+            if (!string.IsNullOrWhiteSpace(bodyAsText) && bodyAsText.Length > requestMaxBodySize)
+            {
+                // Read body's size exceeds max limit. Use an info message body.
+                bodyAsText = GetExceededBodyForBodySize("request", bodyAsText.Length, requestMaxBodySize);
+            }
 #if MOESIF_INSTRUMENT
             getRequestContent = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
@@ -693,11 +723,12 @@ namespace Moesif.Middleware.NetCore
                 string contentEncoding = "";
                 rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
                 string text = stream.ReadStream(contentEncoding);
+
                 // Check if response body exceeded max size supported
-                if (text.Length > responseMaxBodySize)
+                if (!string.IsNullOrWhiteSpace(text) && text.Length > responseMaxBodySize)
                 {
-                    rspHeaders["X-Moesif-BodySize-Exceeded"] = true.ToString();
-                    text = null;
+                    // Body size exceeds max limit. Use an info message body.
+                    text = GetExceededBodyForBodySize("response", text.Length, responseMaxBodySize);
                 }
                 
                 // Serialize Response body
@@ -739,6 +770,12 @@ namespace Moesif.Middleware.NetCore
                     // Capture the response
                     httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
                     responseBody = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+                    // Check if response body exceeded max size supported
+                    if (!string.IsNullOrWhiteSpace(responseBody) && responseBody.Length > responseMaxBodySize)
+                    {
+                        // Body size exceeds max limit. Use an info message body.
+                        responseBody = GetExceededBodyForBodySize("response", responseBody.Length, responseMaxBodySize);
+                    }
                     httpContext.Response.Body.Seek(0, SeekOrigin.Begin); // Reset the position for the response to be sent
 
                     // Copy the response body back to the original stream
