@@ -142,9 +142,9 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return null;
         }
 
-        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
+        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride, bool logBody)
         {
-            if (request == null || request.Body == null || !request.Body.CanRead)
+            if (!logBody || request == null || request.Body == null || !request.Body.CanRead)
             {
                 return string.Empty;
             }
@@ -158,7 +158,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             else {
                 request.Body = memoryStream;
             }
-            return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
+            return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize, logBody);
         }
 
         public void LogDebugMessage(bool debug, String msg) 
