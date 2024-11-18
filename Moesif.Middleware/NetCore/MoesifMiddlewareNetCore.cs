@@ -12,9 +12,11 @@ using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using System.Threading;
 using System.Collections.Concurrent;
+//using System.Net.Http;
 using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using Microsoft.Extensions.Logging;
+//using Newtonsoft.Json;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -27,7 +29,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/3.0.9";
+        public static string APP_VERSION = "moesif-netcore/3.1.0";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -580,7 +582,7 @@ namespace Moesif.Middleware.NetCore
             }
 #endif
         }
-        
+
         public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
         {
             object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
@@ -659,11 +661,6 @@ namespace Moesif.Middleware.NetCore
                 transactionId = loggerHelper.GetOrCreateTransactionId(reqHeaders, "X-Moesif-Transaction-Id");
                 reqHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, reqHeaders);
             }
-
-            if (!logBody)
-            {
-                reqHeaders["X-Moesif-LogBody-Enabled"] = logBody.ToString();
-            }
 #if MOESIF_INSTRUMENT
             addTxIdTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
@@ -687,7 +684,7 @@ namespace Moesif.Middleware.NetCore
                 ApiVersion = apiVersion,
                 IpAddress = ip,
                 Headers = reqHeaders,
-                Body = bodyWrapper.Item1, // "Skipped_Because_Exceeded_Limit"
+                Body = bodyWrapper.Item1,
                 TransferEncoding = bodyWrapper.Item2
             };
 
@@ -730,7 +727,7 @@ namespace Moesif.Middleware.NetCore
                     // Body size exceeds max limit. Use an info message body.
                     text = GetExceededBodyForBodySize("response", text.Length, responseMaxBodySize);
                 }
-                
+
                 // Serialize Response body
                 responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
             }

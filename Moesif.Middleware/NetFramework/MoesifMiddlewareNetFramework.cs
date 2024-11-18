@@ -1,6 +1,6 @@
 ﻿using System;
-// using System.IO;
-// using System.Text;
+//using System.IO;
+//using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,8 +14,8 @@ using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using System.ComponentModel.Design;
 using Microsoft.Extensions.Logging;
-using Moesif.Api.Http.Client;
-#if NET462
+//using Moesif.Api.Http.Client;
+#if NET461
 using Microsoft.Owin;
 using System.Web;
 using Moesif.Api.Http.Response;
@@ -25,12 +25,12 @@ using System.Text.Json.Serialization;
 
 #endif
 
-#if NET462
+#if NET461
 namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public static string APP_VERSION = "moesif-netframework/3.0.9";
+        public static string APP_VERSION = "moesif-netframework/3.1.0";
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -276,7 +276,7 @@ namespace Moesif.Middleware.NetFramework
             string transactionId = null;
             EventRequestModel request;
 
-            // Prepare Moesif Event Request Model
+            // Prepare Moeif Event Request Model
             (request, transactionId) = await ToRequest(httpContext.Request, transactionId, logBody, requestMaxBodySize);
 
             // Add Transaction Id to the Response Header
@@ -483,7 +483,7 @@ namespace Moesif.Middleware.NetFramework
             {
                 // Body size exceeds max limit. Use an info message body.
                 body = GetExceededBodyForBodySize("response", body.Length, responseMaxBodySize);
-            }            
+            }
             var bodyWrapper = loggerHelper.Serialize(body, response.ContentType, logBody);
 
             // Add Transaction Id to Response Header
