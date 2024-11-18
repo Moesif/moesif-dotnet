@@ -167,7 +167,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
             else {
                 request.Body = memoryStream;
             }
-            return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize, logBody);
+            return await Compression.UncompressStream(memoryStream, contentEncoding, bufferSize);
         }
 
         public void LogDebugMessage(bool debug, String msg) 
