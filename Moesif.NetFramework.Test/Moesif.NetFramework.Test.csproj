@@ -122,6 +122,12 @@
       <HintPath>..\packages\Unirest-APIMATIC.1.0.1.27\lib\net45\unirest-net.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
+      <Project>{c5630a28-3d85-4865-9467-b4682ee18060}</Project>
+      <Name>Moesif.Middleware</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
 </Project>

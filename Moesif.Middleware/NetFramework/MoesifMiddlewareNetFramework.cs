@@ -18,11 +18,10 @@ using Microsoft.Extensions.Logging;
 #if NET461
 using Microsoft.Owin;
 using System.Web;
-using Moesif.Api.Http.Response;
+// using Moesif.Api.Http.Response;
 using Moesif.Middleware.NetFramework.Helpers;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
+//using System.Text.Json;
+//using System.Text.Json.Serialization;
 #endif
 
 #if NET461
@@ -260,7 +259,6 @@ namespace Moesif.Middleware.NetFramework
             // Buffering mvc reponse
             StreamHelper outputCaptureMVC = null;
             HttpResponse httpResponse = HttpContext.Current?.Response;
-            // HttpResponse httpResponse = httpContext.Response;
             if (httpResponse != null)
             {
                 outputCaptureMVC = new StreamHelper(httpResponse.Filter);

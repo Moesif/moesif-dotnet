@@ -1,49 +1,52 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net461;net6.0</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+    <DefineConstants>NET6_0_OR_GREATER</DefineConstants>
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">
+    <DefineConstants>NET461</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
+<!--     <PackageReference Include="Moesif.Api" Version="3.1.0" /> -->
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.32" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" />
-    <PackageReference Include="Microsoft.Owin" Version="4.2.2">
-      <NoWarn>NU1701</NoWarn>
-    </PackageReference>
+<!--     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" /> -->
+<!--    <PackageReference Include="Microsoft.Owin" Version="4.2.2">-->
+<!--      <NoWarn>NU1701</NoWarn>-->
+<!--    </PackageReference>-->
     <!--    <PackageReference Include="Microsoft.AspNetCore.Owin" Version="6.0.0" />-->
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+<!--    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.32" />-->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Moesif.Api" Version="3.0.9"/>
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
-    <DefineConstants>NETCORE</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461'">
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="Moesif.Api" Version="2.0.9" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Web" />
-    <PackageReference Include="Microsoft.Owin" Version="4.2.2" />
+     <PackageReference Include="Microsoft.Owin" Version="4.2.2" /> 
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net462'">
-    <DefineConstants>NET462</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -55,8 +58,11 @@
     <Compile Remove="Helpers\ClientIp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="Microsoft.Owin" />
+    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj" />
   </ItemGroup>
+<!--   <ItemGroup> -->
+<!--     <None Remove="Microsoft.Owin" /> -->
+<!--   </ItemGroup> -->
   <PropertyGroup>
     <NuspecFile>Moesif.Middleware.nuspec</NuspecFile>
     <NuspecProperties>$(NuspecProperties);configuration=$(Configuration)</NuspecProperties>

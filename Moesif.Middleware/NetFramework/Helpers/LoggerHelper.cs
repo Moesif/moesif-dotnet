@@ -14,7 +14,7 @@ using System.Xml.Serialization;
 using Moesif.Middleware.Helpers;
 using Microsoft.Extensions.Logging;
 
-#if NET462
+#if NET461
 using System.Text.Json;
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework.Helpers;
@@ -134,19 +134,12 @@ namespace Moesif.Middleware.NetFramework.Helpers
             return transactionId;
         }
 
-        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding, bool logBody, int maxBodySize, out bool maxBodySizeExceeded)
+        public string GetOutputFilterStreamContents(StreamHelper filter, string contentEncoding, bool logBody)
         {
-            maxBodySizeExceeded = false;
             if (logBody && filter != null)
             {
                 string text = filter.ReadStream(contentEncoding);
-                // Check if response body exceeded max size supported
-                if (text.Length > maxBodySize)
-                {
-                    maxBodySizeExceeded = true;
-                    text = null;
-                }
-                return text
+                return text;
             }
             return null;
         }

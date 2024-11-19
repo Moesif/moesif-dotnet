@@ -1,9 +1,15 @@
 ﻿using Moesif.Api.Models;
 using Moesif.Middleware.Models;
 using System;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+
+#if NET6_0_OR_GREATER
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+#else
+    using Newtonsoft.Json.Linq;
+#endif
+
 namespace Moesif.Middleware.Helpers
 {
     public class RequestMapHelper
@@ -13,6 +19,7 @@ namespace Moesif.Middleware.Helpers
             return System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(text));
         }
 
+#if NET6_0_OR_GREATER
         /**
          * Function to convert object to JsonObject. Returns null if not possible.
          */
@@ -33,6 +40,7 @@ namespace Moesif.Middleware.Helpers
 
             return objJson;
         }
+#endif
 
         public static RequestMap createRequestMap(EventModel model) 
         {
@@ -72,6 +80,7 @@ namespace Moesif.Middleware.Helpers
             if (model.Request.TransferEncoding == "json")
             {
                 // Newtonsoft.Json.Linq.JObject body = (Newtonsoft.Json.Linq.JObject)model.Request.Body;
+#if NET6_0_OR_GREATER
                 JsonObject body = GetJsonObject(model.Request.Body);
                 if (body != null)
                 {
@@ -95,6 +104,20 @@ namespace Moesif.Middleware.Helpers
                         requestMap.regex_mapping.Add("request.body", body);
                     }
                 }
+#else
+                Newtonsoft.Json.Linq.JObject body = (Newtonsoft.Json.Linq.JObject)model.Request.Body;
+                var operationName = body.GetValue("operationName");
+                if (operationName != null)
+                {
+                    requestMap.regex_mapping.Add("request.body.operationName", operationName.ToString());
+                }
+                var query = body.GetValue("query");
+                if (query != null)
+                {
+                    requestMap.regex_mapping.Add("request.body.query", query.ToString());
+                }
+                requestMap.regex_mapping.Add("request.body", body);
+#endif
             }
 
             return requestMap;
