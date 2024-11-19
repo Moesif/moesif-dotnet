@@ -149,7 +149,16 @@ namespace Moesif.Middleware.NetCore
                 //companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 //clientIpHelper = new ClientIp(); // Create a new instance of client Ip
                 //isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
-                isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", !isLambda); // Enable batching, defaults to true if not lambda
+                // Force isBatchingEnabled to false if isLambda is true
+                if (isLambda)
+                {
+                    isBatchingEnabled = false;
+                }
+                else
+                {
+                    isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching, defaults to true if not lambda
+                }
+
                 batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
                 queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 100 * 1000); // Queue Size
                 batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
