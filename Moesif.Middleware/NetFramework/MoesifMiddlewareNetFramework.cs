@@ -267,8 +267,14 @@ namespace Moesif.Middleware.NetFramework
 
             // Buffering Owin response
             StreamHelper outputCaptureOwin = null;
-            // Create memory stream only if needed / logBody
-            if (logBody)
+
+            // Create memory stream only if needed
+            //  - logBody is enabled &&
+            //  - content-length is less than maxBodySize
+            var reqHeaders = loggerHelper.ToHeaders(httpContext.Request.Headers, debug);
+            int parsedContentLength = 1000;
+            GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
+            if (logBody && parsedContentLength <= requestMaxBodySize)
             {
                 IOwinResponse owinResponse = httpContext.Response;
                 outputCaptureOwin = new StreamHelper(owinResponse.Body);
@@ -391,10 +397,31 @@ namespace Moesif.Middleware.NetFramework
             return ipAddress;
         }
 
+        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, out int parsedContentLength)
+        {
+            string contentEncoding = "";
+            parsedContentLength = 100000;
+
+            if (headers != null)
+            {
+                string contentLength = "";
+                headers.TryGetValue("Content-Length", out contentLength);
+                headers.TryGetValue("Content-Encoding", out contentEncoding);
+                int.TryParse(contentLength, out parsedContentLength);
+            }
+
+            return contentEncoding;
+        }
+
         public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
         {
-            object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
-            string bodyPayload = ApiHelper.JsonSerialize(payload);
+            // contentType = "application/json; charset=utf-8";  // "application/xml; charset=utf-8"
+            string message = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}";
+
+            // object payload = new { msg = message };
+            // string bodyPayload = ApiHelper.JsonSerialize(payload);
+            //string bodyPayload = $"<html>{message}</html>";
+            string bodyPayload = message;
 
             return bodyPayload;
         }
@@ -404,15 +431,18 @@ namespace Moesif.Middleware.NetFramework
             // Request headers
             var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
 
-            // RequestBody
-            string contentEncoding = "";
-            string contentLength = "";
+            // Get Content-Length and Content-Encoding : TODO it may not be needed as we're no longer create memoryStream to read body if bodySize is large
+            // string contentEncoding = "";
+            // string contentLength = "";
             int parsedContentLength = 100000;
+            // reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            // reqHeaders.TryGetValue("Content-Length", out contentLength);
+            // int.TryParse(contentLength, out parsedContentLength);
+            string requestContentType = request.ContentType;
+            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
 
+            // RequestBody
             string body = null;
-            reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            reqHeaders.TryGetValue("Content-Length", out contentLength);
-            int.TryParse(contentLength, out parsedContentLength);
             try
             { 
                 // Check if body exceeded max size supported or no body content
@@ -443,7 +473,7 @@ namespace Moesif.Middleware.NetFramework
                 _logger.LogDebug("Cannot read request body.");
             }
 
-            var bodyWrapper = loggerHelper.Serialize(body, request.ContentType, logBody);
+            var bodyWrapper = loggerHelper.Serialize(body, requestContentType, logBody);
 
             // Add Transaction Id to the Request Header
             bool disableTransactionId = loggerHelper.GetConfigBoolValues(moesifOptions, "DisableTransactionId", false);
@@ -481,13 +511,14 @@ namespace Moesif.Middleware.NetFramework
             rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
 
             var body = loggerHelper.GetOutputFilterStreamContents(outputStream, contentEncoding, logBody);
+            string responseContentType = response.ContentType;
             // Check if body exceeded max size supported
             if (!string.IsNullOrWhiteSpace(body) && body.Length > responseMaxBodySize)
             {
                 // Body size exceeds max limit. Use an info message body.
                 body = GetExceededBodyForBodySize("response", body.Length, responseMaxBodySize);
             }
-            var bodyWrapper = loggerHelper.Serialize(body, response.ContentType, logBody);
+            var bodyWrapper = loggerHelper.Serialize(body, responseContentType, logBody);
 
             // Add Transaction Id to Response Header
             rspHeaders = loggerHelper.AddTransactionId("X-Moesif-Transaction-Id", transactionId, rspHeaders);

@@ -16,6 +16,7 @@ using Moesif.Middleware.Models;
 using Moesif.Api;
 using Newtonsoft.Json;
 using Assert = NUnit.Framework.Assert;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Moesif.NetCore.Test
 {
@@ -131,6 +132,12 @@ namespace Moesif.NetCore.Test
             return moesifEvent;
         };
 
+        public static string GenerateLargeResponseBody(int sizeInKB)
+        {
+            const string baseString = "This is a test string. ";
+            int repetitions = (sizeInKB * 1024) / baseString.Length; // Calculate repetitions needed for 600 MB
+            return new string('A', repetitions); // Create a large string filled with 'A's
+        }
         public static string LARGE_PAYLOAD = @"{
 	        ""_id"": ""HB9584KSHFU42OJP"",
 	        ""name"": ""Shea Bender"",
@@ -152,30 +159,42 @@ namespace Moesif.NetCore.Test
 	        ""verified"": false,
 	        ""salary"": 29367
         }";
-        public Mock<HttpContext> GetMockEvent(bool smallPayload)
+        public Mock<HttpContext> GetMockEvent(bool largeRequest, bool largeResponse)
         {
             MemoryStream requestMemoryStream = null;
             MemoryStream responseMemoryStream = null;
-            if (smallPayload)
+            // Create a JSON object
+            var jsonObject = new { Name = "John Doe", Age = 30 };
+            var jsonString = JsonConvert.SerializeObject(jsonObject);
+            // Set up the small request body
+            var byteArraySmall = Encoding.UTF8.GetBytes(jsonString);
+            var byteArrayLarge = Encoding.UTF8.GetBytes(LARGE_PAYLOAD);
+            if (largeRequest)
             {
-                // Create a JSON object
-                var jsonObject = new { Name = "John Doe", Age = 30 };
-                var jsonString = JsonConvert.SerializeObject(jsonObject);
-    
-                // Set up the request body
-                var byteArray = Encoding.UTF8.GetBytes(jsonString);
-                requestMemoryStream = new MemoryStream(byteArray);
-                responseMemoryStream = new MemoryStream(byteArray);
+                requestMemoryStream = new MemoryStream(byteArrayLarge);
             }
             else
             {
+                requestMemoryStream = new MemoryStream(byteArraySmall);
+            }
+            if(largeResponse)
+            {
                 // Set up the request body
-                var byteArray = Encoding.UTF8.GetBytes(LARGE_PAYLOAD);
-                requestMemoryStream = new MemoryStream(byteArray);
-                responseMemoryStream = new MemoryStream(byteArray);
+                string content = GenerateLargeResponseBody(2048);
+                var veryLargeJsonObject = new { Name = "John Doe", Age = 30, Description = $"content"};
+                var veryLargeJsonString = JsonConvert.SerializeObject(veryLargeJsonObject);
+                // Set up the small request body
+                var byteArrayVeryLarge = Encoding.UTF8.GetBytes(jsonString);
+                responseMemoryStream = new MemoryStream(byteArrayVeryLarge);
+            }
+            else
+            {
+                responseMemoryStream = new MemoryStream(byteArraySmall);
             }
 
-            string pathString = $"/42752/reviews?small_payload={smallPayload}";
+            int someId = (int) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 1000000);
+            bool smallPayload = !(largeRequest || largeResponse);
+            string pathString = $"/{someId}/reviews?small_payload={smallPayload}";
             
             var loggerMock = new Mock<ILogger>();
             var requestMock = new Mock<HttpRequest>();
@@ -205,12 +224,12 @@ namespace Moesif.NetCore.Test
         }
 
         public MoesifNetCoreTest() {
-            string moesifApplicationId = Environment.GetEnvironmentVariable("MOESIF_APPLICATION_ID") ?? "Your Moesif Application Id";
+            string moesifApplicationId = Environment.GetEnvironmentVariable("MOESIF_APPLICATION_ID") ?? "eyJhcHAiOiIyODU6NTY4IiwidmVyIjoiMi4xIiwib3JnIjoiNjQwOjEyOCIsImlhdCI6MTczMDQxOTIwMH0._5BdM_YZR3E0fbLX8QCx-JRX00nSu52kc3ZYt_wFHro";
             moesifOptions.Add("ApplicationId", moesifApplicationId);
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
-            moesifOptions.Add("RequestMaxBodySize", 100);
-            moesifOptions.Add("ResponseMaxBodySize", 100);
+            moesifOptions.Add("RequestMaxBodySize", 100000);
+            moesifOptions.Add("ResponseMaxBodySize", 100000);
             moesifOptions.Add("LogBodyOutgoing", true);
             moesifOptions.Add("ApiVersion", APP_VERSION);
             moesifOptions.Add("IdentifyUser", IdentifyUser);
@@ -231,15 +250,28 @@ namespace Moesif.NetCore.Test
         }
 
         [Fact]
-        public async Task It_Should_Log_Event()
+        public async Task It_Should_Log_Small_Event()
         {
-            bool smallPayload = true;
-            var contextMock = GetMockEvent(smallPayload);
+            bool largeRequest = false;
+            bool largeResponse = false;
+            var contextMock = GetMockEvent(largeRequest, largeResponse);
 
             await Task.Delay(1000);
             await moesifMiddleware.Invoke(contextMock.Object);
 
         }
+
+        //[Fact]
+        //public async Task It_Should_Log_Very_Large_Response_Event()
+        //{
+        //    bool largeRequest = false;
+        //    bool largeResponse = true;
+        //    var contextMock = GetMockEvent(largeRequest, largeResponse);
+
+        //    await Task.Delay(1000);
+        //    await moesifMiddleware.Invoke(contextMock.Object);
+
+        //}
 
         [Fact]
         public async Task It_Should_Log_Outgoing_Event()

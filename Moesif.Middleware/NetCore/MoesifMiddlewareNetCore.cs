@@ -16,6 +16,8 @@ using System.Collections.Concurrent;
 using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using Microsoft.Extensions.Logging;
+// using System.Reflection.PortableExecutable;
+
 //using Newtonsoft.Json;
 
 #if NETCORE
@@ -453,9 +455,14 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
-                // Create memory stream only if needed / logBody
                 StreamHelper outputCaptureOwin = null;
-                if (logBody)
+                // Create memory stream only if needed
+                //  - logBody is enabled &&
+                //  - content-length is less than maxBodySize
+                var reqHeaders = loggerHelper.ToHeaders(httpContext.Request.Headers, debug);
+                int parsedContentLength = 1000;
+                GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
+                if (logBody && parsedContentLength <= requestMaxBodySize)
                 {
                     var owinResponse = httpContext.Response;
                     outputCaptureOwin = new StreamHelper(owinResponse.Body);
@@ -596,6 +603,22 @@ namespace Moesif.Middleware.NetCore
 #endif
         }
 
+        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, out int parsedContentLength)
+        {
+            string contentEncoding = "";
+            parsedContentLength = 100000;
+
+            if (headers != null)
+            {
+                string contentLength = "";
+                headers.TryGetValue("Content-Length", out contentLength);
+                headers.TryGetValue("Content-Encoding", out contentEncoding);
+                int.TryParse(contentLength, out parsedContentLength);
+            }
+
+            return contentEncoding;
+        }
+
         public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
         {
             object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
@@ -624,17 +647,19 @@ namespace Moesif.Middleware.NetCore
             stopwatch.Restart();
 #endif
 
+            // Get Content-Length and Content-Encoding : TODO it may not be needed as we're no longer create memoryStream to read body if bodySize is large
+            // string contentEncoding = "";
+            // string contentLength = "";
+            int parsedContentLength = 100000;
+            // reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            // reqHeaders.TryGetValue("Content-Length", out contentLength);
+            // int.TryParse(contentLength, out parsedContentLength);
+            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);
+
             // RequestBody
             request.EnableBuffering(bufferThreshold: 1000000);
             string bodyAsText = null;
 
-            string contentEncoding = "";
-            string contentLength = "";
-            int parsedContentLength = 100000;
-
-            reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            reqHeaders.TryGetValue("Content-Length", out contentLength);
-            int.TryParse(contentLength, out parsedContentLength);
 #if MOESIF_INSTRUMENT
             setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
