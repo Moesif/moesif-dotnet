@@ -1,4 +1,4 @@
-﻿//#define MOESIF_INSTRUMENT
+﻿#define MOESIF_INSTRUMENT
 
 using System;
 using System.Diagnostics;
@@ -453,10 +453,14 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
-                var owinResponse = httpContext.Response;
-                StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
-                owinResponse.Body = outputCaptureOwin;
-
+                // Create memory stream only if needed / logBody
+                StreamHelper outputCaptureOwin = null;
+                if (logBody)
+                {
+                    var owinResponse = httpContext.Response;
+                    outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                    owinResponse.Body = outputCaptureOwin;
+                }
                 await _next(httpContext);
 
 #if MOESIF_INSTRUMENT
@@ -723,7 +727,7 @@ namespace Moesif.Middleware.NetCore
 
 
             var responseWrapper = new Tuple<object, string>(null, null);
-            if (logBody)
+            if (logBody && stream != null)
             {
                 // ResponseBody
                 string contentEncoding = "";

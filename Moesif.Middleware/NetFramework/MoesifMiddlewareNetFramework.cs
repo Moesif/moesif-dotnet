@@ -266,9 +266,14 @@ namespace Moesif.Middleware.NetFramework
             }
 
             // Buffering Owin response
-            IOwinResponse owinResponse = httpContext.Response;
-            StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
-            owinResponse.Body = outputCaptureOwin;
+            StreamHelper outputCaptureOwin = null;
+            // Create memory stream only if needed / logBody
+            if (logBody)
+            {
+                IOwinResponse owinResponse = httpContext.Response;
+                outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                owinResponse.Body = outputCaptureOwin;
+            }
 
             // Initialize Transaction Id
             string transactionId = null;
