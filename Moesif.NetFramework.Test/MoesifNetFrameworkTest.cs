@@ -126,8 +126,9 @@ namespace Moesif.NetFramework.Test
 
         public MoesifNetFrameworkTest()
         {
+            string moesifApplicationId = Environment.GetEnvironmentVariable("MOESIF_APPLICATION_ID") ?? "<Your-Moesif-Application-Id>";
 
-            moesifOptions.Add("ApplicationId", "Your Moesif Application Id");
+            moesifOptions.Add("ApplicationId", moesifApplicationId);
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
             moesifOptions.Add("LogBodyOutgoing", true);
