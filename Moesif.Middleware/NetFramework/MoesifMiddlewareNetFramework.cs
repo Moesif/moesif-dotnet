@@ -268,13 +268,8 @@ namespace Moesif.Middleware.NetFramework
             // Buffering Owin response
             StreamHelper outputCaptureOwin = null;
 
-            // Create memory stream only if needed
-            //  - logBody is enabled &&
-            //  - content-length is less than maxBodySize
-            var reqHeaders = loggerHelper.ToHeaders(httpContext.Request.Headers, debug);
-            int parsedContentLength = 1000;
-            GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
-            if (logBody && parsedContentLength <= requestMaxBodySize)
+            // Create memory stream only if logBody is enabled
+            if (logBody)
             {
                 IOwinResponse owinResponse = httpContext.Response;
                 outputCaptureOwin = new StreamHelper(owinResponse.Body);
@@ -431,7 +426,7 @@ namespace Moesif.Middleware.NetFramework
             // Request headers
             var reqHeaders = loggerHelper.ToHeaders(request.Headers, debug);
 
-            // Get Content-Length and Content-Encoding : TODO it may not be needed as we're no longer create memoryStream to read body if bodySize is large
+            // Get Content-Length and Content-Encoding
             // string contentEncoding = "";
             // string contentLength = "";
             int parsedContentLength = 100000;
