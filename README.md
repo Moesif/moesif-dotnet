@@ -40,7 +40,7 @@ Install-Package Moesif.Middleware
 ### Versions & Target Frameworks.
 | Version   | Target Framework |
 | --------- | ------------------- |
-|  3.1.0 or above | .NET45 / .NET6 or above |
+|  3.1.0 or above | .NET46 / .NET6 or above |
 |  1.5.3 or below | .NET45 / .NET Core 2 or below |
 
 Note: __We have deprecated support for .NET Core 2 or below__
