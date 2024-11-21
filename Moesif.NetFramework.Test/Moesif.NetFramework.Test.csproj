@@ -8,9 +8,13 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Moesif.NetFramework.Test</RootNamespace>
     <AssemblyName>Moesif.NetFramework.Test</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>	
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net4.6</TargetFramework>
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -35,6 +39,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <!--    <PackageReference Include="Moesif.Middleware" Version="1.5.1" />-->
+    <!--    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">-->
+    <!--      <Project>{c5630a28-3d85-4865-9467-b4682ee18060}</Project>-->
+    <!--      <Name>Moesif.Middleware</Name>-->
+    <!--    </ProjectReference>-->
+    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj">
+      <Project>{2d13ad9d-3a88-4c50-b1bc-4a0bc09e6884}</Project>
+      <Name>Moesif.Api</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
       <Project>{c5630a28-3d85-4865-9467-b4682ee18060}</Project>
       <Name>Moesif.Middleware</Name>
@@ -80,9 +93,6 @@
     <Reference Include="Microsoft.Owin, Version=4.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Owin.4.2.2\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
-    <Reference Include="Moesif.Api, Version=2.0.9.0, Culture=neutral, PublicKeyToken=b3d293efeab4ba1f, processorArchitecture=MSIL">
-      <HintPath>..\packages\Moesif.Api.2.0.9\lib\net45\Moesif.Api.dll</HintPath>
-    </Reference>
     <Reference Include="Moq, Version=4.12.0.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <HintPath>..\packages\Moq.4.12.0\lib\net45\Moq.dll</HintPath>
     </Reference>
@@ -117,8 +127,8 @@
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
-    <Reference Include="unirest-net, Version=1.0.1.26, Culture=neutral, PublicKeyToken=eaa17fee3fdc2e45, processorArchitecture=MSIL">
-      <HintPath>..\packages\Unirest-APIMATIC.1.0.1.26\lib\net45\unirest-net.dll</HintPath>
+    <Reference Include="unirest-net">
+      <HintPath>..\packages\Unirest-APIMATIC.1.0.1.27\lib\net45\unirest-net.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

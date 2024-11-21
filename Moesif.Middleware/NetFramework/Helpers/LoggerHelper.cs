@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿// using Newtonsoft.Json;
+// using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -15,6 +15,7 @@ using Moesif.Middleware.Helpers;
 using Microsoft.Extensions.Logging;
 
 #if NET461
+using System.Text.Json;
 using Microsoft.Owin;
 using Moesif.Middleware.NetFramework.Helpers;
 
@@ -137,14 +138,15 @@ namespace Moesif.Middleware.NetFramework.Helpers
         {
             if (logBody && filter != null)
             {
-                return filter.ReadStream(contentEncoding);
+                string text = filter.ReadStream(contentEncoding);
+                return text;
             }
             return null;
         }
 
-        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride)
+        public async  Task<string> GetRequestContents(IOwinRequest request, string contentEncoding, int bufferSize, bool disableStreamOverride, bool logBody)
         {
-            if (request == null || request.Body == null || !request.Body.CanRead)
+            if (!logBody || request == null || request.Body == null || !request.Body.CanRead)
             {
                 return string.Empty;
             }
@@ -180,7 +182,7 @@ namespace Moesif.Middleware.NetFramework.Helpers
                 {
                     try
                     {
-                        return new Tuple<object, string>(JToken.Parse(data), null);
+                        return new Tuple<object, string>(JsonDocument.Parse(data), null);
                     }
                     catch (Exception)
                     {

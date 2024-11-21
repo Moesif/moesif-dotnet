@@ -10,10 +10,13 @@ using Xunit;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Net;
+using System.Text;
 using Moesif.Api.Models;
 using Moesif.Middleware.Models;
 using Moesif.Api;
+using Newtonsoft.Json;
 using Assert = NUnit.Framework.Assert;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Moesif.NetCore.Test
 {
@@ -54,8 +57,9 @@ namespace Moesif.NetCore.Test
     };
 
 
-    public class MoesifNetCoreTest{
-
+    public class MoesifNetCoreTest
+    {
+        public static string APP_VERSION = "3.0.11";
         public Dictionary<string, object> moesifOptions = new Dictionary<string, object>();
 
         public MoesifMiddleware moesifMiddleware;
@@ -128,13 +132,106 @@ namespace Moesif.NetCore.Test
             return moesifEvent;
         };
 
-        public MoesifNetCoreTest() {
+        public static string GenerateLargeResponseBody(int sizeInKB)
+        {
+            const string baseString = "This is a test string. ";
+            int repetitions = (sizeInKB * 1024) / baseString.Length; // Calculate repetitions needed for 600 MB
+            return new string('A', repetitions); // Create a large string filled with 'A's
+        }
+        public static string LARGE_PAYLOAD = @"{
+	        ""_id"": ""HB9584KSHFU42OJP"",
+	        ""name"": ""Shea Bender"",
+	        ""dob"": ""2016-07-09"",
+	        ""address"": {
+		        ""street"": ""1390 Franklin"",
+		        ""town"": ""Kingussie"",
+		        ""postode"": ""WR4 3FD""
+	        },
+	        ""telephone"": ""+254-9362-240-050"",
+	        ""pets"": [
+		        ""SUGAR"",
+		        ""Teddy""
+	        ],
+	        ""score"": 4.8,
+	        ""email"": ""danae9008@yours.com"",
+	        ""url"": ""https://consortium.com"",
+	        ""description"": ""sticky contracts jose pills democratic ar perspectives education jim boot bold compression hence distinct usd disturbed art read religious songs"",
+	        ""verified"": false,
+	        ""salary"": 29367
+        }";
+        public Mock<HttpContext> GetMockEvent(bool largeRequest, bool largeResponse)
+        {
+            MemoryStream requestMemoryStream = null;
+            MemoryStream responseMemoryStream = null;
+            // Create a JSON object
+            var jsonObject = new { Name = "John Doe", Age = 30 };
+            var jsonString = JsonConvert.SerializeObject(jsonObject);
+            // Set up the small request body
+            var byteArraySmall = Encoding.UTF8.GetBytes(jsonString);
+            var byteArrayLarge = Encoding.UTF8.GetBytes(LARGE_PAYLOAD);
+            if (largeRequest)
+            {
+                requestMemoryStream = new MemoryStream(byteArrayLarge);
+            }
+            else
+            {
+                requestMemoryStream = new MemoryStream(byteArraySmall);
+            }
+            if(largeResponse)
+            {
+                // Set up the request body
+                string content = GenerateLargeResponseBody(2048);
+                var veryLargeJsonObject = new { Name = "John Doe", Age = 30, Description = $"content"};
+                var veryLargeJsonString = JsonConvert.SerializeObject(veryLargeJsonObject);
+                // Set up the small request body
+                var byteArrayVeryLarge = Encoding.UTF8.GetBytes(jsonString);
+                responseMemoryStream = new MemoryStream(byteArrayVeryLarge);
+            }
+            else
+            {
+                responseMemoryStream = new MemoryStream(byteArraySmall);
+            }
 
-            moesifOptions.Add("ApplicationId", "Your Moesif Application Id");
+            int someId = (int) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 1000000);
+            bool smallPayload = !(largeRequest || largeResponse);
+            string pathString = $"/{someId}/reviews?small_payload={smallPayload}";
+            
+            var loggerMock = new Mock<ILogger>();
+            var requestMock = new Mock<HttpRequest>();
+            requestMock.Setup(x => x.Scheme).Returns("https");
+            requestMock.Setup(x => x.Host).Returns(new HostString("acmeinc.com"));
+            requestMock.Setup(x => x.Path).Returns(new PathString(pathString));
+            requestMock.Setup(x => x.PathBase).Returns(new PathString("/items"));
+            requestMock.Setup(x => x.Method).Returns("GET");
+            requestMock.Setup(x => x.Body).Returns(requestMemoryStream);
+            requestMock.Setup(x => x.QueryString).Returns(new QueryString("?key=value"));
+            requestMock.Setup(x => x.HttpContext.Connection.RemoteIpAddress).Returns(IPAddress.Parse("219.148.232.216"));
+            requestMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
+            requestMock.Setup(x => x.Headers.Add("User-Agent", "MoesifNetCoreTest-" + APP_VERSION));
+
+            var responseMock = new Mock<HttpResponse>();
+            responseMock.Setup(x => x.StatusCode).Returns(200);
+            responseMock.Setup(x => x.ContentType).Returns("application/json");
+            responseMock.Setup(x => x.Body).Returns(responseMemoryStream);
+            responseMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
+
+
+            var contextMock = new Mock<HttpContext>();
+            contextMock.Setup(x => x.Request).Returns(requestMock.Object);
+            contextMock.Setup(x => x.Response).Returns(responseMock.Object);
+
+            return contextMock;
+        }
+
+        public MoesifNetCoreTest() {
+            string moesifApplicationId = Environment.GetEnvironmentVariable("MOESIF_APPLICATION_ID") ?? "eyJhcHAiOiIyODU6NTY4IiwidmVyIjoiMi4xIiwib3JnIjoiNjQwOjEyOCIsImlhdCI6MTczMDQxOTIwMH0._5BdM_YZR3E0fbLX8QCx-JRX00nSu52kc3ZYt_wFHro";
+            moesifOptions.Add("ApplicationId", moesifApplicationId);
             moesifOptions.Add("LocalDebug", true);
             moesifOptions.Add("LogBody", true);
+            moesifOptions.Add("RequestMaxBodySize", 100000);
+            moesifOptions.Add("ResponseMaxBodySize", 100000);
             moesifOptions.Add("LogBodyOutgoing", true);
-            moesifOptions.Add("ApiVersion", "1.0.0");
+            moesifOptions.Add("ApiVersion", APP_VERSION);
             moesifOptions.Add("IdentifyUser", IdentifyUser);
             moesifOptions.Add("IdentifyCompany", IdentifyCompany);
             moesifOptions.Add("GetMetadata", GetMetadata);
@@ -153,35 +250,28 @@ namespace Moesif.NetCore.Test
         }
 
         [Fact]
-        public async Task It_Should_Log_Event()
+        public async Task It_Should_Log_Small_Event()
         {
-            var loggerMock = new Mock<ILogger>();
-            var requestMock = new Mock<HttpRequest>();
-            requestMock.Setup(x => x.Scheme).Returns("https");
-            requestMock.Setup(x => x.Host).Returns(new HostString("acmeinc.com"));
-            requestMock.Setup(x => x.Path).Returns(new PathString("/42752/reviews"));
-            requestMock.Setup(x => x.PathBase).Returns(new PathString("/items"));
-            requestMock.Setup(x => x.Method).Returns("GET");
-            requestMock.Setup(x => x.Body).Returns(new MemoryStream());
-            requestMock.Setup(x => x.QueryString).Returns(new QueryString("?key=value"));
-            requestMock.Setup(x => x.HttpContext.Connection.RemoteIpAddress).Returns(IPAddress.Parse("219.148.232.216"));
-            requestMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
-
-            var responseMock = new Mock<HttpResponse>();
-            responseMock.Setup(x => x.StatusCode).Returns(200);
-            responseMock.Setup(x => x.ContentType).Returns("application/json");
-            responseMock.Setup(x => x.Body).Returns(new MemoryStream(System.Text.Encoding.Unicode.GetBytes("{ \"key\": \"value\"}")));
-            responseMock.Setup(x => x.Headers.Add("Content-Type", "application/json"));
-
-
-            var contextMock = new Mock<HttpContext>();
-            contextMock.Setup(x => x.Request).Returns(requestMock.Object);
-            contextMock.Setup(x => x.Response).Returns(responseMock.Object);
+            bool largeRequest = false;
+            bool largeResponse = false;
+            var contextMock = GetMockEvent(largeRequest, largeResponse);
 
             await Task.Delay(1000);
             await moesifMiddleware.Invoke(contextMock.Object);
 
         }
+
+        //[Fact]
+        //public async Task It_Should_Log_Very_Large_Response_Event()
+        //{
+        //    bool largeRequest = false;
+        //    bool largeResponse = true;
+        //    var contextMock = GetMockEvent(largeRequest, largeResponse);
+
+        //    await Task.Delay(1000);
+        //    await moesifMiddleware.Invoke(contextMock.Object);
+
+        //}
 
         [Fact]
         public async Task It_Should_Log_Outgoing_Event()
@@ -335,7 +425,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Return_Sampling_rate_From_Regex()
         {
-            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 80 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[{'conditions':[{'path':'request.route','value':'/.*'}],'sample_rate':80}],'billing_config_jsons':{}}";
+            var appConfigJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":95,""block_bot_traffic"":false,""user_sample_rate"":{""user_1234"": 80 },""company_sample_rate"":{},""user_rules"":{""12345"":[{""rules"":""62fd061e51f905712d73f72d""}]},""company_rules"":{""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[{""conditions"":[{""path"":""request.route"",""value"":""/.*""}],""sample_rate"":80}],""billing_config_jsons"":{}
+            }";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
             var eventReq = new EventRequestModel()
             {
@@ -377,7 +469,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Return_Smallest_Sampling_rate_From_multi_Regex_Match()
         {
-            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 80 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[{'conditions':[{'path':'request.route','value':'/.*'}],'sample_rate':80},{\"conditions\":[{\"path\":\"response.status\",\"value\":\"200\"}],\"sample_rate\":50}],'billing_config_jsons':{}}";
+            var appConfigJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":95,""block_bot_traffic"":false,""user_sample_rate"":{""user_1234"": 80 },""company_sample_rate"":{},""user_rules"":{""12345"":[{""rules"":""62fd061e51f905712d73f72d""}]},""company_rules"":{""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[{""conditions"":[{""path"":""request.route"",""value"":""/.*""}],""sample_rate"":80},{""conditions"":[{""path"":""response.status"",""value"":""200""}],""sample_rate"":50}],""billing_config_jsons"":{}
+            }";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
             var eventReq = new EventRequestModel()
             {
@@ -420,7 +514,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Return_Sampling_rate_From_User()
         {
-            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{'user_1234': 70 },'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfigJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":95,""block_bot_traffic"":false,""user_sample_rate"":{""user_1234"": 70 },""company_sample_rate"":{},""user_rules"":{""12345"":[{""rules"":""62fd061e51f905712d73f72d""}]},""company_rules"":{""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[],""billing_config_jsons"":{}
+            }";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
             var eventReq = new EventRequestModel()
             {
@@ -463,7 +559,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Return_Sampling_rate_From_Company()
         {
-            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{},'company_sample_rate':{'company_1234': 60},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfigJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":95,""block_bot_traffic"":false,""user_sample_rate"":{},""company_sample_rate"":{""company_1234"": 60},""user_rules"":{""12345"":[{""rules"":""62fd061e51f905712d73f72d""}]},""company_rules"":{""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[],""billing_config_jsons"":{}
+            }";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
             var eventReq = new EventRequestModel()
             {
@@ -506,7 +604,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Return_Sampling_rate_From_Global()
         {
-            var appConfigJson = "{'org_id':'421:67','app_id':'46:73','sample_rate':95,'block_bot_traffic':false,'user_sample_rate':{},'company_sample_rate':{},'user_rules':{'12345':[{'rules':'62fd061e51f905712d73f72d'}]},'company_rules':{'sean-company-6':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'67890':[{'rules':'62fe6f3bf199ee4cf35762d7'}],'sean-company-5':[{'rules':'62fe6f3bf199ee4cf35762d7'}]},'ip_addresses_blocked_by_name':{},'regex_config':[],'billing_config_jsons':{}}";
+            var appConfigJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":95,""block_bot_traffic"":false,""user_sample_rate"":{},""company_sample_rate"":{},""user_rules"":{""12345"":[{""rules"":""62fd061e51f905712d73f72d""}]},""company_rules"":{""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}],""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[],""billing_config_jsons"":{}
+            }";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(appConfigJson);
             var eventReq = new EventRequestModel()
             {
@@ -555,7 +655,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Block_On_User_rule()
         {
-            var configJson = "{\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"sample_rate\":99,\"block_bot_traffic\":false,\"user_sample_rate\":{\"azure_user_id\":100,\"tyk-bearer-token\":100,\"basic-auth-test\":100,\"abc\":60,\"masked_user_id\":100,\"keyur@moesif.com\":100,\"385\":99,\"tyk-basic-auth\":100,\"outgoing_user_id\":90,\"tyk-user\":100,\"keyur\":100,\"nginxapiuser\":95,\"Jason\":100,\"8ce866a1-1ba1-47ec-9130-f046bd8e3df5\":99,\"1234\":0,\"tyk-jwt-token\":100,\"jwt-token\":100,\"2d45bf73-bfa2-4b0a-918a-ee4010dfb5a3\":92,\"dev_user_id\":100,\"12345\":100,\"7ab8b13c-866d-4587-b99d-a8166391171b\":94,\"OAuth\":100,\"my_user_id\":97,\"bearer-token\":100,\"deva-1\":70},\"company_sample_rate\":{\"67890\":98,\"34\":100,\"12\":100,\"8\":100,\"678\":100,\"40\":100,\"9\":100,\"26\":100,\"123\":82,\"37\":100,\"13\":100,\"46\":100,\"24\":100,\"16\":100,\"48\":100,\"43\":100,\"32\":100,\"36\":100,\"39\":100,\"47\":100,\"20\":100,\"27\":100,\"2\":100,\"azure_company_id\":100,\"18\":100,\"3\":100,\"undefined\":80},\"user_rules\":{\"masked_user_id\":[{\"rules\":\"5f4910ab5f09092bd0e4ec79\",\"values\":{\"8\":\"body.phone\",\"4\":\"San Francisco\",\"5\":\"body.title\",\"1\":\"company_id\",\"0\":\"masked_user_id\",\"2\":\"name\",\"7\":\"body.age\",\"3\":\"2021-01-08T19:05:38.482Z\"}}]},\"company_rules\":{\"tyk-company\":[{\"rules\":\"5f49118a5f09092bd0e4ec7a\",\"values\":{\"0\":\"tyk-company\",\"1\":\"2020-11-02T20:22:42.845Z\",\"2\":\"body.age\",\"3\":\"campaign.utm_term\"}}],\"azure_company_id\":[{\"rules\":\"5f49118a5f09092bd0e4ec7a\",\"values\":{\"0\":\"azure_company_id\",\"1\":\"2020-08-28T15:11:32.402Z\",\"2\":\"42\",\"3\":\"campaign.utm_term\"}}]},\"ip_addresses_blocked_by_name\":{},\"regex_config\":[],\"billing_config_jsons\":{}}";
+            var configJson = @"{
+                ""org_id"":""640:128"",""app_id"":""617:473"",""sample_rate"":99,""block_bot_traffic"":false,""user_sample_rate"":{""azure_user_id"":100,""tyk-bearer-token"":100,""basic-auth-test"":100,""abc"":60,""masked_user_id"":100,""keyur@moesif.com"":100,""385"":99,""tyk-basic-auth"":100,""outgoing_user_id"":90,""tyk-user"":100,""keyur"":100,""nginxapiuser"":95,""Jason"":100,""8ce866a1-1ba1-47ec-9130-f046bd8e3df5"":99,""1234"":0,""tyk-jwt-token"":100,""jwt-token"":100,""2d45bf73-bfa2-4b0a-918a-ee4010dfb5a3"":92,""dev_user_id"":100,""12345"":100,""7ab8b13c-866d-4587-b99d-a8166391171b"":94,""OAuth"":100,""my_user_id"":97,""bearer-token"":100,""deva-1"":70},""company_sample_rate"":{""67890"":98,""34"":100,""12"":100,""8"":100,""678"":100,""40"":100,""9"":100,""26"":100,""123"":82,""37"":100,""13"":100,""46"":100,""24"":100,""16"":100,""48"":100,""43"":100,""32"":100,""36"":100,""39"":100,""47"":100,""20"":100,""27"":100,""2"":100,""azure_company_id"":100,""18"":100,""3"":100,""undefined"":80},""user_rules"":{""masked_user_id"":[{""rules"":""5f4910ab5f09092bd0e4ec79"",""values"":{""8"":""body.phone"",""4"":""San Francisco"",""5"":""body.title"",""1"":""company_id"",""0"":""masked_user_id"",""2"":""name"",""7"":""body.age"",""3"":""2021-01-08T19:05:38.482Z""}}]},""company_rules"":{""tyk-company"":[{""rules"":""5f49118a5f09092bd0e4ec7a"",""values"":{""0"":""tyk-company"",""1"":""2020-11-02T20:22:42.845Z"",""2"":""body.age"",""3"":""campaign.utm_term""}}],""azure_company_id"":[{""rules"":""5f49118a5f09092bd0e4ec7a"",""values"":{""0"":""azure_company_id"",""1"":""2020-08-28T15:11:32.402Z"",""2"":""42"",""3"":""campaign.utm_term""}}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[],""billing_config_jsons"":{}
+            }";
             var governaceJson = "[{\"_id\":\"5f4910ab5f09092bd0e4ec79\",\"created_at\":\"2020-08-28T14:11:55.117\",\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"name\":\"First User Rule\",\"block\":true,\"type\":\"user\",\"variables\":[{\"name\":\"0\",\"path\":\"user_id\"},{\"name\":\"1\",\"path\":\"company_id\"},{\"name\":\"2\",\"path\":\"name\"},{\"name\":\"3\",\"path\":\"created\"},{\"name\":\"4\",\"path\":\"geo_ip.city_name\"},{\"name\":\"5\",\"path\":\"body.title\"},{\"name\":\"7\",\"path\":\"body.age\"},{\"name\":\"8\",\"path\":\"body.phone\"}],\"response\":{\"status\":400,\"headers\":{\"X-Company-Id\":\"{{1}}\",\"X-City\":\"{{4}}\",\"X-Created\":\"{{3}}\",\"X-Avg\":\"{{7}} / {{8}}\",\"X-User-Id\":\"{{0}}\"},\"body\":{\"test\":{\"nested\":{\"msg\":\"At {{4}} on {{3}} we {{2}} did this - {{5}}\"}}}}},{\"_id\":\"5f49118a5f09092bd0e4ec7a\",\"created_at\":\"2020-08-28T14:15:38.611\",\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"name\":\"First Company Rule\",\"block\":true,\"type\":\"company\",\"variables\":[{\"name\":\"0\",\"path\":\"company_id\"},{\"name\":\"1\",\"path\":\"created\"},{\"name\":\"2\",\"path\":\"body.age\"},{\"name\":\"3\",\"path\":\"campaign.utm_term\"}],\"response\":{\"status\":500,\"headers\":{\"X-Company-Id\":\"{{0}}\",\"X-Created\":\"{{1}}\",\"X-Age\":\"{{2}}\",\"X-Term\":\"{{3}}\"},\"body\":\"This is a string example for - {{0}}, at {{1}}\"}}]";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(configJson);
             var governace = Governance.fromJson(governaceJson);
@@ -589,7 +691,9 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_Should_Block_On_Company_rule()
         {
-            var configJson = "{\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"sample_rate\":99,\"block_bot_traffic\":false,\"user_sample_rate\":{\"azure_user_id\":100,\"tyk-bearer-token\":100,\"basic-auth-test\":100,\"abc\":60,\"masked_user_id\":100,\"keyur@moesif.com\":100,\"385\":99,\"tyk-basic-auth\":100,\"outgoing_user_id\":90,\"tyk-user\":100,\"keyur\":100,\"nginxapiuser\":95,\"Jason\":100,\"8ce866a1-1ba1-47ec-9130-f046bd8e3df5\":99,\"1234\":0,\"tyk-jwt-token\":100,\"jwt-token\":100,\"2d45bf73-bfa2-4b0a-918a-ee4010dfb5a3\":92,\"dev_user_id\":100,\"12345\":100,\"7ab8b13c-866d-4587-b99d-a8166391171b\":94,\"OAuth\":100,\"my_user_id\":97,\"bearer-token\":100,\"deva-1\":70},\"company_sample_rate\":{\"67890\":98,\"34\":100,\"12\":100,\"8\":100,\"678\":100,\"40\":100,\"9\":100,\"26\":100,\"123\":82,\"37\":100,\"13\":100,\"46\":100,\"24\":100,\"16\":100,\"48\":100,\"43\":100,\"32\":100,\"36\":100,\"39\":100,\"47\":100,\"20\":100,\"27\":100,\"2\":100,\"azure_company_id\":100,\"18\":100,\"3\":100,\"undefined\":80},\"user_rules\":{\"masked_user_id\":[{\"rules\":\"5f4910ab5f09092bd0e4ec79\",\"values\":{\"8\":\"body.phone\",\"4\":\"San Francisco\",\"5\":\"body.title\",\"1\":\"company_id\",\"0\":\"masked_user_id\",\"2\":\"name\",\"7\":\"body.age\",\"3\":\"2021-01-08T19:05:38.482Z\"}}]},\"company_rules\":{\"tyk-company\":[{\"rules\":\"5f49118a5f09092bd0e4ec7a\",\"values\":{\"0\":\"tyk-company\",\"1\":\"2020-11-02T20:22:42.845Z\",\"2\":\"body.age\",\"3\":\"campaign.utm_term\"}}],\"azure_company_id\":[{\"rules\":\"5f49118a5f09092bd0e4ec7a\",\"values\":{\"0\":\"azure_company_id\",\"1\":\"2020-08-28T15:11:32.402Z\",\"2\":\"42\",\"3\":\"campaign.utm_term\"}}]},\"ip_addresses_blocked_by_name\":{},\"regex_config\":[],\"billing_config_jsons\":{}}";
+            var configJson = @"{
+                ""org_id"":""640:128"",""app_id"":""617:473"",""sample_rate"":99,""block_bot_traffic"":false,""user_sample_rate"":{""azure_user_id"":100,""tyk-bearer-token"":100,""basic-auth-test"":100,""abc"":60,""masked_user_id"":100,""keyur@moesif.com"":100,""385"":99,""tyk-basic-auth"":100,""outgoing_user_id"":90,""tyk-user"":100,""keyur"":100,""nginxapiuser"":95,""Jason"":100,""8ce866a1-1ba1-47ec-9130-f046bd8e3df5"":99,""1234"":0,""tyk-jwt-token"":100,""jwt-token"":100,""2d45bf73-bfa2-4b0a-918a-ee4010dfb5a3"":92,""dev_user_id"":100,""12345"":100,""7ab8b13c-866d-4587-b99d-a8166391171b"":94,""OAuth"":100,""my_user_id"":97,""bearer-token"":100,""deva-1"":70},""company_sample_rate"":{""67890"":98,""34"":100,""12"":100,""8"":100,""678"":100,""40"":100,""9"":100,""26"":100,""123"":82,""37"":100,""13"":100,""46"":100,""24"":100,""16"":100,""48"":100,""43"":100,""32"":100,""36"":100,""39"":100,""47"":100,""20"":100,""27"":100,""2"":100,""azure_company_id"":100,""18"":100,""3"":100,""undefined"":80},""user_rules"":{""masked_user_id"":[{""rules"":""5f4910ab5f09092bd0e4ec79"",""values"":{""8"":""body.phone"",""4"":""San Francisco"",""5"":""body.title"",""1"":""company_id"",""0"":""masked_user_id"",""2"":""name"",""7"":""body.age"",""3"":""2021-01-08T19:05:38.482Z""}}]},""company_rules"":{""tyk-company"":[{""rules"":""5f49118a5f09092bd0e4ec7a"",""values"":{""0"":""tyk-company"",""1"":""2020-11-02T20:22:42.845Z"",""2"":""body.age"",""3"":""campaign.utm_term""}}],""azure_company_id"":[{""rules"":""5f49118a5f09092bd0e4ec7a"",""values"":{""0"":""azure_company_id"",""1"":""2020-08-28T15:11:32.402Z"",""2"":""42"",""3"":""campaign.utm_term""}}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[],""billing_config_jsons"":{}
+            }";
             var governaceJson = "[{\"_id\":\"5f4910ab5f09092bd0e4ec79\",\"created_at\":\"2020-08-28T14:11:55.117\",\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"name\":\"First User Rule\",\"block\":true,\"type\":\"user\",\"variables\":[{\"name\":\"0\",\"path\":\"user_id\"},{\"name\":\"1\",\"path\":\"company_id\"},{\"name\":\"2\",\"path\":\"name\"},{\"name\":\"3\",\"path\":\"created\"},{\"name\":\"4\",\"path\":\"geo_ip.city_name\"},{\"name\":\"5\",\"path\":\"body.title\"},{\"name\":\"7\",\"path\":\"body.age\"},{\"name\":\"8\",\"path\":\"body.phone\"}],\"response\":{\"status\":400,\"headers\":{\"X-Company-Id\":\"{{1}}\",\"X-City\":\"{{4}}\",\"X-Created\":\"{{3}}\",\"X-Avg\":\"{{7}} / {{8}}\",\"X-User-Id\":\"{{0}}\"},\"body\":{\"test\":{\"nested\":{\"msg\":\"At {{4}} on {{3}} we {{2}} did this - {{5}}\"}}}}},{\"_id\":\"5f49118a5f09092bd0e4ec7a\",\"created_at\":\"2020-08-28T14:15:38.611\",\"org_id\":\"640:128\",\"app_id\":\"617:473\",\"name\":\"First Company Rule\",\"block\":true,\"type\":\"company\",\"variables\":[{\"name\":\"0\",\"path\":\"company_id\"},{\"name\":\"1\",\"path\":\"created\"},{\"name\":\"2\",\"path\":\"body.age\"},{\"name\":\"3\",\"path\":\"campaign.utm_term\"}],\"response\":{\"status\":500,\"headers\":{\"X-Company-Id\":\"{{0}}\",\"X-Created\":\"{{1}}\",\"X-Age\":\"{{2}}\",\"X-Term\":\"{{3}}\"},\"body\":\"This is a string example for - {{0}}, at {{1}}\"}}]";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(configJson);
             var governace = Governance.fromJson(governaceJson);
@@ -622,8 +726,10 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_should_block_on_regex_rule()
         {
+            var configJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":100,""block_bot_traffic"":false,""user_sample_rate"":{""sean-user-11"":70,""sean-user-10"":70,""sean-user-9"":70},""company_sample_rate"":{""sean-company-5"":50,""67890"":50,""sean-company-9"":50,""sean-company-6"":50,""sean-company-10"":50,""sean-company-11"":50,""company_1234"":50},""user_rules"":{""sean-user-11"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-11""}}],""sean-user-10"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-10""}}],""sean-user-9"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-9""}}]},""company_rules"":{""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-9"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-10"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-11"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""company_1234"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[{""conditions"":[{""path"":""request.verb"",""value"":""post""}],""sample_rate"":20}],""billing_config_jsons"":{}
+            }";
             var governanceJson = "[{\"_id\":\"62f69205ec701a4f0400a377\",\"created_at\":\"2022-08-12T17:46:45.670\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"my gov\",\"block\":true,\"type\":\"company\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"POST\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"ok\":1}}},{\"_id\":\"62f6c661ac3331776950eba1\",\"created_at\":\"2022-08-12T21:30:09.523\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"my regex\",\"block\":true,\"type\":\"regex\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"POST\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"ok\":1}}},{\"_id\":\"62fd061e51f905712d73f72d\",\"created_at\":\"2022-08-17T15:15:42.909\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"user\",\"block\":true,\"type\":\"user\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.body.operationName\",\"value\":\"Get.*\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"error\":\"this is a test\"}}},{\"_id\":\"62fe6f3bf199ee4cf35762d7\",\"created_at\":\"2022-08-18T16:56:27.767\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"company rule 2\",\"block\":true,\"type\":\"company\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"DELETE\"}]}],\"response\":{\"status\":401,\"headers\":{},\"body\":{\"error\":\"test\"}}},{\"_id\":\"62ffc2e77a9aca1bfdefc3e3\",\"created_at\":\"2022-08-19T17:05:43.321\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"graphql2\",\"block\":true,\"type\":\"regex\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.body.query\",\"value\":\".*Get.*\"}]}],\"response\":{\"status\":401,\"headers\":{},\"body\":{\"test\":\"graph2\"}}},{\"_id\":\"62fff3367a9aca1bfdefc3f1\",\"created_at\":\"2022-08-19T20:31:50.765\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"company rule no regex\",\"block\":true,\"type\":\"company\",\"regex_config\":[],\"response\":{\"status\":402,\"headers\":{},\"body\":{\"status\":\"make payment\"}}},{\"_id\":\"6317c7ba63501c63e3ff4ee0\",\"created_at\":\"2022-09-06T22:20:42.060\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"user rule\",\"block\":true,\"type\":\"user\",\"variables\":[{\"name\":\"0\",\"path\":\"cohort_names\"},{\"name\":\"1\",\"path\":\"created\"},{\"name\":\"2\",\"path\":\"identified_user_id\"},{\"name\":\"3\",\"path\":\"company_id\"}],\"regex_config\":[],\"response\":{\"status\":204,\"headers\":{\"my header\":\"{{0}}\",\"my header2\":\"{{1}}\",\"header3\":\"{{2}}\"},\"body\":{\"yes\":true,\"{{3}}\":\"yes\"}}}]";
-            var configJson = "{\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"sample_rate\":100,\"block_bot_traffic\":false,\"user_sample_rate\":{\"sean-user-11\":70,\"sean-user-10\":70,\"sean-user-9\":70},\"company_sample_rate\":{\"sean-company-5\":50,\"67890\":50,\"sean-company-9\":50,\"sean-company-6\":50,\"sean-company-10\":50,\"sean-company-11\":50,\"company_1234\":50},\"user_rules\":{\"sean-user-11\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-11\"}}],\"sean-user-10\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-10\"}}],\"sean-user-9\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-9\"}}]},\"company_rules\":{\"sean-company-5\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"67890\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-9\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-6\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-10\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-11\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"company_1234\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}]},\"ip_addresses_blocked_by_name\":{},\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"post\"}],\"sample_rate\":20}],\"billing_config_jsons\":{}}";
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(configJson);
             var governace = Governance.fromJson(governanceJson);
 
@@ -722,8 +828,19 @@ namespace Moesif.NetCore.Test
         [Fact]
         public void It_should_block_on_regex_rule_when_no_entity_rule_match()
         {
-            var governanceJson = "[{\"_id\":\"62f69205ec701a4f0400a377\",\"created_at\":\"2022-08-12T17:46:45.670\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"my gov\",\"block\":true,\"type\":\"company\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"POST\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"ok\":1}}},{\"_id\":\"62f6c661ac3331776950eba1\",\"created_at\":\"2022-08-12T21:30:09.523\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"my regex\",\"block\":true,\"type\":\"regex\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"POST\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"ok\":1}}},{\"_id\":\"62fd061e51f905712d73f72d\",\"created_at\":\"2022-08-17T15:15:42.909\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"user\",\"block\":true,\"type\":\"user\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.body.operationName\",\"value\":\"Get.*\"}]}],\"response\":{\"status\":203,\"headers\":{},\"body\":{\"error\":\"this is a test\"}}},{\"_id\":\"62fe6f3bf199ee4cf35762d7\",\"created_at\":\"2022-08-18T16:56:27.767\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"company rule 2\",\"block\":true,\"type\":\"company\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"DELETE\"}]}],\"response\":{\"status\":401,\"headers\":{},\"body\":{\"error\":\"test\"}}},{\"_id\":\"62ffc2e77a9aca1bfdefc3e3\",\"created_at\":\"2022-08-19T17:05:43.321\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"graphql2\",\"block\":true,\"type\":\"regex\",\"regex_config\":[{\"conditions\":[{\"path\":\"request.body.query\",\"value\":\".*Get.*\"}]}],\"response\":{\"status\":401,\"headers\":{},\"body\":{\"test\":\"graph2\"}}},{\"_id\":\"62fff3367a9aca1bfdefc3f1\",\"created_at\":\"2022-08-19T20:31:50.765\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"company rule no regex\",\"block\":true,\"type\":\"company\",\"regex_config\":[],\"response\":{\"status\":402,\"headers\":{},\"body\":{\"status\":\"make payment\"}}},{\"_id\":\"6317c7ba63501c63e3ff4ee0\",\"created_at\":\"2022-09-06T22:20:42.060\",\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"name\":\"user rule\",\"block\":true,\"type\":\"user\",\"variables\":[{\"name\":\"0\",\"path\":\"cohort_names\"},{\"name\":\"1\",\"path\":\"created\"},{\"name\":\"2\",\"path\":\"identified_user_id\"},{\"name\":\"3\",\"path\":\"company_id\"}],\"regex_config\":[],\"response\":{\"status\":204,\"headers\":{\"my header\":\"{{0}}\",\"my header2\":\"{{1}}\",\"header3\":\"{{2}}\"},\"body\":{\"yes\":true,\"{{3}}\":\"yes\"}}}]";
-            var configJson = "{\"org_id\":\"421:67\",\"app_id\":\"46:73\",\"sample_rate\":100,\"block_bot_traffic\":false,\"user_sample_rate\":{\"sean-user-11\":70,\"sean-user-10\":70,\"sean-user-9\":70},\"company_sample_rate\":{\"sean-company-5\":50,\"67890\":50,\"sean-company-9\":50,\"sean-company-6\":50,\"sean-company-10\":50,\"sean-company-11\":50,\"company_1234\":50},\"user_rules\":{\"sean-user-11\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-11\"}}],\"sean-user-10\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-10\"}}],\"sean-user-9\":[{\"rules\":\"6317c7ba63501c63e3ff4ee0\",\"values\":{\"0\":\"cohort_names\",\"1\":\"created\",\"2\":\"identified_user_id\",\"3\":\"sean-company-9\"}}]},\"company_rules\":{\"sean-company-5\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"67890\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-9\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-6\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-10\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"sean-company-11\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}],\"company_1234\":[{\"rules\":\"62fe6f3bf199ee4cf35762d7\"},{\"rules\":\"62fff3367a9aca1bfdefc3f1\"}]},\"ip_addresses_blocked_by_name\":{},\"regex_config\":[{\"conditions\":[{\"path\":\"request.verb\",\"value\":\"post\"}],\"sample_rate\":20}],\"billing_config_jsons\":{}}";
+            var configJson = @"{
+                ""org_id"":""421:67"",""app_id"":""46:73"",""sample_rate"":100,""block_bot_traffic"":false,""user_sample_rate"":{""sean-user-11"":70,""sean-user-10"":70,""sean-user-9"":70},""company_sample_rate"":{""sean-company-5"":50,""67890"":50,""sean-company-9"":50,""sean-company-6"":50,""sean-company-10"":50,""sean-company-11"":50,""company_1234"":50},""user_rules"":{""sean-user-11"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-11""}}],""sean-user-10"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-10""}}],""sean-user-9"":[{""rules"":""6317c7ba63501c63e3ff4ee0"",""values"":{""0"":""cohort_names"",""1"":""created"",""2"":""identified_user_id"",""3"":""sean-company-9""}}]},""company_rules"":{""sean-company-5"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""67890"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-9"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-6"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-10"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""sean-company-11"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}],""company_1234"":[{""rules"":""62fe6f3bf199ee4cf35762d7""},{""rules"":""62fff3367a9aca1bfdefc3f1""}]},""ip_addresses_blocked_by_name"":{},""regex_config"":[{""conditions"":[{""path"":""request.verb"",""value"":""post""}],""sample_rate"":20}],""billing_config_jsons"":{}
+            }";
+            var governanceJson = @"[
+                {""_id"":""62f69205ec701a4f0400a377"",""created_at"":""2022-08-12T17:46:45.670"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""my gov"",""block"":true,""type"":""company"",""regex_config"":[{""conditions"":[{""path"":""request.verb"",""value"":""POST""}]}],""response"":{""status"":203,""headers"":{},""body"":{""ok"":1}}},
+                {""_id"":""62f6c661ac3331776950eba1"",""created_at"":""2022-08-12T21:30:09.523"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""my regex"",""block"":true,""type"":""regex"",""regex_config"":[{""conditions"":[{""path"":""request.verb"",""value"":""POST""}]}],""response"":{""status"":203,""headers"":{},""body"":{""ok"":1}}},
+                {""_id"":""62fd061e51f905712d73f72d"",""created_at"":""2022-08-17T15:15:42.909"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""user"",""block"":true,""type"":""user"",""regex_config"":[{""conditions"":[{""path"":""request.body.operationName"",""value"":""Get.*""}]}],""response"":{""status"":203,""headers"":{},""body"":{""error"":""this is a test""}}},
+                {""_id"":""62fe6f3bf199ee4cf35762d7"",""created_at"":""2022-08-18T16:56:27.767"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""company rule 2"",""block"":true,""type"":""company"",""regex_config"":[{""conditions"":[{""path"":""request.verb"",""value"":""DELETE""}]}],""response"":{""status"":401,""headers"":{},""body"":{""error"":""test""}}},
+                {""_id"":""62ffc2e77a9aca1bfdefc3e3"",""created_at"":""2022-08-19T17:05:43.321"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""graphql2"",""block"":true,""type"":""regex"",""regex_config"":[{""conditions"":[{""path"":""request.body.query"",""value"":"".*Get.*""}]}],""response"":{""status"":401,""headers"":{},""body"":{""test"":""graph2""}}},
+                {""_id"":""62fff3367a9aca1bfdefc3f1"",""created_at"":""2022-08-19T20:31:50.765"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""company rule no regex"",""block"":true,""type"":""company"",""regex_config"":[],""response"":{""status"":402,""headers"":{},""body"":{""status"":""make payment""}}},
+                {""_id"":""6317c7ba63501c63e3ff4ee0"",""created_at"":""2022-09-06T22:20:42.060"",""org_id"":""421:67"",""app_id"":""46:73"",""name"":""user rule"",""block"":true,""type"":""user"",""variables"":[{""name"":""0"",""path"":""cohort_names""},{""name"":""1"",""path"":""created""},{""name"":""2"",""path"":""identified_user_id""},{""name"":""3"",""path"":""company_id""}],""regex_config"":[],""response"":{""status"":204,""headers"":{""my header"":""{{0}}"",""my header2"":""{{1}}"",""header3"":""{{2}}""},""body"":{""yes"":true,""{{3}}"":""yes""}}}
+            ]";
+            
             var appConfig = ApiHelper.JsonDeserialize<AppConfig>(configJson);
             var governace = Governance.fromJson(governanceJson);
 

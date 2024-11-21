@@ -5,9 +5,11 @@ using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using System.Text;
-using System.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-
+// using System.IdentityModel.Tokens;
+// using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.JsonWebTokens;
+    
 namespace Moesif.Middleware.Helpers
 {
     public class UserHelper
@@ -132,7 +134,16 @@ namespace Moesif.Middleware.Helpers
         {
             try
             {
-                var newToken = new JwtSecurityToken(jwtEncodedString: token);
+                // var newToken = new JwtSecurityToken(jwtEncodedString: token);
+                // Initialize the token handler
+                var tokenHandler = new JsonWebTokenHandler();
+                // Read the token (this does not validate it)
+                var newToken = tokenHandler.ReadToken(token) as JsonWebToken;
+                if (newToken == null)
+                {
+                    return null;
+                }
+                
                 bool hasClaim = newToken.Claims.Any(c => c.Type == field);
                 return hasClaim ? newToken.Claims.First(c => c.Type == field).Value : null;
             }

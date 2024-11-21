@@ -6,10 +6,15 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using Rule = Moesif.Middleware.Models.Rule;
+#if NET6_0_OR_GREATER
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+#else
+    using Newtonsoft.Json.Linq;
+#endif
 
 namespace Moesif.Middleware.Helpers
 {
@@ -185,9 +190,17 @@ namespace Moesif.Middleware.Helpers
                     {
                         if (c.path.StartsWith("request.body.") && requestMap.regex_mapping.ContainsKey("request.body"))
                         {
+#if NET6_0_OR_GREATER
+                            var body = (JsonObject)requestMap.regex_mapping["request.body"];
+#else
                             var body = (Newtonsoft.Json.Linq.JObject)requestMap.regex_mapping["request.body"];
+#endif
                             var fieldName = c.path.Split('.')[2];
+#if NET6_0_OR_GREATER
+                            var fieldlValue = body[fieldName];
+#else
                             var fieldlValue = body.GetValue(fieldName);
+#endif
                             if (fieldlValue != null)
                             {
                                 Match m = Regex.Match(fieldlValue.ToString(), c.value, RegexOptions.IgnoreCase);

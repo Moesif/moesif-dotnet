@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Moesif.Api;
-using Newtonsoft.Json;
+// using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Moesif.Middleware.Models
 {
@@ -30,8 +32,8 @@ namespace Moesif.Middleware.Models
 
     public class GovernanceRule
     {
-        public string _id;
-        public string type;
+        public string _id { get; set; }
+        public string type { get; set; }
         public List<RegexConfig> regex_config { get; set; }
         public List<Variable> variables { get; set; }
         public Response response { get; set; }

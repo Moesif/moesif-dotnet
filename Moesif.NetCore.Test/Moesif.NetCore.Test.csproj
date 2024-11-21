@@ -1,22 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+<!--    <PackageReference Include="Moesif.Middleware" Version="3.0.11" />-->
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="Moq" Version="4.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.2.0" />
-    <PackageReference Include="Moesif.Api" Version="2.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj" />
+    <ProjectReference Include="..\Moesif.Middleware\Moesif.Middleware.csproj">
+    </ProjectReference>
   </ItemGroup>
 </Project>

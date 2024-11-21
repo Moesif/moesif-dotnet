@@ -12,9 +12,13 @@ using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
 using System.Threading;
 using System.Collections.Concurrent;
+//using System.Net.Http;
 using Moesif.Middleware.Helpers;
 using Moesif.Middleware.Models;
 using Microsoft.Extensions.Logging;
+// using System.Reflection.PortableExecutable;
+
+//using Newtonsoft.Json;
 
 #if NETCORE
 using Microsoft.AspNetCore.Http;
@@ -27,7 +31,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/1.5.1";
+        public static string APP_VERSION = "moesif-netcore/3.1.0";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -75,6 +79,8 @@ namespace Moesif.Middleware.NetCore
         public bool debug = false;
 
         public bool logBody;
+        public int requestMaxBodySize = 100000;
+        public int responseMaxBodySize = 100000;
 
         public bool isLambda;
 
@@ -136,6 +142,8 @@ namespace Moesif.Middleware.NetCore
                 debug = loggerHelper.GetConfigBoolValues(moesifOptions, "LocalDebug", false);
                 client = new MoesifApiClient(moesifOptions["ApplicationId"].ToString(), APP_VERSION, debug);
                 logBody = loggerHelper.GetConfigBoolValues(moesifOptions, "LogBody", true);
+                requestMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "RequestMaxBodySize", 100000);
+                responseMaxBodySize = loggerHelper.GetConfigIntValues(moesifOptions, "ResponseMaxBodySize", 100000);
                 isLambda = loggerHelper.GetConfigBoolValues(moesifOptions, "IsLambda", false);
                 _next = next;
                 //config = AppConfig.getDefaultAppConfig();
@@ -143,7 +151,16 @@ namespace Moesif.Middleware.NetCore
                 //companyHelper = new CompanyHelper(); // Create a new instane of companyHelper
                 //clientIpHelper = new ClientIp(); // Create a new instance of client Ip
                 //isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching
-                isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", !isLambda); // Enable batching, defaults to true if not lambda
+                // Force isBatchingEnabled to false if isLambda is true
+                if (isLambda)
+                {
+                    isBatchingEnabled = false;
+                }
+                else
+                {
+                    isBatchingEnabled = loggerHelper.GetConfigBoolValues(moesifOptions, "EnableBatching", true); // Enable batching, defaults to true if not lambda
+                }
+
                 batchSize = loggerHelper.GetConfigIntValues(moesifOptions, "BatchSize", 200); // Batch Size
                 queueSize = loggerHelper.GetConfigIntValues(moesifOptions, "QueueSize", 100 * 1000); // Queue Size
                 batchMaxTime = loggerHelper.GetConfigIntValues(moesifOptions, "batchMaxTime", 2); // Batch max time in seconds
@@ -438,10 +455,19 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
-                var owinResponse = httpContext.Response;
-                StreamHelper outputCaptureOwin = new StreamHelper(owinResponse.Body);
-                owinResponse.Body = outputCaptureOwin;
-
+                StreamHelper outputCaptureOwin = null;
+                // Create memory stream only if needed
+                //  - logBody is enabled &&
+                //  - response's content-length is less than maxBodySize
+                var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
+                int parsedRespContentLength = 1000;
+                GetContentLengthAndEncoding(resHeaders, out parsedRespContentLength);  // Get the content-length from response header if possible.
+                if (logBody && parsedRespContentLength <= responseMaxBodySize)
+                {
+                    var owinResponse = httpContext.Response;
+                    outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                    owinResponse.Body = outputCaptureOwin;
+                }
                 await _next(httpContext);
 
 #if MOESIF_INSTRUMENT
@@ -464,7 +490,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
                         {
                             formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-                            //_logger.LogError($"Format lambda response time: {secondMeasurement} milliseconds");
+                            _logger.LogError($"Format lambda response time: {formatLambdaResponse} milliseconds");
                         }
 #endif
                     } else
@@ -473,7 +499,7 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
                         {
                             formatLambdaResponse = stopwatch.ElapsedMilliseconds;
-                            //_logger.LogError($"Format response time: {secondMeasurement} milliseconds");
+                            _logger.LogError($"Format response time: {formatLambdaResponse} milliseconds");
                         }
 #endif
                     }
@@ -524,6 +550,7 @@ namespace Moesif.Middleware.NetCore
                     {
                         getSessionTokenTime = stopwatch.ElapsedMilliseconds;
                         stopwatch.Restart();
+                        _logger.LogError("Calling the API to send the event to Moesif");
                     }
 #endif
                     _logger.LogDebug("Calling the API to send the event to Moesif");
@@ -576,6 +603,30 @@ namespace Moesif.Middleware.NetCore
 #endif
         }
 
+        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, out int parsedContentLength)
+        {
+            string contentEncoding = "";
+            parsedContentLength = 100000;
+
+            if (headers != null)
+            {
+                string contentLength = "";
+                headers.TryGetValue("Content-Length", out contentLength);
+                headers.TryGetValue("Content-Encoding", out contentEncoding);
+                int.TryParse(contentLength, out parsedContentLength);
+            }
+
+            return contentEncoding;
+        }
+
+        public static string GetExceededBodyForBodySize(string prefix, int curBodySize, int maxBodySize)
+        {
+            object payload = new { msg = $"{prefix}.body.length {curBodySize} exceeded {prefix}MaxBodySize of {maxBodySize}" };
+            string bodyPayload = ApiHelper.JsonSerialize(payload);
+
+            return bodyPayload;
+        }
+
         private async Task<(EventRequestModel, String)> FormatRequest(HttpRequest request, string transactionId)
         {
 #if MOESIF_INSTRUMENT
@@ -596,22 +647,46 @@ namespace Moesif.Middleware.NetCore
             stopwatch.Restart();
 #endif
 
+            // Get Content-Length and Content-Encoding
+            // string contentEncoding = "";
+            // string contentLength = "";
+            int parsedContentLength = 100000;
+            // reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
+            // reqHeaders.TryGetValue("Content-Length", out contentLength);
+            // int.TryParse(contentLength, out parsedContentLength);
+            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);
+
             // RequestBody
             request.EnableBuffering(bufferThreshold: 1000000);
             string bodyAsText = null;
 
-            string contentEncoding = "";
-            string contentLength = "";
-            int parsedContentLength = 100000;
-
-            reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
-            reqHeaders.TryGetValue("Content-Length", out contentLength);
-            int.TryParse(contentLength, out parsedContentLength);
 #if MOESIF_INSTRUMENT
             setHeaderEnableBufferingTime = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
 #endif
-            bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug);
+            // Check if body exceeded max size supported or no body content
+            if (parsedContentLength == 0)
+            {
+                // no body content
+                bodyAsText = null;
+            }
+            else if (parsedContentLength > requestMaxBodySize)
+            {
+                // Body size exceeds max limit. Use an info message body.
+                bodyAsText = GetExceededBodyForBodySize("request", parsedContentLength, requestMaxBodySize);
+            }
+            else
+            {
+                // Body size is within allowed max limit or unknown. Read the body.
+                bodyAsText = await loggerHelper.GetRequestContents(bodyAsText, request, contentEncoding, parsedContentLength, debug, logBody);
+            }
+
+            // Check if body exceeded max size supported
+            if (!string.IsNullOrWhiteSpace(bodyAsText) && bodyAsText.Length > requestMaxBodySize)
+            {
+                // Read body's size exceeds max limit. Use an info message body.
+                bodyAsText = GetExceededBodyForBodySize("request", bodyAsText.Length, requestMaxBodySize);
+            }
 #if MOESIF_INSTRUMENT
             getRequestContent = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
@@ -677,12 +752,20 @@ namespace Moesif.Middleware.NetCore
 
 
             var responseWrapper = new Tuple<object, string>(null, null);
-            if (logBody)
+            if (logBody && stream != null)
             {
                 // ResponseBody
                 string contentEncoding = "";
                 rspHeaders.TryGetValue("Content-Encoding", out contentEncoding);
                 string text = stream.ReadStream(contentEncoding);
+
+                // Check if response body exceeded max size supported
+                if (!string.IsNullOrWhiteSpace(text) && text.Length > responseMaxBodySize)
+                {
+                    // Body size exceeds max limit. Use an info message body.
+                    text = GetExceededBodyForBodySize("response", text.Length, responseMaxBodySize);
+                }
+
                 // Serialize Response body
                 responseWrapper = loggerHelper.Serialize(text, response.ContentType, logBody, debug);
             }
@@ -722,6 +805,12 @@ namespace Moesif.Middleware.NetCore
                     // Capture the response
                     httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
                     responseBody = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+                    // Check if response body exceeded max size supported
+                    if (!string.IsNullOrWhiteSpace(responseBody) && responseBody.Length > responseMaxBodySize)
+                    {
+                        // Body size exceeds max limit. Use an info message body.
+                        responseBody = GetExceededBodyForBodySize("response", responseBody.Length, responseMaxBodySize);
+                    }
                     httpContext.Response.Body.Seek(0, SeekOrigin.Begin); // Reset the position for the response to be sent
 
                     // Copy the response body back to the original stream
@@ -821,10 +910,11 @@ namespace Moesif.Middleware.NetCore
                 }
 #endif
                 var samplingPercentage = AppConfigHelper.getSamplingPercentage(config, requestMap);
-                //_logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
+                //_logger.LogDebug($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
 
 #if MOESIF_INSTRUMENT
                 {
+                    _logger.LogError($"Sampling percentage in LogEventAsync is - { samplingPercentage} ");
                     samplingPercentageTime = stopwatch.ElapsedMilliseconds;
                     stopwatch.Restart();
                 }
@@ -868,19 +958,22 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        //_logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+#if MOESIF_INSTRUMENT
+                        _logger.LogError("Current UTC time BEFORE CreateEventAsync call : " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+#endif
                         //Task.Run(async () => client.Api.CreateEventAsync(eventModel, !isLambda));
                         await client.Api.CreateEventAsync(eventModel, !isLambda);
                         //var t1 = Task.Run(async () => {
                         //    Thread.Sleep(500);
                         //    Console.WriteLine("------ AFTER 2SEC Delay PRINTINg at -----: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
                         //    });
-                        //_logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
                         _logger.LogDebug("Event sent successfully to Moesif");
 
 #if MOESIF_INSTRUMENT
                         {
+                            _logger.LogError("Current UTC time AFTER CreateEventAsync call: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                            _logger.LogError("Event sent successfully to Moesif");
                             createEventAsyncTime = stopwatch.ElapsedMilliseconds;
                             stopwatch.Restart();
                         }

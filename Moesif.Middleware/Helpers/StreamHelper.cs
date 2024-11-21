@@ -8,12 +8,17 @@ namespace Moesif.Middleware.Helpers
     public class StreamHelper : Stream
     {
         private readonly Stream InnerStream;
+        // Using lazy initialization
+        // private Lazy<MemoryStream> _lazyCopyStream;
+        // public MemoryStream CopyStream => _lazyCopyStream.Value;
         public MemoryStream CopyStream;
 
         public StreamHelper(Stream inner)
         {
             this.InnerStream = inner;
             this.CopyStream = new MemoryStream();
+            // Use lazy initialization
+            // this._lazyCopyStream = new Lazy<MemoryStream>(() => new MemoryStream());
         }
 
         public string ReadStream(string contentEncoding)

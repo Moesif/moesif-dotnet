@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Moesif.NetCore.Test", "Moes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Moesif.NetFramework.Test", "Moesif.NetFramework.Test\Moesif.NetFramework.Test.csproj", "{B101FAAF-8C82-4185-A75E-0DDDCBB1CED6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Moesif.Api", "..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj", "{2D13AD9D-3A88-4C50-B1BC-4A0BC09E6884}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,5 +27,9 @@ Global
 		{B101FAAF-8C82-4185-A75E-0DDDCBB1CED6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B101FAAF-8C82-4185-A75E-0DDDCBB1CED6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B101FAAF-8C82-4185-A75E-0DDDCBB1CED6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D13AD9D-3A88-4C50-B1BC-4A0BC09E6884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D13AD9D-3A88-4C50-B1BC-4A0BC09E6884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D13AD9D-3A88-4C50-B1BC-4A0BC09E6884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D13AD9D-3A88-4C50-B1BC-4A0BC09E6884}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
