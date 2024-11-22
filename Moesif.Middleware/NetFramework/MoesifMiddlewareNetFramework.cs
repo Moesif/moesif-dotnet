@@ -254,31 +254,42 @@ namespace Moesif.Middleware.NetFramework
             companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
-        public async override Task Invoke(IOwinContext httpContext) 
+        public void CreateStreamHelpers(IOwinContext httpContext, out StreamHelper outputCaptureMVC, out StreamHelper outputCaptureOwin)
         {
-            // Buffering mvc reponse
-            StreamHelper outputCaptureMVC = null;
+            outputCaptureMVC = null;   // Buffering MVC response
+            outputCaptureOwin = null;  // Buffering Owin response
+            
+            // Check if we need to create memory stream. Create it only if
+            //  - logBody is enabled &&
+            //  - response's content-length is less than maxBodySize
+            var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
+            int parsedResContentLength = responseMaxBodySize - 1;
+            GetContentLengthAndEncoding(resHeaders, parsedResContentLength, out parsedResContentLength);  // Get the content-length from response header if possible.
+            bool needToCreateStream = (logBody && parsedResContentLength <= responseMaxBodySize) ;
+
+            // Buffering mvc response
             HttpResponse httpResponse = HttpContext.Current?.Response;
-            if (httpResponse != null)
+            if (httpResponse != null && needToCreateStream)
             {
                 outputCaptureMVC = new StreamHelper(httpResponse.Filter);
                 httpResponse.Filter = outputCaptureMVC;
             }
 
-            // Buffering Owin response
-            StreamHelper outputCaptureOwin = null;
-            // Create memory stream only if needed
-            //  - logBody is enabled &&
-            //  - response's content-length is less than maxBodySize
-            var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
-            int parsedResContentLength = 1000;
-            GetContentLengthAndEncoding(resHeaders, out parsedResContentLength);  // Get the content-length from response header if possible.
-            if (logBody && parsedResContentLength <= responseMaxBodySize)
+            // Create stream to buffer Owin response
+            if (needToCreateStream)
             {
                 IOwinResponse owinResponse = httpContext.Response;
                 outputCaptureOwin = new StreamHelper(owinResponse.Body);
                 owinResponse.Body = outputCaptureOwin;
             }
+        }
+
+        public override async Task Invoke(IOwinContext httpContext) 
+        {
+            // Create memory stream to buffer response
+            StreamHelper outputCaptureMVC = null;   // For buffering MVC response
+            StreamHelper outputCaptureOwin = null;  // For buffering Owin response
+            CreateStreamHelpers(httpContext, out outputCaptureMVC, out outputCaptureOwin); 
 
             // Initialize Transaction Id
             string transactionId = null;
@@ -396,10 +407,9 @@ namespace Moesif.Middleware.NetFramework
             return ipAddress;
         }
 
-        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, out int parsedContentLength)
+        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, int defaultLength, out int parsedContentLength)
         {
             string contentEncoding = "";
-            parsedContentLength = 100000;
 
             if (headers != null)
             {
@@ -407,6 +417,10 @@ namespace Moesif.Middleware.NetFramework
                 headers.TryGetValue("Content-Length", out contentLength);
                 headers.TryGetValue("Content-Encoding", out contentEncoding);
                 int.TryParse(contentLength, out parsedContentLength);
+            }
+            else
+            {
+                parsedContentLength = defaultLength;
             }
 
             return contentEncoding;
@@ -433,12 +447,12 @@ namespace Moesif.Middleware.NetFramework
             // Get Content-Length and Content-Encoding
             // string contentEncoding = "";
             // string contentLength = "";
-            int parsedContentLength = 100000;
+            int parsedContentLength = requestMaxBodySize - 1;
             // reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
             // reqHeaders.TryGetValue("Content-Length", out contentLength);
             // int.TryParse(contentLength, out parsedContentLength);
             string requestContentType = request.ContentType;
-            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
+            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, parsedContentLength, out parsedContentLength);  // Get the content-length
 
             // RequestBody
             string body = null;
