@@ -254,31 +254,42 @@ namespace Moesif.Middleware.NetFramework
             companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
-        public async override Task Invoke(IOwinContext httpContext) 
+        public void CreateStreamHelpers(IOwinContext httpContext, out StreamHelper outputCaptureMVC, out StreamHelper outputCaptureOwin)
         {
-            // Buffering mvc reponse
-            StreamHelper outputCaptureMVC = null;
-            HttpResponse httpResponse = HttpContext.Current?.Response;
-            if (httpResponse != null)
-            {
-                outputCaptureMVC = new StreamHelper(httpResponse.Filter);
-                httpResponse.Filter = outputCaptureMVC;
-            }
-
-            // Buffering Owin response
-            StreamHelper outputCaptureOwin = null;
-            // Create memory stream only if needed
+            outputCaptureMVC = null;   // Buffering MVC response
+            outputCaptureOwin = null;  // Buffering Owin response
+            
+            // Check if we need to create memory stream. Create it only if
             //  - logBody is enabled &&
             //  - response's content-length is less than maxBodySize
             var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
             int parsedResContentLength = 1000;
             GetContentLengthAndEncoding(resHeaders, out parsedResContentLength);  // Get the content-length from response header if possible.
-            if (logBody && parsedResContentLength <= responseMaxBodySize)
+            bool needToCreateStream = (logBody && parsedResContentLength <= responseMaxBodySize) ;
+
+            // Buffering mvc response
+            HttpResponse httpResponse = HttpContext.Current?.Response;
+            if (httpResponse != null && needToCreateStream)
+            {
+                outputCaptureMVC = new StreamHelper(httpResponse.Filter);
+                httpResponse.Filter = outputCaptureMVC;
+            }
+
+            // Create stream to buffer Owin response
+            if (needToCreateStream)
             {
                 IOwinResponse owinResponse = httpContext.Response;
                 outputCaptureOwin = new StreamHelper(owinResponse.Body);
                 owinResponse.Body = outputCaptureOwin;
             }
+        }
+
+        public override async Task Invoke(IOwinContext httpContext) 
+        {
+            // Create memory stream to buffer response
+            StreamHelper outputCaptureMVC = null;   // For buffering MVC response
+            StreamHelper outputCaptureOwin = null;  // For buffering Owin response
+            CreateStreamHelpers(httpContext, out outputCaptureMVC, out outputCaptureOwin); 
 
             // Initialize Transaction Id
             string transactionId = null;

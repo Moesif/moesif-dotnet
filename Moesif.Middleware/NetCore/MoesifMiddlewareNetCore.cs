@@ -369,6 +369,27 @@ namespace Moesif.Middleware.NetCore
             companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
+        public void CreateStreamHelpers(HttpContext httpContext, out StreamHelper outputCaptureOwin)
+        {
+            outputCaptureOwin = null;  // Buffering Owin response
+
+            // Check if we need to create memory stream., only if
+            //  - logBody is enabled &&
+            //  - response's content-length is less than maxBodySize
+            var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
+            int parsedRespContentLength = 1000;
+            GetContentLengthAndEncoding(resHeaders, out parsedRespContentLength);  // Get the content-length from response header if possible.
+            bool needToCreateStream = (logBody && parsedRespContentLength <= responseMaxBodySize) ;
+
+            // Create stream to Buffer Owin response
+            if (needToCreateStream)
+            {
+                var owinResponse = httpContext.Response;
+                outputCaptureOwin = new StreamHelper(owinResponse.Body);
+                owinResponse.Body = outputCaptureOwin;
+            }
+        }
+
         public async Task Invoke(HttpContext httpContext)
         {
 #if MOESIF_INSTRUMENT
@@ -455,19 +476,10 @@ namespace Moesif.Middleware.NetCore
 
             else
             {
-                StreamHelper outputCaptureOwin = null;
-                // Create memory stream only if needed
-                //  - logBody is enabled &&
-                //  - response's content-length is less than maxBodySize
-                var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
-                int parsedRespContentLength = 1000;
-                GetContentLengthAndEncoding(resHeaders, out parsedRespContentLength);  // Get the content-length from response header if possible.
-                if (logBody && parsedRespContentLength <= responseMaxBodySize)
-                {
-                    var owinResponse = httpContext.Response;
-                    outputCaptureOwin = new StreamHelper(owinResponse.Body);
-                    owinResponse.Body = outputCaptureOwin;
-                }
+                // Create memory stream
+                StreamHelper outputCaptureOwin = null;  // For buffering Owin response
+                CreateStreamHelpers(httpContext, out outputCaptureOwin);
+ 
                 await _next(httpContext);
 
 #if MOESIF_INSTRUMENT
@@ -798,6 +810,7 @@ namespace Moesif.Middleware.NetCore
 
                 var originalResponseBodyStream = httpContext.Response.Body;
                 string responseBody = string.Empty;
+                // TODO : why new memory stream here???
                 using (var responseBodyStream = new MemoryStream())
                 {
                     httpContext.Response.Body = responseBodyStream; // Use the memory stream for the response
