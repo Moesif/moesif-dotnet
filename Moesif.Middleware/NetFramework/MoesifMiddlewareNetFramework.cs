@@ -266,6 +266,7 @@ namespace Moesif.Middleware.NetFramework
             int parsedResContentLength = responseMaxBodySize - 1;
             GetContentLengthAndEncoding(resHeaders, parsedResContentLength, out parsedResContentLength);  // Get the content-length from response header if possible.
             bool needToCreateStream = (logBody && parsedResContentLength <= responseMaxBodySize) ;
+            bool needToCreateStreamOwin = needToCreateStream;   // We do not create Owin Stream if MVC stream is success.
 
             // Buffering mvc response
             HttpResponse httpResponse = HttpContext.Current?.Response;
@@ -273,10 +274,13 @@ namespace Moesif.Middleware.NetFramework
             {
                 outputCaptureMVC = new StreamHelper(httpResponse.Filter);
                 httpResponse.Filter = outputCaptureMVC;
+
+                // Check if we need to create Owin stream
+                needToCreateStreamOwin = (outputCaptureMVC == null || outputCaptureMVC.CopyStream.Length == 0);
             }
 
             // Create stream to buffer Owin response
-            if (needToCreateStream)
+            if (needToCreateStreamOwin)
             {
                 IOwinResponse owinResponse = httpContext.Response;
                 outputCaptureOwin = new StreamHelper(owinResponse.Body);
