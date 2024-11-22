@@ -263,8 +263,8 @@ namespace Moesif.Middleware.NetFramework
             //  - logBody is enabled &&
             //  - response's content-length is less than maxBodySize
             var resHeaders = loggerHelper.ToHeaders(httpContext.Response.Headers, debug);
-            int parsedResContentLength = 1000;
-            GetContentLengthAndEncoding(resHeaders, out parsedResContentLength);  // Get the content-length from response header if possible.
+            int parsedResContentLength = responseMaxBodySize - 1;
+            GetContentLengthAndEncoding(resHeaders, parsedResContentLength, out parsedResContentLength);  // Get the content-length from response header if possible.
             bool needToCreateStream = (logBody && parsedResContentLength <= responseMaxBodySize) ;
 
             // Buffering mvc response
@@ -407,10 +407,9 @@ namespace Moesif.Middleware.NetFramework
             return ipAddress;
         }
 
-        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, out int parsedContentLength)
+        public static string GetContentLengthAndEncoding(Dictionary<string, string> headers, int defaultLength, out int parsedContentLength)
         {
             string contentEncoding = "";
-            parsedContentLength = 100000;
 
             if (headers != null)
             {
@@ -418,6 +417,10 @@ namespace Moesif.Middleware.NetFramework
                 headers.TryGetValue("Content-Length", out contentLength);
                 headers.TryGetValue("Content-Encoding", out contentEncoding);
                 int.TryParse(contentLength, out parsedContentLength);
+            }
+            else
+            {
+                parsedContentLength = defaultLength;
             }
 
             return contentEncoding;
@@ -444,12 +447,12 @@ namespace Moesif.Middleware.NetFramework
             // Get Content-Length and Content-Encoding
             // string contentEncoding = "";
             // string contentLength = "";
-            int parsedContentLength = 100000;
+            int parsedContentLength = requestMaxBodySize - 1;
             // reqHeaders.TryGetValue("Content-Encoding", out contentEncoding);
             // reqHeaders.TryGetValue("Content-Length", out contentLength);
             // int.TryParse(contentLength, out parsedContentLength);
             string requestContentType = request.ContentType;
-            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, out parsedContentLength);  // Get the content-length
+            string contentEncoding = GetContentLengthAndEncoding(reqHeaders, parsedContentLength, out parsedContentLength);  // Get the content-length
 
             // RequestBody
             string body = null;
