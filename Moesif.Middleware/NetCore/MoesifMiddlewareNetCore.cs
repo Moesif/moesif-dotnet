@@ -1,4 +1,4 @@
-﻿//#define MOESIF_INSTRUMENT
+﻿#define MOESIF_INSTRUMENT
 
 using System;
 using System.Diagnostics;
@@ -250,12 +250,30 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
             {
                 stopwatch.Stop();
+                string strHeader = string.Concat(
+                    "ExitingMoesifMiddlewareInit,",
+                    "createLoggerTime,",
+                    "createInitCientAndOptTime,",
+                    "fetchAppConfigTime,",
+                    "fetchGovRuleTime,"
+                );
+                string strTimes = string.Concat(
+                    $"{createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds},",
+                    $"{createLoggerTime},",
+                    $"{createInitCientAndOptTime},",
+                    $"{fetchAppConfigTime},",
+                    $"{fetchGovRuleTime},"
+                );
                 _logger.LogError($@"
-                                Exiting MoesifMiddleware Init with time: {createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds} ms
-                                createLoggerTime took: {createLoggerTime} ms
-                                createInitCientAndOptTime took: {createInitCientAndOptTime} ms
-                                fetchAppConfigTime took: {fetchAppConfigTime} ms
-                                fetchGovRuleTime took: {fetchGovRuleTime} ms");
+                    {strHeader}
+                    {strTimes}
+                ");
+                // _logger.LogError($@"
+                //                 Exiting MoesifMiddleware Init with time: {createLoggerTime + createInitCientAndOptTime + fetchAppConfigTime + fetchGovRuleTime + stopwatch.ElapsedMilliseconds} ms
+                //                 createLoggerTime took: {createLoggerTime} ms
+                //                 createInitCientAndOptTime took: {createInitCientAndOptTime} ms
+                //                 fetchAppConfigTime took: {fetchAppConfigTime} ms
+                //                 fetchGovRuleTime took: {fetchGovRuleTime} ms");
             }
 #endif
         }
@@ -601,16 +619,43 @@ namespace Moesif.Middleware.NetCore
             {
                 stopwatch.Stop();
                 // Get the elapsed time in milliseconds
+                var strHeader = string.Concat(
+                                "ExitingInvoke,",
+                                "FormatRequest,",
+                                "FetchUpstreamResponse,",
+                                "FormatResponse,",
+                                "getCompanyId,",
+                                "getUserIdTime",
+                                "getMetadataTime,",
+                                "getSessionTokenTime,",
+                                "LogEventAsync"
+                );
+                var strTimes = string.Concat(
+                                $"{formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds},",
+                                $"{formatLambdaRequest},",
+                                $"{upstreamResponseTime},",
+                                $"{formatLambdaResponse},",
+                                $"{getCompanyIdTime},",
+                                $"{getUserIdTime},",
+                                $"{getMetadataTime},",
+                                $"{getSessionTokenTime},",
+                                $"{sendEventAsyncTime}"
+                );
                 _logger.LogError($@"
-                                Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
-                                Format request took: {formatLambdaRequest} ms
-                                Fetch Upstream response took: {upstreamResponseTime} ms
-                                Format response took: {formatLambdaResponse} ms
-                                getCompanyId took: {getCompanyIdTime} ms
-                                getUserIdTime took: {getUserIdTime} ms
-                                getMetadataTime took: {getMetadataTime} ms
-                                getSessionTokenTime took: {getSessionTokenTime} ms
-                                Send event async took: {sendEventAsyncTime} ms");
+                    {strHeader}
+                    {strTimes}
+                ");
+
+                // _logger.LogError($@"
+                //                 Exiting Invoke with time: {formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                //                 Format request took: {formatLambdaRequest} ms
+                //                 Fetch Upstream response took: {upstreamResponseTime} ms
+                //                 Format response took: {formatLambdaResponse} ms
+                //                 getCompanyId took: {getCompanyIdTime} ms
+                //                 getUserIdTime took: {getUserIdTime} ms
+                //                 getMetadataTime took: {getMetadataTime} ms
+                //                 getSessionTokenTime took: {getSessionTokenTime} ms
+                //                 Send event async took: {sendEventAsyncTime} ms");
             }
 #endif
         }
@@ -744,14 +789,36 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
             getIpAndPrepModel = stopwatch.ElapsedMilliseconds;
             stopwatch.Stop();
+            string strHeader = string.Concat(
+                "ExitingFormatRequest,",
+                "convertToHeadersTime,",
+                "setHeaderEnableBufferingTime,",
+                "getRequestContent,",
+                "addTxIdTime,",
+                "serializeReqBody,",
+                "getIpAndPrepModel,"
+            );
+            string strTimes = string.Concat(
+                $"{convertToHeadersTime + setHeaderEnableBufferingTime + getRequestContent + addTxIdTime + serializeReqBody + getIpAndPrepModel + stopwatch.ElapsedMilliseconds},",
+                $"{convertToHeadersTime},",
+                $"{setHeaderEnableBufferingTime},",
+                $"{getRequestContent},",
+                $"{addTxIdTime},",
+                $"{serializeReqBody},",
+                $"{getIpAndPrepModel}"
+            );
             _logger.LogError($@"
-                                Exiting FormatRequest with time: {convertToHeadersTime + setHeaderEnableBufferingTime + getRequestContent + addTxIdTime + serializeReqBody + getIpAndPrepModel + stopwatch.ElapsedMilliseconds} ms
-                                convertToHeadersTime took: {convertToHeadersTime} ms
-                                setHeaderEnableBufferingTime took: {setHeaderEnableBufferingTime} ms
-                                getRequestContent took: {getRequestContent} ms
-                                addTxIdTime took: {addTxIdTime} ms
-                                serializeReqBody took: {serializeReqBody} ms
-                                getIpAndPrepModel took: {getIpAndPrepModel} ms");
+                    {strHeader}
+                    {strTimes}
+            ");
+            // _logger.LogError($@"
+            //                     Exiting FormatRequest with time: {convertToHeadersTime + setHeaderEnableBufferingTime + getRequestContent + addTxIdTime + serializeReqBody + getIpAndPrepModel + stopwatch.ElapsedMilliseconds} ms
+            //                     convertToHeadersTime took: {convertToHeadersTime} ms
+            //                     setHeaderEnableBufferingTime took: {setHeaderEnableBufferingTime} ms
+            //                     getRequestContent took: {getRequestContent} ms
+            //                     addTxIdTime took: {addTxIdTime} ms
+            //                     serializeReqBody took: {serializeReqBody} ms
+            //                     getIpAndPrepModel took: {getIpAndPrepModel} ms");
 #endif
 
             return (eventReq, transactionId);
@@ -881,7 +948,7 @@ namespace Moesif.Middleware.NetCore
             long createEventAsyncTime = 0;
 #endif
 
-            // Get Mask Event
+            // Get Mask Event : REVIEW can it be created early?
             var maskEvent_out = new object();
             var getMaskEvent = moesifOptions.TryGetValue("MaskEventModel", out maskEvent_out);
 
@@ -1017,14 +1084,37 @@ namespace Moesif.Middleware.NetCore
 #if MOESIF_INSTRUMENT
             {
                 stopwatch.Stop();
+                string strHeader = string.Concat(
+                                "LogEventAsync,",
+                                "getMaskEventTime,",
+                                "createRequestMapTime,",
+                                "samplingPercentageTime,",
+                                "randomPercentageTime,",
+                                "computeWeightTime,",
+                                "createEventAsyncTime"
+                                );
+                string strTimes = string.Concat(
+                                $"{getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds},",
+                                $"{getMaskEventTime},",
+                                $"{createRequestMapTime},",
+                                $"{samplingPercentageTime},",
+                                $"{randomPercentageTime},",
+                                $"{computeWeightTime},",
+                                $"{createEventAsyncTime}"
+                                );
+                
                 _logger.LogError($@"
-                                Exiting LogEventAsync with time: {getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
-                                getMaskEventTime took: {getMaskEventTime} ms
-                                createRequestMapTime took: {createRequestMapTime} ms
-                                samplingPercentageTime took: {samplingPercentageTime} ms
-                                randomPercentageTime took: {randomPercentageTime} ms
-                                computeWeightTime took: {computeWeightTime} ms
-                                createEventAsyncTime took: {createEventAsyncTime} ms");
+                    {strHeader}
+                    {strTimes}
+                ");
+                // _logger.LogError($@"
+                //                 Exiting LogEventAsync with time: {getMaskEventTime + createRequestMapTime + samplingPercentageTime + randomPercentageTime + computeWeightTime + createEventAsyncTime + stopwatch.ElapsedMilliseconds} ms
+                //                 getMaskEventTime took: {getMaskEventTime} ms
+                //                 createRequestMapTime took: {createRequestMapTime} ms
+                //                 samplingPercentageTime took: {samplingPercentageTime} ms
+                //                 randomPercentageTime took: {randomPercentageTime} ms
+                //                 computeWeightTime took: {computeWeightTime} ms
+                //                 createEventAsyncTime took: {createEventAsyncTime} ms");
 
             }
 #endif
