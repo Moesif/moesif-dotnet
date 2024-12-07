@@ -421,7 +421,7 @@ namespace Moesif.Middleware.Helpers
                         try
                         {
                             // Get Application config
-                             await AppConfigHelper.updateConfig(client, config, debug, _logger);
+                            AppConfigHelper.updateConfig(client, config, debug, _logger);
                       
                         }
                         catch (Exception)

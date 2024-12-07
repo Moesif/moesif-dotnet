@@ -10,6 +10,8 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
     <DefineConstants>NET6_0_OR_GREATER</DefineConstants>
     <DefineConstants>NETCORE</DefineConstants>
+    <!-- IMPORTANT please comment following lines before release build/publish -->
+<!--    <DefineConstants>MOESIF_INSTRUMENT</DefineConstants>-->
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">

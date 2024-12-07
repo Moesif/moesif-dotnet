@@ -24,6 +24,9 @@ namespace Moesif.Middleware.Helpers
         {
             try
             {
+#if MOESIF_INSTRUMENT
+              logger.LogError($"Called: updateGovernance");
+#endif
                 var resp = await client.Api.GetGovernanceRuleAsync();
                 var etag = resp.Headers.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-rules-tag"];
                 if (etag != prevGovernance.etag)

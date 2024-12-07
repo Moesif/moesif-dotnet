@@ -1,4 +1,4 @@
-﻿#define MOESIF_INSTRUMENT
+﻿//#define MOESIF_INSTRUMENT
 
 using System;
 using System.Diagnostics;
@@ -417,6 +417,7 @@ namespace Moesif.Middleware.NetCore
             long formatLambdaResponse = 0;
             long sendEventAsyncTime = 0;
             long upstreamResponseTime = 0;
+            long nextMiddlewareTime = 0;
             long getCompanyIdTime = 0;
             long getUserIdTime = 0;
             long getMetadataTime = 0;
@@ -489,7 +490,11 @@ namespace Moesif.Middleware.NetCore
 
                 eventModel.Response.Headers["X-Moesif-Transaction-Id"] = transactionId;
                 if (!skipLogging)
-                   await Task.Run(async () => await LogEventAsync(eventModel));
+                {
+                    // REVIEW 
+                    // await Task.Run(async () => await LogEventAsync(eventModel));
+                    await LogEventAsync(eventModel);
+                }
             }
 
             else
@@ -497,15 +502,19 @@ namespace Moesif.Middleware.NetCore
                 // Create memory stream
                 StreamHelper outputCaptureOwin = null;  // For buffering Owin response
                 CreateStreamHelpers(httpContext, out outputCaptureOwin);
- 
-                await _next(httpContext);
-
 #if MOESIF_INSTRUMENT
                 {
                     upstreamResponseTime = stopwatch.ElapsedMilliseconds;
                     stopwatch.Restart();
                 }
-#endif
+#endif 
+                await _next(httpContext);
+#if MOESIF_INSTRUMENT
+                {
+                    nextMiddlewareTime = stopwatch.ElapsedMilliseconds;
+                    stopwatch.Restart();
+                }
+#endif 
 
                 if (skipLogging)
                 {
@@ -598,7 +607,9 @@ namespace Moesif.Middleware.NetCore
                     }
                     else
                     {
-                        Task.Run(async () => await LogEventAsync(eventModel));
+                        // REVIEW : Fire & Forget
+                        // Task.Run(async () => await LogEventAsync(eventModel));
+                        LogEventAsync(eventModel);
 #if MOESIF_INSTRUMENT
                         {
                             sendEventAsyncTime = stopwatch.ElapsedMilliseconds;
@@ -623,9 +634,10 @@ namespace Moesif.Middleware.NetCore
                                 "ExitingInvoke,",
                                 "FormatRequest,",
                                 "FetchUpstreamResponse,",
+                                "NextMiddlewareTime,",
                                 "FormatResponse,",
                                 "getCompanyId,",
-                                "getUserIdTime",
+                                "getUserIdTime,",
                                 "getMetadataTime,",
                                 "getSessionTokenTime,",
                                 "LogEventAsync"
@@ -634,6 +646,7 @@ namespace Moesif.Middleware.NetCore
                                 $"{formatLambdaRequest + upstreamResponseTime + formatLambdaResponse + getCompanyIdTime + getUserIdTime + getMetadataTime + getSessionTokenTime + sendEventAsyncTime + stopwatch.ElapsedMilliseconds},",
                                 $"{formatLambdaRequest},",
                                 $"{upstreamResponseTime},",
+                                $"{nextMiddlewareTime},",
                                 $"{formatLambdaResponse},",
                                 $"{getCompanyIdTime},",
                                 $"{getUserIdTime},",
