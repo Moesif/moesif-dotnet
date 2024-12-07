@@ -247,12 +247,30 @@ namespace Moesif.Middleware.NetCore.Helpers
             }
 #if MOESIF_INSTRUMENT
             stopwatch.Stop();
+            var strHeader = string.Concat(
+                "ExitingSerializeBody,",
+                "checkForEmptyDataAndInitObj,",
+                "parseJsonData,",
+                "parseBase64Data,",
+                "exceptionBase64Data"
+            );
+            var strTimes = string.Concat(
+                $"{checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds},",
+                $"{checkForEmptyDataAndInitObj},",
+                $"{parseJsonData},",
+                $"{parseBase64Data},",
+                $"{exceptionBase64Data}"
+            );
             _logger.LogError($@"
-                                Exiting Serialize Body with time: {checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds} ms
-                                checkForEmptyDataAndInitObj took: {checkForEmptyDataAndInitObj} ms
-                                parseJsonData took: {parseJsonData} ms
-                                parseBase64Data took: {parseBase64Data} ms
-                                exceptionBase64Data took: {exceptionBase64Data} ms");
+                    {strHeader}
+                    {strTimes}
+                ");
+            // _logger.LogError($@"
+            //                     Exiting Serialize Body with time: {checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds} ms
+            //                     checkForEmptyDataAndInitObj took: {checkForEmptyDataAndInitObj} ms
+            //                     parseJsonData took: {parseJsonData} ms
+            //                     parseBase64Data took: {parseBase64Data} ms
+            //                     exceptionBase64Data took: {exceptionBase64Data} ms");
 #endif
 
             return new Tuple<object, string>(reqBody, requestTransferEncoding);

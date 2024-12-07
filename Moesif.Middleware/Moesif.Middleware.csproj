@@ -10,6 +10,8 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
     <DefineConstants>NET6_0_OR_GREATER</DefineConstants>
     <DefineConstants>NETCORE</DefineConstants>
+    <!-- IMPORTANT please comment following lines before release build/publish -->
+<!--    <DefineConstants>MOESIF_INSTRUMENT</DefineConstants>-->
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">
@@ -17,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-     <PackageReference Include="Moesif.Api" Version="3.1.0" /> 
+    <PackageReference Include="Moesif.Api" Version="3.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.32" />
 <!--     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" /> -->
 <!--    <PackageReference Include="Microsoft.Owin" Version="4.2.2">-->
@@ -57,9 +59,9 @@
   <ItemGroup>
     <Compile Remove="Helpers\ClientIp.cs" />
   </ItemGroup>
-<!--  <ItemGroup>-->
-<!--    <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj" />-->
-<!--  </ItemGroup>-->
+<!--   <ItemGroup> -->
+<!--     <ProjectReference Include="..\..\moesifapi-csharp\Moesif.Api\Moesif.Api.csproj" /> -->
+<!--   </ItemGroup> -->
 
 <!--   <ItemGroup> -->
 <!--     <None Remove="Microsoft.Owin" /> -->

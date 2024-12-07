@@ -29,7 +29,7 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public static string APP_VERSION = "moesif-netframework/3.1.0";
+        public static string APP_VERSION = "moesif-netframework/3.1.2";
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -331,7 +331,9 @@ namespace Moesif.Middleware.NetFramework
                 await httpContext.Response.WriteAsync(eventModel.Response.Body.ToString());
                 eventModel.Response.Headers["X-Moesif-Transaction-Id"] = transactionId;
                 _logger.LogDebug("Request is blocked by Governance rule {ruleId} " , eventModel.BlockedBy);
-                await Task.Run(async () => await LogEventAsync(eventModel));
+                // REVIEW 
+                // await Task.Run(async () => await LogEventAsync(eventModel));
+                await LogEventAsync(eventModel);
             }
             else
             {
@@ -372,7 +374,9 @@ namespace Moesif.Middleware.NetFramework
                     eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
                     loggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
-                    await Task.Run(async () => await LogEventAsync(eventModel));
+                    // REVIEW
+                    // await Task.Run(async () => await LogEventAsync(eventModel));
+                    await LogEventAsync(eventModel);
                 }
             }
         }

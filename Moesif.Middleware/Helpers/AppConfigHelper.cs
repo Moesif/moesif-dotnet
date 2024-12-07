@@ -1,4 +1,5 @@
-﻿using System;
+﻿// #define MOESIF_INSTRUMENT
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Moesif.Api;
@@ -18,6 +19,10 @@ namespace Moesif.Middleware.Helpers
         {
             try
             {
+#if MOESIF_INSTRUMENT
+                // REVIEW TODO : add line to check how many times we're calling this function.
+                logger.LogError($"Called: updateConfig");
+#endif
                 var appConfigResp = await client.Api.GetAppConfigAsync();
                 var etag = appConfigResp.Headers.ToDictionary(k => k.Key.ToLower(), k => k.Value)["x-moesif-config-etag"];
                 if (etag != prevConfig.etag)
@@ -42,7 +47,6 @@ namespace Moesif.Middleware.Helpers
                 logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
 
-            await Task.Delay(8000); // Asynchronously wait for 2 seconds
             return prevConfig;
         }
 
