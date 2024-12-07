@@ -331,7 +331,9 @@ namespace Moesif.Middleware.NetFramework
                 await httpContext.Response.WriteAsync(eventModel.Response.Body.ToString());
                 eventModel.Response.Headers["X-Moesif-Transaction-Id"] = transactionId;
                 _logger.LogDebug("Request is blocked by Governance rule {ruleId} " , eventModel.BlockedBy);
-                await Task.Run(async () => await LogEventAsync(eventModel));
+                // REVIEW 
+                // await Task.Run(async () => await LogEventAsync(eventModel));
+                await LogEventAsync(eventModel);
             }
             else
             {
@@ -372,7 +374,9 @@ namespace Moesif.Middleware.NetFramework
                     eventModel.SessionToken = loggerHelper.GetConfigValues("GetSessionToken", moesifOptions, httpContext.Request, httpContext.Response, debug);
 
                     loggerHelper.LogDebugMessage(debug, "Calling the API to send the event to Moesif");
-                    await Task.Run(async () => await LogEventAsync(eventModel));
+                    // REVIEW
+                    // await Task.Run(async () => await LogEventAsync(eventModel));
+                    await LogEventAsync(eventModel);
                 }
             }
         }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿// #define MOESIF_INSTRUMENT
+
+using System;
 using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Middleware.Models;

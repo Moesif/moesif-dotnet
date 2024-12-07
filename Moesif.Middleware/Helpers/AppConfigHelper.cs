@@ -1,4 +1,5 @@
-﻿using System;
+﻿// #define MOESIF_INSTRUMENT
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Moesif.Api;
@@ -46,8 +47,6 @@ namespace Moesif.Middleware.Helpers
                 logger.LogError(e, "Error while updateing AppConfig, skip the update");
             }
 
-            // REVIEW : why it is here ??
-            // await Task.Delay(8000); // Asynchronously wait for 2 seconds
             return prevConfig;
         }
 
