@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define MOESIF_INSTRUMENTATION
+
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Moesif.Api;
@@ -73,7 +75,9 @@ namespace Moesif.Middleware.Helpers
                             governanceEvent.Set();
                             logger.LogDebug("GoveranceRule has changed at {time}", DateTime.UtcNow);
                         }
-
+#if MOESIF_INSTRUMENTATION
+                        logger.LogError($"Events [{batchEvents.Count}] sent successfully to Moesif at {DateTime.UtcNow}");
+#endif
                         logger.LogDebug("Events sent successfully to Moesif at {time}", DateTime.UtcNow);
                     }
                     catch (Exception e)

@@ -29,7 +29,7 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public static string APP_VERSION = "moesif-netframework/3.1.2";
+        public static string APP_VERSION = "moesif-netframework/3.1.3";
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
