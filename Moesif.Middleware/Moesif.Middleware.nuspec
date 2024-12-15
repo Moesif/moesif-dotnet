@@ -19,7 +19,7 @@
 	<tags>azure web app moesif API analytics insights debug debugging log logging apm performance monitor monitoring restful rest graphql ethereum web3 json-rpc soap net java node python php go golang ruby microsoft</tags>
 	<dependencies>
         <group>
-          <dependency id="Moesif.Api" version="3.1.1" />
+          <dependency id="Moesif.Api" version="3.1.2" />
         </group>
 		<group targetFramework="net461">
             <dependency id="Microsoft.Owin" version="4.2.2" />
