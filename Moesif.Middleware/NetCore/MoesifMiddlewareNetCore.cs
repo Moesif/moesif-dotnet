@@ -1,4 +1,4 @@
-﻿#define MOESIF_INSTRUMENT
+﻿// #define MOESIF_INSTRUMENT
 
 using System;
 using System.Diagnostics;
@@ -117,9 +117,6 @@ namespace Moesif.Middleware.NetCore
         public MoesifMiddlewareNetCore(RequestDelegate next, Dictionary<string, object> _middleware, ILoggerFactory logger)
         {
 #if MOESIF_INSTRUMENT
-            long fetchAppConfigTime = 0;
-            long fetchGovRuleTime = 0;
-
             var logStage = false;
             var perfMetrics = new PerformanceMetrics("MiddlewareInit", logStage);
             perfMetrics.Start("createLoggerTime");

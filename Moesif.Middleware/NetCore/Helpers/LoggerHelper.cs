@@ -1,4 +1,4 @@
-﻿#define MOESIF_INSTRUMENT
+﻿// #define MOESIF_INSTRUMENT
 
 using System;
 using System.IO;
@@ -223,7 +223,9 @@ namespace Moesif.Middleware.NetCore.Helpers
                     else
                     {
                         LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+#if MOESIF_INSTRUMENT
                         perfMetrics.Start("parseBase64Data");
+#endif
                         reqBody = Base64Encode(data);
                         requestTransferEncoding = "base64";
 #if MOESIF_INSTRUMENT
@@ -234,7 +236,9 @@ namespace Moesif.Middleware.NetCore.Helpers
                 catch (Exception)
                 {
                     LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+#if MOESIF_INSTRUMENT
                     perfMetrics.Start("exceptionBase64Data");
+#endif
                     reqBody = Base64Encode(data);
                     requestTransferEncoding = "base64";
 #if MOESIF_INSTRUMENT
