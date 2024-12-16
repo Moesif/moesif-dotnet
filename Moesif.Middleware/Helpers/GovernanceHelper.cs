@@ -1,4 +1,4 @@
-﻿// #define MOESIF_INSTRUMENT
+﻿//#define MOESIF_INSTRUMENT
 
 using System;
 using Moesif.Api;
@@ -68,11 +68,11 @@ namespace Moesif.Middleware.Helpers
                 var matchingRules = new List<(Rule, GovernanceRule)>();
                 var matchingUser = findMatchingEntityRule(eventModel.UserId, "user", governace, config, requestMap);
                 matchingRules.AddRange(matchingUser);
-              
-               
+
+
                 var matchingCompany = findMatchingEntityRule(eventModel.CompanyId, "company", governace, config, requestMap);
                 matchingRules.AddRange(matchingCompany);
-               
+
 
                 var regexRules = new List<GovernanceRule>();
                 var matchingRegexRules = new List<(Rule, GovernanceRule)>();

@@ -1,4 +1,4 @@
-﻿//#define MOESIF_INSTRUMENT
+﻿// #define MOESIF_INSTRUMENT
 
 using System;
 using System.IO;
@@ -182,23 +182,19 @@ namespace Moesif.Middleware.NetCore.Helpers
         public  Tuple<object, string> Serialize(string data, string contentType, bool logBody, bool debug)
         {
 #if MOESIF_INSTRUMENT
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var logStage = false;
+            var perfMetrics = new PerformanceMetrics("Serialize", logStage);
+            perfMetrics.Start("checkForEmptyDataAndInitObj");
             _logger.LogError($@"
                                 Serialize Body: {data}");
-
-            long checkForEmptyDataAndInitObj = 0;
-            long parseJsonData = 0;
-            long parseBase64Data = 0;
-            long exceptionBase64Data = 0;
 #endif
 
             if (string.IsNullOrEmpty(data))
             {
 #if MOESIF_INSTRUMENT
-                stopwatch.Stop();
                 _logger.LogError($@"
-                                Exiting Serialize Body as empty data with time: {stopwatch.ElapsedMilliseconds} ms");
+                                Exiting Serialize Body as empty data with time");
+                perfMetrics.PrintMetrics(Console.WriteLine);
 #endif
                 return new Tuple<object, string>(null, null);
             }
@@ -206,8 +202,7 @@ namespace Moesif.Middleware.NetCore.Helpers
             var reqBody = new object();
             string requestTransferEncoding = null;
 #if MOESIF_INSTRUMENT
-            checkForEmptyDataAndInitObj = stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
+            perfMetrics.Stop();
 #endif
             if (logBody && contentType != null && !(contentType.ToLower().StartsWith("multipart/form-data")))
             {
@@ -216,61 +211,43 @@ namespace Moesif.Middleware.NetCore.Helpers
                     // Only try parse if is JSON or looks like JSON
                     if (contentType != null && contentType.ToLower().Contains("json") || data.StartsWith("{") || data.StartsWith("["))
                     {
+#if MOESIF_INSTRUMENT
+                        perfMetrics.Start("parseJsonData");
+#endif
                         reqBody = ApiHelper.JsonDeserialize<object>(data);
                         requestTransferEncoding = "json";
 #if MOESIF_INSTRUMENT
-                        parseJsonData = stopwatch.ElapsedMilliseconds;
-                        stopwatch.Restart();
+                        perfMetrics.Stop();
 #endif
                     }
                     else
                     {
                         LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+#if MOESIF_INSTRUMENT
+                        perfMetrics.Start("parseBase64Data");
+#endif
                         reqBody = Base64Encode(data);
                         requestTransferEncoding = "base64";
 #if MOESIF_INSTRUMENT
-                        parseBase64Data = stopwatch.ElapsedMilliseconds;
-                        stopwatch.Restart();
+                        perfMetrics.Stop();
 #endif
                     }
                 }
                 catch (Exception)
                 {
                     LogDebugMessage(debug, "About to parse Request body as Base64 encoding");
+#if MOESIF_INSTRUMENT
+                    perfMetrics.Start("exceptionBase64Data");
+#endif
                     reqBody = Base64Encode(data);
                     requestTransferEncoding = "base64";
 #if MOESIF_INSTRUMENT
-                    exceptionBase64Data = stopwatch.ElapsedMilliseconds;
-                    stopwatch.Restart();
+                    perfMetrics.Stop();
 #endif
                 }
             }
 #if MOESIF_INSTRUMENT
-            stopwatch.Stop();
-            var strHeader = string.Concat(
-                "ExitingSerializeBody,",
-                "checkForEmptyDataAndInitObj,",
-                "parseJsonData,",
-                "parseBase64Data,",
-                "exceptionBase64Data"
-            );
-            var strTimes = string.Concat(
-                $"{checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds},",
-                $"{checkForEmptyDataAndInitObj},",
-                $"{parseJsonData},",
-                $"{parseBase64Data},",
-                $"{exceptionBase64Data}"
-            );
-            _logger.LogError($@"
-                    {strHeader}
-                    {strTimes}
-                ");
-            // _logger.LogError($@"
-            //                     Exiting Serialize Body with time: {checkForEmptyDataAndInitObj + parseJsonData + parseBase64Data + exceptionBase64Data + stopwatch.ElapsedMilliseconds} ms
-            //                     checkForEmptyDataAndInitObj took: {checkForEmptyDataAndInitObj} ms
-            //                     parseJsonData took: {parseJsonData} ms
-            //                     parseBase64Data took: {parseBase64Data} ms
-            //                     exceptionBase64Data took: {exceptionBase64Data} ms");
+            perfMetrics.PrintMetrics(Console.WriteLine);
 #endif
 
             return new Tuple<object, string>(reqBody, requestTransferEncoding);
