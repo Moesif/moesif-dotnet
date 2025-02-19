@@ -37,7 +37,8 @@ Install the Nuget Package for the middleware:
 Install-Package Moesif.Middleware
 ```
 
-### Versions & Target Frameworks.
+### Versions & Target Frameworks
+
 | Version   | Target Framework |
 | --------- | ------------------- |
 |  3.1.0 or above | .NET46 / .NET6 or above |
