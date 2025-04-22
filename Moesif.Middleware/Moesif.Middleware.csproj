@@ -7,20 +7,20 @@
 	<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+  <PropertyGroup Condition=" !('$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net46' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net481' Or '$(TargetFramework)' == 'net5.0')">
     <DefineConstants>NET6_0_OR_GREATER</DefineConstants>
     <DefineConstants>NETCORE</DefineConstants>
     <!-- IMPORTANT please comment following lines before release build/publish -->
 <!--    <DefineConstants>MOESIF_INSTRUMENT</DefineConstants>-->
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461'">
+  <PropertyGroup Condition=" ('$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net46' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net481' Or '$(TargetFramework)' == 'net5.0')">
     <DefineConstants>NET461</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Moesif.Api" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.32" />
+    <PackageReference Include="Moesif.Api" Version="3.1.4" />
 <!--     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" /> -->
 <!--    <PackageReference Include="Microsoft.Owin" Version="4.2.2">-->
 <!--      <NoWarn>NU1701</NoWarn>-->
@@ -28,19 +28,19 @@
     <!--    <PackageReference Include="Microsoft.AspNetCore.Owin" Version="6.0.0" />-->
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+  <ItemGroup Condition=" !('$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net46' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net481' Or '$(TargetFramework)' == 'net5.0')">
 <!--    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.32" />-->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition=" ('$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net46' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net481' Or '$(TargetFramework)' == 'net5.0')">
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+  <ItemGroup Condition=" ('$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net46' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net481' Or '$(TargetFramework)' == 'net5.0')">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net" />
