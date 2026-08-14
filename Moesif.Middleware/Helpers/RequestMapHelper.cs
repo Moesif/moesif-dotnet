@@ -34,8 +34,9 @@ namespace Moesif.Middleware.Helpers
             JsonNode objNode = JsonNode.Parse(objStr);
             if (objNode != null)
             {
-                // Get JsonObject
-                objJson = objNode.AsObject();   
+                // Only treat it as a JsonObject if it actually is one
+                // A JSON array or primitive body would throw from AsObject(), so use a safe cast instead.
+                objJson = objNode as JsonObject;
             }
 
             return objJson;
