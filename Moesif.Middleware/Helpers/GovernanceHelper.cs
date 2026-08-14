@@ -196,10 +196,14 @@ namespace Moesif.Middleware.Helpers
                         if (c.path.StartsWith("request.body.") && requestMap.regex_mapping.ContainsKey("request.body"))
                         {
 #if NET6_0_OR_GREATER
-                            var body = (JsonObject)requestMap.regex_mapping["request.body"];
+                            var body = requestMap.regex_mapping["request.body"] as JsonObject;
 #else
-                            var body = (Newtonsoft.Json.Linq.JObject)requestMap.regex_mapping["request.body"];
+                            var body = requestMap.regex_mapping["request.body"] as Newtonsoft.Json.Linq.JObject;
 #endif
+                            if (body == null)
+                            {
+                                return false;
+                            }
                             var fieldName = c.path.Split('.')[2];
 #if NET6_0_OR_GREATER
                             var fieldlValue = body[fieldName];

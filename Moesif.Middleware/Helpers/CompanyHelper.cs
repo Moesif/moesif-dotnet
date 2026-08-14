@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Moesif.Api;
 using Moesif.Api.Models;
 using Moesif.Api.Exceptions;
@@ -33,7 +34,7 @@ namespace Moesif.Middleware.Helpers
         }
 
         // Function to update company
-        public async void UpdateCompany(MoesifApiClient client, Dictionary<string, object> companyProfile, bool debug)
+        public async Task UpdateCompany(MoesifApiClient client, Dictionary<string, object> companyProfile, bool debug)
         {
 
             if (!companyProfile.Any())
@@ -77,7 +78,7 @@ namespace Moesif.Middleware.Helpers
         }
 
         // Function to update companies in batch
-        public async void UpdateCompaniesBatch(MoesifApiClient client, List<Dictionary<string, object>> companyProfiles, bool debug)
+        public async Task UpdateCompaniesBatch(MoesifApiClient client, List<Dictionary<string, object>> companyProfiles, bool debug)
         {
             if (!companyProfiles.Any())
             {

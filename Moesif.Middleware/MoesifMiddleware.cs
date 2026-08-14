@@ -121,12 +121,7 @@ namespace Moesif.Middleware
 
         public async override Task Invoke(IOwinContext httpContext)
         {
-            try 
-            {
-                await netFrameworkMoesifMiddleware.Invoke(httpContext);
-            }
-            catch 
-            { }
+            await netFrameworkMoesifMiddleware.Invoke(httpContext);
         }
 
         // Function to update user
