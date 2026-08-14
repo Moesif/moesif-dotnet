@@ -34,8 +34,9 @@ namespace Moesif.Middleware.Helpers
             JsonNode objNode = JsonNode.Parse(objStr);
             if (objNode != null)
             {
-                // Get JsonObject
-                objJson = objNode.AsObject();   
+                // Only treat it as a JsonObject if it actually is one
+                // A JSON array or primitive body would throw from AsObject(), so use a safe cast instead.
+                objJson = objNode as JsonObject;
             }
 
             return objJson;
@@ -105,18 +106,23 @@ namespace Moesif.Middleware.Helpers
                     }
                 }
 #else
-                Newtonsoft.Json.Linq.JObject body = (Newtonsoft.Json.Linq.JObject)model.Request.Body;
-                var operationName = body.GetValue("operationName");
-                if (operationName != null)
+                // Only treat it as a JObject if it actually is one
+                // A JSON array or primitive body would throw from an unchecked cast, so use `as` instead.
+                Newtonsoft.Json.Linq.JObject body = model.Request.Body as Newtonsoft.Json.Linq.JObject;
+                if (body != null)
                 {
-                    requestMap.regex_mapping.Add("request.body.operationName", operationName.ToString());
+                    var operationName = body.GetValue("operationName");
+                    if (operationName != null)
+                    {
+                        requestMap.regex_mapping.Add("request.body.operationName", operationName.ToString());
+                    }
+                    var query = body.GetValue("query");
+                    if (query != null)
+                    {
+                        requestMap.regex_mapping.Add("request.body.query", query.ToString());
+                    }
+                    requestMap.regex_mapping.Add("request.body", body);
                 }
-                var query = body.GetValue("query");
-                if (query != null)
-                {
-                    requestMap.regex_mapping.Add("request.body.query", query.ToString());
-                }
-                requestMap.regex_mapping.Add("request.body", body);
 #endif
             }
 

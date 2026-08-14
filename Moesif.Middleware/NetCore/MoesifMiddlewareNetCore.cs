@@ -31,7 +31,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/3.1.4";
+        public static string APP_VERSION = "moesif-netcore/3.1.5";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -322,25 +322,22 @@ namespace Moesif.Middleware.NetCore
         // Function to update user
         public void UpdateUser(Dictionary<string, object> userProfile)
         {
-            userHelper.UpdateUser(client, userProfile, debug);
+            _ = userHelper.UpdateUser(client, userProfile, debug);
         }
 
-        // Function to update users in batch
         public void UpdateUsersBatch(List<Dictionary<string, object>> userProfiles)
         {
-            userHelper.UpdateUsersBatch(client, userProfiles, debug);
+            _ = userHelper.UpdateUsersBatch(client, userProfiles, debug);
         }
 
-        // Function to update company
         public void UpdateCompany(Dictionary<string, object> companyProfile)
         {
-            companyHelper.UpdateCompany(client, companyProfile, debug);
+            _ = companyHelper.UpdateCompany(client, companyProfile, debug);
         }
 
-        // Function to update companies in batch
         public void UpdateCompaniesBatch(List<Dictionary<string, object>> companyProfiles)
         {
-            companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
+            _ = companyHelper.UpdateCompaniesBatch(client, companyProfiles, debug);
         }
 
         public void CreateStreamHelpers(HttpContext httpContext, out StreamHelper outputCaptureOwin)

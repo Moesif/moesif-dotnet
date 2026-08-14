@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Moesif.Middleware.Helpers
 {
@@ -89,7 +91,13 @@ namespace Moesif.Middleware.Helpers
             } catch (Exception e) {
                 Console.WriteLine(this.GetType().ToString() + "Error flushing stream: " + e.ToString()
                 + "\n See troubleshooting: https://github.com/Moesif/moesif-dotnet#the-response-body-is-not-logged-or-calls-are-not-recieved-in-moesif");
+                throw;
             }
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return this.InnerStream.FlushAsync(cancellationToken);
         }
 
         public override long Length
@@ -128,7 +136,22 @@ namespace Moesif.Middleware.Helpers
             } catch (Exception e) {
                 Console.WriteLine(this.GetType().ToString() + "Error writing stream: " + e.ToString()
                 + "\n See troubleshooting: https://github.com/Moesif/moesif-dotnet#the-response-body-is-not-logged-or-calls-are-not-recieved-in-moesif");
+                throw;
             }
         }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            this.CopyStream.Write(buffer, offset, count);
+            await this.InnerStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+#if NETCORE
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            this.CopyStream.Write(buffer.Span);
+            await this.InnerStream.WriteAsync(buffer, cancellationToken);
+        }
+#endif
     }
 }

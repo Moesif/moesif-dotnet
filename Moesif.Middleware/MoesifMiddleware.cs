@@ -63,14 +63,9 @@ namespace Moesif.Middleware
 
         public MoesifMiddleware(Dictionary<string, object> _middleware) => netCoreMoesifMiddleware = new MoesifMiddlewareNetCore(_middleware);
 
-        public async Task Invoke(HttpContext httpContext) 
+        public async Task Invoke(HttpContext httpContext)
         {
-            try
-            {
-                await netCoreMoesifMiddleware.Invoke(httpContext);
-            }
-            catch 
-            { }
+            await netCoreMoesifMiddleware.Invoke(httpContext);
         }
 
         // Function to update user
@@ -126,12 +121,7 @@ namespace Moesif.Middleware
 
         public async override Task Invoke(IOwinContext httpContext)
         {
-            try 
-            {
-                await netFrameworkMoesifMiddleware.Invoke(httpContext);
-            }
-            catch 
-            { }
+            await netFrameworkMoesifMiddleware.Invoke(httpContext);
         }
 
         // Function to update user
