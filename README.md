@@ -59,9 +59,58 @@ See the following to learn how to configure the middleware for your use case.
 - [.NET Core configuration options](#net-core-configuration-options)
 - [.NET Framework configuration options](#net-framework-configuration-options)
 
-## Use the Middleware in .NET6.0 and higher
+## Use the Middleware in .NET 6.0 and higher
 
-Please use Moesif.Middleware version `3.0.9` or higher for .NET6 or higher framework. Rest of instrusctions are same.
+Use `Moesif.Middleware` version `3.0.9` or higher for .NET 6 and above. For apps built with the minimal-hosting `Program.cs` pattern (the default template since .NET 6):
+
+```csharp
+using Moesif.Middleware;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+var moesifOptions = new Dictionary<string, object>
+{
+    { "ApplicationId", "YOUR_MOESIF_APPLICATION_ID" },
+    { "LogBody", true },
+    // For other options see below.
+};
+
+// ⚠ Add MoesifMiddleware FIRST — before any other `app.Use...` call,
+// especially before UseExceptionHandler. Every middleware you register
+// after this line will run "inside" Moesif, which is exactly what you
+// want: Moesif logs the final response, including 5xx error bodies
+app.UseMiddleware<MoesifMiddleware>(moesifOptions);
+
+app.UseExceptionHandler(errorApp => { /* your error handler */ });
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+app.Run();
+```
+
+Replace `YOUR_MOESIF_APPLICATION_ID` with [your Moesif Application ID](#get-your-moesif-application-id).
+
+### Where to place `MoesifMiddleware` in `Program.cs`
+
+**Rule:** register `MoesifMiddleware` **before every other `app.Use...` call** in your `Program.cs`. It must come *before* `UseExceptionHandler`, *before* `UseAuthentication`, *before* everything.
+
+```csharp
+var app = builder.Build();
+
+app.UseMiddleware<MoesifMiddleware>(moesifOptions);   // FIRST — do this
+app.UseExceptionHandler(...);                         // then error handling
+app.UseAuthentication();                              // then auth
+app.UseAuthorization();
+app.UseSession();                                     // then session, custom middleware, etc.
+app.MapControllers();                                 // finally, endpoints
+app.Run();
+```
+
+**Why this order matters:** ASP.NET Core middleware runs top-to-bottom on the way in and bottom-to-top on the way out. If Moesif is registered first, it's the last thing to see the response — including the 500 body written by `UseExceptionHandler` or the 401 written by authentication. Register it anywhere else and those responses may be logged incorrectly or not at all.
 
 ## Use the Middleware in .NET Core and .NET 5.0
 
@@ -1053,11 +1102,16 @@ app.MapWhen(context => context.Request.Path.ToString().Contains("/api"), appBuil
 });
 ```
 
-### The Response Body Is Not Logged or Calls Are Jot Recieved in Moesif
+### The Response Body Is Not Logged or Calls Are Not Received in Moesif
+
+> **Fixed in 3.1.5.** Upgrade to `Moesif.Middleware` 3.1.5 or later — the middleware now uses async IO on the response stream and no longer requires `AllowSynchronousIO`. The workaround below is only needed on 3.1.4 and older.
+
+<details>
+<summary>Legacy workaround for 3.1.4 and older</summary>
 
 Each ASP.NET Core server has an option called `AllowSynchronousIO` that toggles synchronous IO APIs such as `HttpRequest.Body.Read`, `HttpResponse.Body.Write`, and `Stream.Flush`. These APIs have previously caused thread starvation and app hangs, so starting from ASP.NET Core 3.0 Preview 3, they are disabled by default.
 
-You  need to set the following option to ensure the response body is logged and to ensure all events are forwarded to Moesif:
+You need to set the following option to ensure the response body is logged and to ensure all events are forwarded to Moesif:
 
 - For .NET Core and .NET 5:
 
@@ -1076,7 +1130,9 @@ You  need to set the following option to ensure the response body is logged and 
     });
     ```
 
-[See the .NET documentation](https://learn.microsoft.com/en-us/dotnet/core/compatibility/aspnetcore#http-synchronous-io-disabled-in-all-servers) relating to the origins of the `AllowSynchronousIO` option. For more information about this workaround, see [.NET Core 3.0 AllowSynchronousIO Workaround](https://khalidabuhakmeh.com/dotnet-core-3-dot-0-allowsynchronousio-workaround).
+[See the .NET documentation](https://learn.microsoft.com/en-us/dotnet/core/compatibility/aspnetcore#http-synchronous-io-disabled-in-all-servers) relating to the origins of the `AllowSynchronousIO` option.
+
+</details>
 
 ## Ensuring Errors Handled by ExceptionHandler Are Logged
 
@@ -1099,6 +1155,9 @@ Moesif has validated this middleware against the following framework versions.
 | .NET |5.0|
 | .NET |6.0|
 | .NET |7.0|
+| .NET |8.0|
+| .NET |9.0|
+| .NET |10.0|
 | .NET Core|2.0-3.0|
 | .NET Framework MVC |4.6-4.7|
 | .NET Framework Web API|4.6-4.7|
