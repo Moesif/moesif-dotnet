@@ -31,7 +31,7 @@ namespace Moesif.Middleware.NetCore
 {
     public class MoesifMiddlewareNetCore
     {
-        public static string APP_VERSION = "moesif-netcore/3.1.5";
+        public static string APP_VERSION = "moesif-netcore/3.1.6";
         private readonly RequestDelegate _next;
 
         public Dictionary<string, object> moesifOptions;
@@ -526,16 +526,19 @@ namespace Moesif.Middleware.NetCore
         {
             string contentEncoding = "";
 
+            parsedContentLength = defaultLength;
+
             if (headers != null)
             {
                 string contentLength = "";
-                headers.TryGetValue("Content-Length", out contentLength);
                 headers.TryGetValue("Content-Encoding", out contentEncoding);
-                int.TryParse(contentLength, out parsedContentLength);
-            }
-            else
-            {
-                parsedContentLength = defaultLength;
+
+                if (headers.TryGetValue("Content-Length", out contentLength)
+                    && int.TryParse(contentLength, out int headerContentLength)
+                    && headerContentLength >= 0)
+                {
+                    parsedContentLength = headerContentLength;
+                }
             }
 
             return contentEncoding;

@@ -29,7 +29,7 @@ namespace Moesif.Middleware.NetFramework
 {
     public class MoesifMiddlewareNetFramework : OwinMiddleware
     {
-        public static string APP_VERSION = "moesif-netframework/3.1.5";
+        public static string APP_VERSION = "moesif-netframework/3.1.6";
         public Dictionary<string, object> moesifOptions;
 
         public MoesifApiClient client;
@@ -419,16 +419,19 @@ namespace Moesif.Middleware.NetFramework
         {
             string contentEncoding = "";
 
+            parsedContentLength = defaultLength;
+
             if (headers != null)
             {
                 string contentLength = "";
-                headers.TryGetValue("Content-Length", out contentLength);
                 headers.TryGetValue("Content-Encoding", out contentEncoding);
-                int.TryParse(contentLength, out parsedContentLength);
-            }
-            else
-            {
-                parsedContentLength = defaultLength;
+
+                if (headers.TryGetValue("Content-Length", out contentLength)
+                    && int.TryParse(contentLength, out int headerContentLength)
+                    && headerContentLength >= 0)
+                {
+                    parsedContentLength = headerContentLength;
+                }
             }
 
             return contentEncoding;
