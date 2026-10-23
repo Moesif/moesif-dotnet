@@ -526,16 +526,19 @@ namespace Moesif.Middleware.NetCore
         {
             string contentEncoding = "";
 
+            parsedContentLength = defaultLength;
+
             if (headers != null)
             {
                 string contentLength = "";
-                headers.TryGetValue("Content-Length", out contentLength);
                 headers.TryGetValue("Content-Encoding", out contentEncoding);
-                int.TryParse(contentLength, out parsedContentLength);
-            }
-            else
-            {
-                parsedContentLength = defaultLength;
+
+                if (headers.TryGetValue("Content-Length", out contentLength)
+                    && int.TryParse(contentLength, out int headerContentLength)
+                    && headerContentLength >= 0)
+                {
+                    parsedContentLength = headerContentLength;
+                }
             }
 
             return contentEncoding;
